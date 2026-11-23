@@ -1,5 +1,5 @@
 {
-  "about": "Model budgets (spec §8.1), proposed in phase 0 and tuned in phase 2. Triangles per model; bytes after compression. Raised 2026-11-23 for crooked-to-the-tip wood and twiglets (marcos: change the tools if they cannot do it).",
+  "about": "Model budgets (spec §8.1), proposed in phase 0 and tuned in phase 2. Triangles per model; bytes after compression. Raised 2026-11-23 for crooked-to-the-tip wood and twiglets (marcos: change the tools if they cannot do it; confirmed by him the same day).",
   "triangles": {
     "lod0": {
       "seedling": 1500,

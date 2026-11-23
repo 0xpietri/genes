@@ -268,7 +268,7 @@ standing trees, and for a season selector in the viewer.
   triangles kept for them (the highest ends first) and `stages` (default adult, old,
   dead_standing). They are thin three-sided tubes in the bark.
 - **Budgets raised** (marcos said to change the tools if they could not do it; please
-  confirm): lod0 adult and old 12,000 → 20,000 triangles, dead_standing 8,000 → 14,000;
+  confirmed by marcos 2026-11-23): lod0 adult and old 12,000 → 20,000 triangles, dead_standing 8,000 → 14,000;
   file 500 KB → 800 KB; look 6 MB → 9 MB. With 12,000, crooked wood used the whole
   budget and only branches over 15–20 cm were drawn. Now adult and old draw branches
   down to 2–5 cm, with about 100 twiglets each; dead trees about 200.
@@ -312,4 +312,4 @@ the same data; and for more small twigs and more foliage high up, airy but shadi
   source describes autumn colours, so it has none. Trees differ by 10–15 days (FAO).
   No source gives how long one leaf stays bright, nor how much of the crown stays in
   winter, so those are left out (the viewer uses the semi-deciduous default, 35 %).
-- Scores: mean 0.50. Look 7.4 MB of 9 MB; budgets unchanged since round 6 (still to confirm).
+- Scores: mean 0.50. Look 7.4 MB of 9 MB; budgets of round 6, confirmed by marcos (2026-11-23).
