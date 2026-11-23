@@ -2,11 +2,13 @@
 
     curl -o a0.json https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson
     curl -o a1.json https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson
-    uv run python scripts/make_basemap.py a0.json a1.json
+    curl -o r.json https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_rivers_lake_centerlines.geojson
+    curl -o l.json https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_lakes.geojson
+    uv run python scripts/make_basemap.py a0.json a1.json r.json l.json
 
-South America's countries, and the provinces of the countries where the Chaco's species live,
-projected (equirectangular, scaled by cos 25° S) to SVG units, 10 per degree of longitude, and
-simplified to about 3 km. The species pages draw the map from this file at build time.
+South America's countries, the main rivers and lakes, and where the provinces of the Chaco's
+countries are, projected (equirectangular, scaled by cos 25° S) to SVG units, 10 per degree of
+longitude, and simplified to about 3 km. The species pages draw the map from this file.
 """
 
 from __future__ import annotations
@@ -75,6 +77,20 @@ def _path(geom: dict[str, Any]) -> str:
     return "".join(parts)
 
 
+def _lines(geom: dict[str, Any]) -> str:
+    lines = geom["coordinates"] if geom["type"] == "MultiLineString" else [geom["coordinates"]]
+    parts = []
+    for line in lines:
+        if not any(BOX[0] <= x <= BOX[2] and BOX[1] <= y <= BOX[3] for x, y in line):
+            continue
+        pts = _simplify([(x, y) for x, y in line], TOLERANCE)
+        if len(pts) < 2:
+            continue
+        xy = [project(x, y) for x, y in pts]
+        parts.append("M" + "L".join(f"{x:.1f} {y:.1f}" for x, y in xy))
+    return "".join(parts)
+
+
 def _centroid(geom: dict[str, Any]) -> list[float]:
     ring = max(_rings(geom), key=len)
     lon = sum(p[0] for p in ring) / len(ring)
@@ -82,7 +98,7 @@ def _centroid(geom: dict[str, Any]) -> list[float]:
     return [round(lon, 3), round(lat, 3)]
 
 
-def main(a0: str, a1: str) -> None:
+def main(a0: str, a1: str, rivers: str, lakes: str) -> None:
     countries = []
     for f in json.loads(Path(a0).read_text(encoding="utf-8"))["features"]:
         p = f["properties"]
@@ -96,19 +112,25 @@ def main(a0: str, a1: str) -> None:
         p = f["properties"]
         if p.get("adm0_a3") not in PROVINCES_OF:
             continue
-        d = _path(f["geometry"])
+        # Only where each province is: the map does not draw them, the build places photos.
+        provinces.append(
+            {"country": p["adm0_a3"], "name": p["name"], "centre": _centroid(f["geometry"])}
+        )
+    water = []
+    for f in json.loads(Path(rivers).read_text(encoding="utf-8"))["features"]:
+        p = f["properties"]
+        d = _lines(f["geometry"]) if f["geometry"] else ""
+        if d and p.get("featurecla") != "Lake Centerline":
+            water.append({"name": p.get("name") or "", "rank": p.get("scalerank", 9), "d": d})
+    lake_list = []
+    for f in json.loads(Path(lakes).read_text(encoding="utf-8"))["features"]:
+        d = _path(f["geometry"]) if f["geometry"] else ""
         if d:
-            provinces.append(
-                {
-                    "country": p["adm0_a3"],
-                    "name": p["name"],
-                    "d": d,
-                    "centre": _centroid(f["geometry"]),
-                }
-            )
+            lake_list.append({"name": f["properties"].get("name") or "", "d": d})
     w, h = project(BOX[2], BOX[1])
     out = {
-        "about": "Natural Earth 1:50m countries and 1:10m provinces (public domain), "
+        "about": "Natural Earth 1:50m countries, rivers and lakes and 1:10m provinces "
+        "(public domain), "
         "made by scripts/make_basemap.py",
         "box": list(BOX),
         "unit": UNIT,
@@ -117,6 +139,8 @@ def main(a0: str, a1: str) -> None:
         "height": round(h, 1),
         "countries": sorted(countries, key=lambda c: c["iso"]),
         "provinces": sorted(provinces, key=lambda c: (c["country"], c["name"])),
+        "rivers": sorted(water, key=lambda r: (r["rank"], r["name"], r["d"])),
+        "lakes": sorted(lake_list, key=lambda r: (r["name"], r["d"])),
     }
     OUT.write_text(
         json.dumps(out, ensure_ascii=False, separators=(",", ":"), sort_keys=True) + "\n",
@@ -124,9 +148,10 @@ def main(a0: str, a1: str) -> None:
     )
     print(
         f"wrote {OUT}: {len(countries)} countries, {len(provinces)} provinces, "
+        f"{len(water)} rivers, {len(lake_list)} lakes, "
         f"{OUT.stat().st_size // 1024} KB"
     )
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    main(*sys.argv[1:5])

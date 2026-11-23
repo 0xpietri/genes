@@ -59,6 +59,7 @@ function setupLife(stage, life, look) {
   const play = $('[data-play]');
   const readout = $('[data-readout]');
   const chips = [...document.querySelectorAll('[data-stage-chip]')];
+  const jumps = [...document.querySelectorAll('[data-jump]')];
   const seasons = [...document.querySelectorAll('[data-season]')];
   const speeds = [...document.querySelectorAll('[data-speed]')];
   const chart = $('[data-lifechart]');
@@ -94,6 +95,7 @@ function setupLife(stage, life, look) {
     }
     readout.append(` · ${STAGE_LABEL[st] ?? st}${statusText}`);
     for (const c of chips) c.setAttribute('aria-current', c.dataset.stageChip === st ? 'step' : 'false');
+    for (const b of jumps) b.setAttribute('aria-current', b.dataset.stagePic === st ? 'step' : 'false');
     const season = SEASON_OF(s.month);
     for (const b of seasons) b.setAttribute('aria-pressed', String(b.textContent === season));
     setWheel(s.month);
@@ -138,6 +140,14 @@ function setupLife(stage, life, look) {
     b.addEventListener('click', () => {
       speed = Number(b.dataset.speed);
       for (const o of speeds) o.setAttribute('aria-pressed', String(o === b));
+    });
+  }
+  for (const b of jumps) {
+    b.addEventListener('click', () => {
+      setPlaying(false);
+      pos = Number(b.dataset.jump);
+      draw(pos);
+      $('[data-stage]').scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }
   chart?.addEventListener('click', (e) => {

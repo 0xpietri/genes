@@ -1,0 +1,85 @@
+{
+  "about": "Painted icons cut from marcos's Gemini illustration sheet, 2026-11-23. Width and height in pixels.",
+  "sizes": {
+    "i-bee": [
+      180,
+      169
+    ],
+    "i-bread": [
+      192,
+      123
+    ],
+    "i-compass": [
+      143,
+      187
+    ],
+    "i-cow": [
+      192,
+      143
+    ],
+    "i-fire": [
+      154,
+      191
+    ],
+    "i-flower": [
+      175,
+      175
+    ],
+    "i-frost": [
+      159,
+      181
+    ],
+    "i-gauge": [
+      95,
+      185
+    ],
+    "i-goat": [
+      178,
+      185
+    ],
+    "i-leaf": [
+      184,
+      178
+    ],
+    "i-nest": [
+      192,
+      130
+    ],
+    "i-person": [
+      68,
+      192
+    ],
+    "i-pod": [
+      164,
+      180
+    ],
+    "i-rain": [
+      105,
+      163
+    ],
+    "i-roots": [
+      192,
+      154
+    ],
+    "i-seedling": [
+      164,
+      165
+    ],
+    "i-shade": [
+      192,
+      178
+    ],
+    "i-sun": [
+      187,
+      191
+    ],
+    "i-thermometer": [
+      78,
+      184
+    ],
+    "i-wood": [
+      192,
+      159
+    ]
+  }
+}

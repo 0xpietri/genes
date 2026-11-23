@@ -140,6 +140,43 @@ def test_place_points_read_inaturalist_place_codes() -> None:
     assert [p["name"] for p in pts] == ["La Paz", "Santiago del Estero"]
 
 
+def test_stage_strip_follows_the_life_and_its_pictures_exist(dist: Path) -> None:
+    sp = next(s for s in validate.discover([SPECIES_DIR]) if s.id == "neltuma-alba")
+    life = genes_site.lifecycle_of(sp)
+    assert life is not None
+    spans = genes_site.stage_spans(life[1])
+    assert [s[0] for s in spans] == [
+        "seedling",
+        "sapling",
+        "young",
+        "adult",
+        "old",
+        "dead_standing",
+        "fallen",
+    ]
+    assert all(a[1] < b[1] for a, b in zip(spans, spans[1:], strict=False))
+    html = (dist / "species" / "neltuma-alba" / "index.html").read_text(encoding="utf-8")
+    for st, *_ in spans:
+        url = f"/v1/species/neltuma-alba/media/stages/{st}.webp"
+        assert url in html, st
+        assert (dist / url.lstrip("/")).exists(), url
+
+
+def test_painted_icons_exist_with_their_sizes(dist: Path) -> None:
+    html = (dist / "species" / "neltuma-alba" / "index.html").read_text(encoding="utf-8")
+    used = set(re.findall(r'src="/static/site/art/([a-z-]+)\.webp"', html))
+    assert {"i-pod", "i-bee", "i-goat", "i-frost", "i-rain"} <= used
+    sizes = jsonio.load(SITE_STATIC / "art" / "sizes.json")["sizes"]
+    for name in used:
+        assert name in sizes and (dist / "static" / "site" / "art" / f"{name}.webp").exists()
+
+
+def test_the_map_draws_no_provinces() -> None:
+    basemap = jsonio.load(SITE_STATIC / "geo" / "basemap.json")
+    assert basemap["rivers"] and basemap["lakes"]
+    assert all("d" not in p for p in basemap["provinces"])
+
+
 def test_recorded_lifecycle_is_valid() -> None:
     species = [s for s in validate.discover([SPECIES_DIR]) if s.id == "neltuma-alba"]
     assert validate._lifecycle_problems(species[0]) == []
@@ -178,7 +215,7 @@ def test_public_pages_run_without_errors(served: str) -> None:
         assert page.evaluate("document.body.dataset.mode") in ("day", "night")
         page.locator("#map").scroll_into_view_if_needed()
         page.locator("[data-map-canvas] svg").wait_for(timeout=30000)
-        assert page.locator("[data-map-canvas] circle.place").count() == 9
+        assert page.locator("[data-map-canvas] .pin").count() == 10
         assert errors == []
     finally:
         browser.close()

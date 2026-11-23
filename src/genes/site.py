@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 from genes import jsonio
+from genes import site_art as art
 from genes.paths import REPO_ROOT
 from genes.species import Species
 
@@ -159,6 +160,11 @@ def head(
     ]
     if image:
         parts.append(f'<meta property="og:image" content="{e(BASE_URL + image)}">')
+    for font in ("fredoka", "nunito"):
+        parts.append(
+            f'<link rel="preload" href="/static/site/fonts/{font}.woff2" as="font" '
+            'type="font/woff2" crossorigin>'
+        )
     parts.append('<link rel="stylesheet" href="/static/site/site.css">')
     for href in preload or []:
         parts.append(f'<link rel="modulepreload" href="{e(href)}">')
@@ -206,6 +212,19 @@ def media_of(sp: Species) -> Path | None:
         if p.exists():
             return p
     return None
+
+
+def stage_art_of(sp: Species) -> dict[str, tuple[str, int, int]]:
+    """Painted pictures of the tree at each stage: stage -> (URL, width, height)."""
+    p = sp.folder / "media" / "stages" / "sizes.json"
+    if not p.exists():
+        return {}
+    sizes = jsonio.load(p)["sizes"]
+    return {
+        k: (f"/v1/species/{sp.id}/media/stages/{k}.webp", int(w), int(h))
+        for k, (w, h) in sorted(sizes.items())
+        if (p.parent / f"{k}.webp").exists()
+    }
 
 
 def occurrences_of(sp: Species) -> dict[str, Any] | None:
@@ -343,63 +362,6 @@ def phenology_wheel(sheet: dict[str, Any], palette: dict[str, Any]) -> str:
     )
 
 
-def height_scale(sheet: dict[str, Any], palette: dict[str, Any]) -> str:
-    h = dig(sheet, "plant", "size", "adult_height_m")
-    c = dig(sheet, "plant", "size", "crown_width_m")
-    if not h:
-        return ""
-    top = max(20.0, math.ceil(h["max"] / 5) * 5)
-    W, H, base, left = 520, 300, 270, 40
-    sy = (base - 20) / top
-    foliage = dig(palette, "foliage", "mature", "lit") or "#8fa155"
-    bark = dig(palette, "bark", "lit") or "#7a6a58"
-    grid = []
-    for m in range(0, int(top) + 1, 5):
-        y = base - m * sy
-        grid.append(
-            f'<line class="gl" x1="{left}" x2="{W - 10}" y1="{y:.1f}" y2="{y:.1f}"/>'
-            f'<text class="axis" x="{left - 8}" y="{y + 4:.1f}">{m} m</text>'
-        )
-    trees = []
-    widths = {
-        "min": c["min"] if c else h["min"],
-        "typical": c.get("typical", (c["min"] + c["max"]) / 2) if c else h["typical"],
-        "max": c["max"] if c else h["max"],
-    }
-    for i, (key, label) in enumerate((("min", "small"), ("typical", "usual"), ("max", "tallest"))):
-        hh = float(h.get(key) or 0)
-        if not hh:
-            continue
-        x = 150 + i * 130
-        crown_w = float(widths[key]) * sy
-        crown_h = hh * 0.55 * sy
-        trunk_top = base - hh * sy + crown_h * 0.75
-        trees.append(
-            f'<g class="scale-tree"><rect x="{x - 0.035 * hh * sy:.1f}" y="{trunk_top:.1f}" '
-            f'width="{0.07 * hh * sy:.1f}" height="{base - trunk_top:.1f}" fill="{bark}"/>'
-            f'<ellipse cx="{x}" cy="{base - hh * sy + crown_h / 2:.1f}" rx="{crown_w / 2:.1f}" '
-            f'ry="{crown_h / 2:.1f}" fill="{foliage}"/>'
-            f'<text class="scale-label" x="{x}" y="{base - hh * sy - 8:.1f}">{fmt_num(hh)} m</text>'
-            f'<text class="scale-sub" x="{x}" y="{base + 18}">{label}</text></g>'
-        )
-    p = 1.75 * sy
-    person = (
-        f'<g class="person"><circle cx="{left + 40}" cy="{base - p + p * 0.1:.1f}" r="{p * 0.1:.1f}"/>'
-        f'<rect x="{left + 40 - p * 0.09:.1f}" y="{base - p * 0.8:.1f}" width="{p * 0.18:.1f}" '
-        f'height="{p * 0.8:.1f}" rx="{p * 0.06:.1f}"/>'
-        f'<text class="scale-sub" x="{left + 40}" y="{base + 18}">you, 1.75 m</text></g>'
-    )
-    return (
-        f'<svg class="scale" viewBox="0 0 {W} {H}" role="img" aria-label="Adult height '
-        f'{fmt_range(h, "m")} next to a 1.75 m person">'
-        + "".join(grid)
-        + f'<line class="ground" x1="{left}" x2="{W - 10}" y1="{base}" y2="{base}"/>'
-        + person
-        + "".join(trees)
-        + "</svg>"
-    )
-
-
 def life_chart(life: dict[str, Any] | None) -> str:
     if not life:
         return ""
@@ -443,46 +405,78 @@ def life_chart(life: dict[str, Any] | None) -> str:
     for m in range(0, math.ceil(top) + 1, 2):
         ym = B - m * sy
         ticks.append(f'<text class="axis" x="{L - 6}" y="{ym + 4:.1f}">{m} m</text>')
+    area = f"M{L} {B}L" + "L".join(pts) + f"L{pts[-1].split()[0]} {B}Z"
     return (
         f'<svg class="lifechart" viewBox="0 0 {W} {H}" role="img" data-lifechart '
         f'data-x0="{L}" data-sx="{sx:.5f}" data-y0="{B}" data-sy="{sy:.5f}" '
         f'aria-label="Height over the life of one simulated tree">'
+        + '<defs><linearGradient id="lc-area" x1="0" y1="0" x2="0" y2="1">'
+        '<stop offset="0" stop-color="#9fdc8f" stop-opacity=".55"/>'
+        '<stop offset="1" stop-color="#9fdc8f" stop-opacity="0"/></linearGradient></defs>'
         + "".join(bands)
         + "".join(ticks)
+        + f'<path class="lifearea" d="{area}"/>'
         + f'<polyline class="lifeline" points="{" ".join(pts)}"/>'
         + f'<line class="life-cursor" data-life-cursor x1="{L}" x2="{L}" y1="{T}" y2="{B}"/>'
         + f'<circle class="life-dot" data-life-dot cx="{L}" cy="{B}" r="5"/></svg>'
     )
 
 
-def range_bar(
-    label: str, r: dict[str, Any] | None, lo: float, hi: float, unit: str, cls: str
-) -> str:
-    if not r or "min" not in r:
+def stage_spans(life: dict[str, Any]) -> list[tuple[str, int, float, float]]:
+    """The stages one recorded life goes through: (stage, first sample, from year, to year).
+
+    The same rule as `life.js` stageAt (spec §6.2), so the strip and the 3D model agree.
+    """
+    s = life["samples"]
+    ind = life["individual"]
+    own = ind["max_height_mm"] / 1000
+    spans: list[tuple[str, int, float, float]] = []
+    for i in range(len(s["date"])):
+        status = life["statuses"][s["status"][i]]
+        h = s["h_mm"][i] / 1000
+        age = s["age_days"][i] / 365.25
+        if status == "fallen":
+            st = "fallen"
+        elif status == "standing_dead":
+            st = "dead_standing"
+        elif h < 0.5:
+            st = "seedling"
+        elif h < 2:
+            st = "sapling"
+        elif h < 0.6 * own:
+            st = "young"
+        elif age >= 0.7 * ind["max_age_years"]:
+            st = "old"
+        else:
+            st = "adult"
+        if not spans or spans[-1][0] != st:
+            if st in {x[0] for x in spans}:
+                continue  # a stage seen before (a dip in height): keep the first span
+            spans.append((st, i, age, age))
+        else:
+            spans[-1] = (st, spans[-1][1], spans[-1][2], age)
+    return spans
+
+
+def stage_strip(life: dict[str, Any] | None, art: dict[str, tuple[str, int, int]]) -> str:
+    if not life:
         return ""
-    a = (r["min"] - lo) / (hi - lo) * 100
-    b = (r["max"] - lo) / (hi - lo) * 100
-    typ = ""
-    if "typical" in r:
-        t = (r["typical"] - lo) / (hi - lo) * 100
-        typ = f'<span class="bar-typ" style="left:{t:.1f}%" title="usually {fmt_num(r["typical"])} {unit}"></span>'
+    items = []
+    for st, i, y0, y1 in stage_spans(life):
+        pic = art.get(st)
+        img = (
+            f'<img src="{e(pic[0])}" alt="" width="{pic[1]}" height="{pic[2]}" loading="lazy" decoding="async">'
+            if pic
+            else ""
+        )
+        items.append(
+            f'<li><button type="button" data-jump="{i}" data-stage-pic="{e(st)}">'
+            f'<span class="pic">{img}</span><strong>{e(STAGE_LABEL.get(st, st))}</strong>'
+            f"<small>years {math.floor(y0)}–{math.ceil(y1)}</small></button></li>"
+        )
     return (
-        f'<div class="gauge {cls}"><div class="gauge-head"><span>{e(label)}</span>'
-        f"<strong>{e(fmt_range(r, unit))}</strong></div>"
-        f'<div class="bar"><span class="bar-fill" style="left:{a:.1f}%;width:{b - a:.1f}%"></span>{typ}</div>'
-        f'<div class="bar-scale"><span>{fmt_num(lo)} {e(unit)}</span><span>{fmt_num(hi)} {e(unit)}</span></div></div>'
+        '<ol class="life-stages" aria-label="Its stages: jump to one">' + "".join(items) + "</ol>"
     )
-
-
-GIVES_ICON = {
-    "fruit": '<path d="M5 18c4-1 9-5 13-12 1 4-2 11-10 13-2 .5-3 0-3-1Z"/>',
-    "nectar": '<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11Z"/>',
-    "pollen": '<circle cx="8" cy="9" r="2.5"/><circle cx="15" cy="7" r="2"/><circle cx="14" cy="15" r="3"/><circle cx="7" cy="16" r="1.8"/>',
-    "browse": '<path d="M4 20c0-8 5-14 16-16-1 10-6 16-16 16Zm0 0 9-9"/>',
-    "shade": '<path d="M3 12a9 9 0 0 1 18 0H3Zm9 0v8"/>',
-    "nitrogen_fixing": '<path d="M7 19V5l10 14V5"/>',
-    "firewood": '<path d="M12 3c3 4 6 6 6 10a6 6 0 0 1-12 0c0-3 2-4 3-7 1 2 2 3 3 3 0-2 0-4 0-6Z"/>',
-}
 
 
 def gives_tiles(sheet: dict[str, Any]) -> str:
@@ -503,7 +497,7 @@ def gives_tiles(sheet: dict[str, Any]) -> str:
         to = ", ".join(g.get("to", []))
         when = months_text(months)
         tiles.append(
-            f'<li class="give"><svg viewBox="0 0 24 24" aria-hidden="true">{GIVES_ICON.get(what, "")}</svg>'
+            f'<li class="give">{art.icon(what, "ico give-ico")}'
             f"<div><strong>{e(GIVES_LABEL.get(what, what.replace('_', ' ').capitalize()))}</strong>"
             f"{f'<span> to {e(to)}</span>' if to else ''}"
             f"{f'<small>{e(when)}</small>' if when else ''}{cells}"
@@ -560,15 +554,15 @@ def species_ld(sheet: dict[str, Any], path: str, image: str | None) -> list[dict
 def stat_tiles(sheet: dict[str, Any], life: dict[str, Any] | None) -> str:
     size = dig(sheet, "plant", "size") or {}
     items = [
-        ("Height", size.get("adult_height_m"), "m"),
-        ("Crown", size.get("crown_width_m"), "m"),
-        ("Trunk", size.get("trunk_dbh_m"), "m"),
-        ("Wood", dig(sheet, "plant", "wood", "density_kg_m3"), "kg/m³"),
-        ("Frost", dig(sheet, "plant", "climate", "frost_kill_c_adult"), "°C"),
-        ("Rain", dig(sheet, "plant", "water", "rainfall_mm_year"), "mm/yr"),
+        ("Height", size.get("adult_height_m"), "m", "height"),
+        ("Crown", size.get("crown_width_m"), "m", "crown"),
+        ("Trunk", size.get("trunk_dbh_m"), "m", "trunk"),
+        ("Wood", dig(sheet, "plant", "wood", "density_kg_m3"), "kg/m³", "wood"),
+        ("Frost", dig(sheet, "plant", "climate", "frost_kill_c_adult"), "°C", "frost"),
+        ("Rain", dig(sheet, "plant", "water", "rainfall_mm_year"), "mm/yr", "rain"),
     ]
     out = []
-    for label, r, unit in items:
+    for label, r, unit, ico in items:
         if not r:
             continue
         typ = (
@@ -577,7 +571,7 @@ def stat_tiles(sheet: dict[str, Any], life: dict[str, Any] | None) -> str:
             else ""
         )
         out.append(
-            f'<div class="tile"><span class="tile-k">{e(label)}</span>'
+            f'<div class="tile">{art.icon(ico, "ico tile-ico")}<span class="tile-k">{e(label)}</span>'
             f'<span class="tile-v">{e(fmt_range(r))}<em>{e(unit)}</em></span>{typ}'
             f'<small class="src">[{e(", ".join(r.get("source", [])))}]</small></div>'
         )
@@ -586,7 +580,7 @@ def stat_tiles(sheet: dict[str, Any], life: dict[str, Any] | None) -> str:
         if dead:
             years = int(dead["date"][:4]) - int(life["born"][:4])
             out.append(
-                f'<div class="tile tile-sim"><span class="tile-k">Simulated life</span>'
+                f'<div class="tile tile-sim">{art.icon("life", "ico tile-ico")}<span class="tile-k">Simulated life</span>'
                 f'<span class="tile-v">{years}<em>years</em></span>'
                 f"<small>one tree in pietri.dev's simulator</small></div>"
             )
@@ -720,17 +714,12 @@ def species_page(
         + f" <small>accessed {e(s.get('accessed', ''))}</small></li>"
         for s in sheet.get("sources", [])
     )
-    place_list = "".join(
-        f"<li>{e(p['name'])} <small>({len(p['photos'])} photo"
-        f"{'s' if len(p['photos']) != 1 else ''})</small></li>"
-        for p in places
-    )
     occ_note = (
-        f"{occ['total']:,} GBIF sightings in {len(occ['cells'])} half-degree cells "
-        f"(accessed {occ['source']['accessed']})."
+        f"Each little tree marks a half-degree area with GBIF sightings: {occ['total']:,} "
+        f"in {len(occ['cells'])} areas (accessed {occ['source']['accessed']})."
         if occ
-        else "Shown: where the reference photos were taken, by province. The full GBIF "
-        "sightings layer appears once `genes occurrences` has been run."
+        else "For now each little tree marks a province where a reference photo was taken; "
+        "the GBIF sightings layer replaces them once `genes occurrences` has been run."
     )
     dead = next((c for c in (life or {}).get("changes", []) if c["to"] == "standing_dead"), None)
     life_text = ""
@@ -748,6 +737,42 @@ def species_page(
                 else ""
             )
             + "Every page shows the same tree.</p>"
+        )
+
+    size = dig(sheet, "plant", "size") or {}
+    stage_art = stage_art_of(sp)
+    size_pills = "".join(
+        f'<span class="pill">{art.icon(ico, "ico ico-sm")}<span>{label}</span>'
+        f"<strong>{e(fmt_range(r, 'm'))}</strong>"
+        + (f"<small>usually {fmt_num(r['typical'])} m</small>" if "typical" in r else "")
+        + "</span>"
+        for label, r, ico in (
+            ("Height", size.get("adult_height_m"), "height"),
+            ("Crown width", size.get("crown_width_m"), "crown"),
+            ("Trunk", size.get("trunk_dbh_m"), "trunk"),
+        )
+        if isinstance(r, dict) and "min" in r
+    )
+    life_kpis = ""
+    if life:
+        ind = life["individual"]
+        kpis = [
+            (f"{ind['max_height_mm'] / 1000:.1f} m", "its tallest", "height"),
+        ]
+        if dead:
+            kpis.insert(
+                0, (f"{int(dead['date'][:4]) - int(life['born'][:4])} years", "lived", "life")
+            )
+            cause = {"age": "Old age"}.get(dead["cause"], str(dead["cause"]).capitalize())
+            kpis.append((e(cause), "is what it dies of", "leaf"))
+        kpis.append((life["end"]["date"][:4], "gone into the soil", "trunk"))
+        life_kpis = (
+            '<div class="kpis">'
+            + "".join(
+                f'<div class="kpi">{art.icon(ico, "ico kpi-ico")}<strong>{v}</strong><span>{k}</span></div>'
+                for v, k, ico in kpis
+            )
+            + "</div>"
         )
 
     sim = ""
@@ -819,87 +844,115 @@ def species_page(
   </section>
 
   <section class="panel span-2" id="life">
-    <header><h2>Its life</h2><p>Age, height and death of one tree, simulated once and replayed.</p></header>
+    <header>{
+        art.icon("life", "ico head-ico")
+    }<div><h2>Its life</h2><p>Age, height and death of one tree, simulated once and replayed.</p></div></header>
+    {life_kpis}
     {life_text}
+    {stage_strip(life, stage_art)}
     {life_chart(life)}
     <ul class="legend"><li><i class="sw alive"></i>Alive</li><li><i class="sw dead"></i>Dead, standing</li><li><i class="sw fallen"></i>Fallen, rotting</li></ul>
   </section>
 
-  <div class="grid">
-    <section class="panel" id="year">
-      <header><h2>The year</h2><p>In the Sierras Chicas of Córdoba (southern hemisphere).</p></header>
-      {phenology_wheel(sheet, palette)}
-      <ul class="legend"><li><i class="sw leaves"></i>Leaves (outer ring: new, mature, dry)</li><li><i class="sw flowers"></i>Flowers</li><li><i class="sw pods"></i>Pods</li><li><i class="sw fall"></i>Leaf fall</li></ul>
-    </section>
+  <div class="grid grid-wide">
     <section class="panel" id="size">
-      <header><h2>How big</h2><p>Adult height and crown, next to a person.</p></header>
-      {height_scale(sheet, palette)}
+      <header>{
+        art.icon("height", "ico head-ico")
+    }<div><h2>How big</h2><p>Adult trees to scale, next to a person.</p></div></header>
+      {art.height_scene(size, image, stage_art)}
+      <div class="pills">{size_pills}</div>
     </section>
-    <section class="panel" id="leaf">
-      <header><h2>The leaf</h2><p>{e(HABIT_LABEL.get(ph.get("leaf_habit", ""), ""))}, {
-        e(ph.get("leaf_type", ""))
-    }: each leaf splits into pinnae lined with small leaflets. Drag to turn it.</p></header>
-      <div class="leafbox" data-leaf><canvas data-leaf-canvas aria-label="Animated 3D leaf"></canvas></div>
-    </section>
-    <section class="panel" id="climate">
-      <header><h2>Water and cold</h2><p>The ranges the sources give.</p></header>
-      {
-        range_bar(
-            "Rainfall it lives with",
-            dig(sheet, "plant", "water", "rainfall_mm_year"),
-            0,
-            1500,
-            "mm",
-            "g-rain",
-        )
-    }
-      {
-        range_bar(
-            "Frost that kills an adult",
-            dig(sheet, "plant", "climate", "frost_kill_c_adult"),
-            -15,
-            5,
-            "°C",
-            "g-frost",
-        )
-    }
-      <dl class="mini">
-        <div><dt>Drought</dt><dd>{
-        e(fmt_range(dig(sheet, "plant", "water", "drought_tolerance")))
-    }</dd></div>
-        <div><dt>Shade, seedling</dt><dd>{
-        e(fmt_range(dig(sheet, "plant", "light", "shade_tolerance_seedling")))
-    }</dd></div>
-        <div><dt>Shade, adult</dt><dd>{
-        e(fmt_range(dig(sheet, "plant", "light", "shade_tolerance_adult")))
-    }</dd></div>
-      </dl>
+    <section class="panel" id="wood">
+      <header>{
+        art.icon("wood", "ico head-ico")
+    }<div><h2>Wood and trunk</h2><p>How heavy the wood is, and how thick the trunk grows.</p></div></header>
+      {art.wood_gauge(dig(sheet, "plant", "wood", "density_kg_m3"))}
+      {art.trunk_rings(size.get("trunk_dbh_m"))}
     </section>
   </div>
 
-  <section class="panel span-2" id="map">
-    <header><h2>Where it lives</h2><p>{e(sheet.get("range_note", ""))}</p></header>
-    <figure class="map" data-map data-basemap="/static/site/geo/basemap.json" data-points="{
+  <div class="grid">
+    <section class="panel" id="climate">
+      <header>{
+        art.icon("rain", "ico head-ico")
+    }<div><h2>Water and cold</h2><p>The ranges the sources give.</p></div></header>
+      <div class="tubes">
+        <figure><figcaption>{art.icon("gauge", "ico ico-sm")}Rain it lives with</figcaption>{
+        art.rain_tube(dig(sheet, "plant", "water", "rainfall_mm_year"))
+    }</figure>
+        <figure><figcaption>{
+        art.icon("thermometer", "ico ico-sm")
+    }Frost that kills an adult</figcaption>{
+        art.thermometer(dig(sheet, "plant", "climate", "frost_kill_c_adult"))
+    }</figure>
+      </div>
+      <div class="levels">
+        {
+        art.level_meter(
+            "Drought tolerance", dig(sheet, "plant", "water", "drought_tolerance"), "drought"
+        )
+    }
+        {
+        art.level_meter(
+            "Shade, seedling",
+            dig(sheet, "plant", "light", "shade_tolerance_seedling"),
+            "shade_need",
+        )
+    }
+        {
+        art.level_meter(
+            "Shade, adult", dig(sheet, "plant", "light", "shade_tolerance_adult"), "shade_need"
+        )
+    }
+      </div>
+    </section>
+    <section class="panel" id="year">
+      <header>{
+        art.icon("year", "ico head-ico")
+    }<div><h2>The year</h2><p>In the Sierras Chicas of Córdoba (southern hemisphere).</p></div></header>
+      {phenology_wheel(sheet, palette)}
+      <ul class="legend"><li><i class="sw leaves"></i>Leaves (outer ring: new, mature, dry)</li><li><i class="sw flowers"></i>Flowers</li><li><i class="sw pods"></i>Pods</li><li><i class="sw fall"></i>Leaf fall</li></ul>
+    </section>
+  </div>
+
+  <div class="grid">
+    <section class="panel" id="map">
+      <header>{art.icon("map", "ico head-ico")}<div><h2>Where it lives</h2><p>{
+        e(sheet.get("range_note", ""))
+    }</p></div></header>
+      <figure class="map" data-map data-basemap="/static/site/geo/basemap.json" data-points="{
         json_attr(points)
     }">
-      <div class="map-tools"><button type="button" data-zoom="1" aria-label="Zoom in">+</button><button type="button" data-zoom="-1" aria-label="Zoom out">−</button><button type="button" data-zoom="0" aria-label="Whole range">⤢</button></div>
-      <div class="map-canvas" data-map-canvas><p class="map-wait">Loading the map…</p></div>
-      <figcaption>{
+        <div class="map-tools"><button type="button" data-zoom="1" aria-label="Zoom in">+</button><button type="button" data-zoom="-1" aria-label="Zoom out">−</button><button type="button" data-zoom="0" aria-label="Whole range">⤢</button></div>
+        <div class="map-canvas" data-map-canvas><p class="map-wait">Loading the map…</p></div>
+        <figcaption>{
         e(occ_note)
-    } The star is Unquillo, where the pietri.dev world stands. Map: Natural Earth.</figcaption>
-    </figure>
-    <ul class="places">{place_list}</ul>
-  </section>
+    } The house is Unquillo, where the pietri.dev world stands. Map: Natural Earth.</figcaption>
+      </figure>
+    </section>
+    <section class="panel" id="leaf">
+      <header>{art.icon("leaf", "ico head-ico")}<div><h2>The leaf</h2><p>{
+        e(HABIT_LABEL.get(ph.get("leaf_habit", ""), ""))
+    }, {
+        e(ph.get("leaf_type", ""))
+    }: each leaf splits into pinnae lined with small leaflets. Drag to turn it.</p></div></header>
+      <div class="leafbox" data-leaf><canvas data-leaf-canvas aria-label="Animated 3D leaf"></canvas></div>
+    </section>
+  </div>
 
   <div class="grid">
     <section class="panel" id="gives">
-      <header><h2>What it gives</h2><p>To animals, people and the soil.</p></header>
+      <header>{
+        art.icon("shade", "ico head-ico")
+    }<div><h2>What it gives</h2><p>To animals, people and the soil.</p></div></header>
       {gives_tiles(sheet)}
     </section>
     <section class="panel" id="people">
-      <header><h2>People and the algarrobo</h2><p>Uses the sources record <small class="src">[{
+      <header>{
+        art.icon("people", "ico head-ico")
+    }<div><h2>People and the algarrobo</h2><p>Uses the sources record <small class="src">[{
         e(uses_src)
-    }]</small>.</p></header>
+    }]</small>.</p></div></header>
       <ul class="uses">{"".join(f"<li>{e(u)}</li>" for u in uses)}</ul>
       <h3>How to recognise it</h3>
       <ul class="traits">{recognisable}</ul>
@@ -908,12 +961,16 @@ def species_page(
   </div>
 
   <section class="panel span-2" id="photos">
-    <header><h2>Reference photos</h2><p>Real trees the model was checked against. Each keeps its author and licence.</p></header>
+    <header>{
+        art.icon("photo", "ico head-ico")
+    }<div><h2>Reference photos</h2><p>Real trees the model was checked against, with where each was taken. Each keeps its author and licence.</p></div></header>
     <div class="photos">{photos}</div>
   </section>
 
   <section class="panel span-2" id="details">
-    <header><h2>Technical details</h2><p>Every number is a sourced range in real units.</p></header>
+    <header>{
+        art.icon("book", "ico head-ico")
+    }<div><h2>Technical details</h2><p>Every number is a sourced range in real units.</p></div></header>
     {facts_table(sheet)}
     <dl class="ids">
       <div><dt>Scientific name</dt><dd><i>{e(sheet["scientific_name"])}</i> {

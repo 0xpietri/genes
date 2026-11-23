@@ -11,6 +11,7 @@
     dist/v1/species/<id>/lifecycle/<n>.json              one simulated life (from pietri.dev)
     dist/v1/species/<id>/occurrences.json                GBIF sightings per cell, if fetched
     dist/v1/species/<id>/media/card.*                    the catalog card's cut-out picture
+    dist/v1/species/<id>/media/stages/*                  painted stage pictures and sizes.json
 
 Same species files, same dist/: byte-identical (sorted keys, no timestamps).
 """
@@ -90,6 +91,11 @@ def _species_entry(sp: Species, out: Path) -> dict[str, Any]:
     if media is not None:
         meta = _copy(media, base / "media" / media.name)
         entry["media"] = {"path": f"{url}/media/{media.name}", **meta}
+    stages_dir = sp.folder / "media" / "stages"
+    if stages_dir.is_dir():
+        for f in sorted(stages_dir.iterdir()):
+            if f.suffix in (".webp", ".json"):
+                _copy(f, base / "media" / "stages" / f.name)
 
     if sp.refs is not None and isinstance(sp.refs.data, dict):
         refs = sp.refs.data

@@ -7,7 +7,10 @@
   and a Markdown copy per species; species cards; the species page with the 3D tree, one
   recorded life from pietri.dev's simulator (age slider, seasons, play), day and night sky,
   infographics, a 3D leaf and a map; `genes occurrences` for GBIF sightings per cell;
-  `docs/DEPLOY.md`. The review viewer moved to `/review/`.
+  `docs/DEPLOY.md`. The review viewer moved to `/review/`. Second pass: a cartoon dashboard
+  with glass modules, marcos's painted icons and stage pictures, illustrated charts (height
+  to scale, wood dial, trunk logs, rain gauge, thermometer, life stages) and a toy map
+  without provinces.
 - The species recipe for any agent: `docs/HOW_TO_ADD_A_SPECIES.md` rewritten with marcos's
   rules, sources, the leaf colour calendar and the viewer checks;
   `docs/PLANT_FORM_PARAMETERS.md` written from the schema (`genes form-reference`);

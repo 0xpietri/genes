@@ -49,6 +49,7 @@ allowed-confusables = ["–", "×", "−"]
 [tool.ruff.lint.per-file-ignores]
 # HTML and SVG written as f-strings: a tag per line reads better than a broken one.
 "src/genes/site.py" = ["E501"]
+"src/genes/site_art.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.13"

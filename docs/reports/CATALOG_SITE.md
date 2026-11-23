@@ -60,6 +60,36 @@ uv run genes serve
   stages' models load while the browser is idle, so play never waits. The catalog page does
   not load three.js at all. Nothing of the 3D was reduced: `lod0` models, every stage.
 
+## Second pass: a cartoon dashboard (asked by marcos the same evening)
+
+marcos found the first version plain and asked for a softer, more cartoon look like his
+dashboard reference: glass modules, little drawings for each fact, real charts for height, wood
+and size, and a smaller map that shows only where the plant is.
+
+- **Look**: Fredoka for titles and Nunito for text (SIL OFL, subset to Latin and vendored in
+  `site/static/fonts/`, 28 KB and 38 KB); every module, tile and control is frosted glass
+  over a painted backdrop of soft colour blobs.
+- **marcos's illustrations** (Gemini, his own sheet): cut out on the white background and
+  stored as WebP. Generic icons in `site/static/art/` (pod, flower, bee, goat, rain, frost,
+  log, roots, fire, nest, person and more, with `sizes.json`); the algarrobo at each stage in
+  `species/plants/neltuma-alba/media/stages/` (also with `sizes.json`), copied to
+  `/v1/species/<id>/media/stages/`. Where no painted icon exists, a drawn SVG one stands in
+  (`src/genes/site_art.py`). The card picture is his Gemini tree, cut out.
+- **Charts** (`site_art.py`, inline SVG at build time): small, usual and tallest adults drawn
+  to scale next to the painted person; a wood density dial from 0 to 1,200 kg/m³ with water's
+  1,000 marked; trunk diameters as nested cut logs; a rain gauge and a thermometer; drought
+  and shade as three-dot meters; the life's height as a filled area under KPIs (years lived,
+  tallest, cause of death, when it is gone) and a strip of the seven stage pictures with
+  their years, which jump the 3D tree to that stage.
+- **Map**: no province lines. A toy map from Natural Earth countries, rivers and lakes
+  (`scripts/make_basemap.py` now keeps only where provinces are, for placing photos), sea,
+  white shore and a little algarrobo on each place with sightings, and a house on Unquillo;
+  4:3 and at most 420 px tall. With `occurrences.json` each tree is a half-degree area with
+  GBIF sightings, sized by count; until then, a province with reference photos.
+
+Still to come: the painted sky, ground and map pieces (second Gemini sheet), which replace
+the code-drawn sky dome and ground texture and the drawn map trees.
+
 ## Decisions to confirm
 
 1. **The life is pietri.dev's, recorded into genes.** Growth, health and death belong to
@@ -81,7 +111,7 @@ uv run genes serve
 5. **Card pictures** (`species/<kind>/<id>/media/card.webp`) are not versioned, like the
    reference photos. Today's is a placeholder: the adult model rendered by `render.html`
    and cut out. marcos makes the real one with Gemini (prompt in the thread).
-6. **The specimen map** shows only the reference photos' provinces. `genes occurrences <id>`
+6. **The specimen map** shows the reference photos' provinces until GBIF is fetched. `genes occurrences <id>`
    (new) downloads GBIF sightings and stores only counts per half-degree cell; the map
    draws them when the file exists. This cloud machine cannot reach GBIF, so it has not
    been run: marcos can run it at home (`uv run genes occurrences neltuma-alba`).
