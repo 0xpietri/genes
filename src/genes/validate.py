@@ -61,10 +61,12 @@ def schema_validator(name: str) -> Draft202012Validator:
     return _VALIDATORS[name]
 
 
-def _schema_problems(name: str, data: Any, path: Path) -> list[Problem]:
+def _schema_problems(name: str, data: Any, path: Path, prefix: str = "") -> list[Problem]:
     out = []
     for err in sorted(schema_validator(name).iter_errors(data), key=lambda e: list(e.path)):
-        where = "/".join(str(p) for p in err.path) or "(root)"
+        where = (
+            "/".join([prefix, *map(str, err.path)] if prefix else map(str, err.path)) or "(root)"
+        )
         out.append(Problem(_rel(path), f"{where}: {err.message}"))
     return out
 
@@ -208,12 +210,19 @@ def _model_problems(
     return out
 
 
+# Generators whose `form` has its own schema (the others are free-form).
+FORM_SCHEMAS = {"plant@1": "plant-form.v1"}
+
+
 def _look_problems(sp: Species, v: Version, budgets: dict[str, Any]) -> list[Problem]:
     look = v.data
     path = _rel(v.path)
     out = _schema_problems("look.v1", look, v.path)
     if not isinstance(look, dict):
         return out
+    form_schema = FORM_SCHEMAS.get(str(look.get("generator")))
+    if form_schema and "form" in look:
+        out.extend(_schema_problems(form_schema, look["form"], v.path, "form"))
     if look.get("id") != sp.id:
         out.append(Problem(path, f"id {look.get('id')!r} differs from its folder {sp.id!r}"))
     if look.get("look") != v.number:
@@ -293,6 +302,13 @@ def _refs_problems(sp: Species) -> list[Problem]:
                 )
             if not (v.path.parent / photo["file"]).exists():
                 out.append(Problem(path, f"photo {pid!r}: file {photo['file']} is missing"))
+        box = photo.get("tree_box")
+        if isinstance(box, list) and len(box) == 4 and not (box[0] < box[2] and box[1] < box[3]):
+            out.append(
+                Problem(path, f"photo {pid!r}: tree_box needs left < right and top < bottom")
+            )
+        if box and "file" not in photo:
+            out.append(Problem(path, f"photo {pid!r}: a tree_box needs a stored file"))
     return out
 
 

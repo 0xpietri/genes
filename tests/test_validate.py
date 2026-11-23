@@ -237,3 +237,24 @@ def test_committed_example_models_are_what_the_code_makes() -> None:
             assert (look_dir / name).read_bytes() == built, (
                 f"{name}: run `uv run genes make-example`"
             )
+
+
+def test_a_plant_form_is_checked_against_its_schema(examples: Path) -> None:
+    def plant(look: dict[str, Any]) -> None:
+        look["generator"] = "plant@1"
+        look["form"] = {"trunk": {"count": "two", "colour": 1}}
+
+    _edit(_look(examples), plant)
+    msgs = _messages(examples)
+    assert _has(msgs, "form/trunk/count")
+    assert _has(msgs, "'colour' was unexpected")
+
+
+def test_tree_box_order_and_file(examples: Path) -> None:
+    def box(refs: dict[str, Any]) -> None:
+        refs["photos"][0]["tree_box"] = [0.8, 0.1, 0.2, 0.9]
+
+    _edit(_refs(examples), box)
+    msgs = _messages(examples)
+    assert _has(msgs, "tree_box needs left < right")
+    assert _has(msgs, "a tree_box needs a stored file")

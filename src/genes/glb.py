@@ -124,6 +124,19 @@ def _apply(m: Mat4, p: Vec3) -> Vec3:
     )
 
 
+# Largest value of each integer component type, for normalized accessors (KHR_mesh_quantization).
+_NORMALIZED_MAX = {5120: 127.0, 5121: 255.0, 5122: 32767.0, 5123: 65535.0}
+
+
+def _dequantize(acc: dict[str, Any], values: list[float]) -> list[float]:
+    """Accessor min/max are stored in the component type: a normalized accessor's values are
+    integers that stand for -1..1 or 0..1 (glTF 2.0 §3.11, meshopt's quantization)."""
+    if acc.get("normalized"):
+        top = _NORMALIZED_MAX.get(int(acc.get("componentType", 5126)), 1.0)
+        return [max(v / top, -1.0) for v in values]
+    return [float(v) for v in values]
+
+
 def inspect(path: Path) -> GlbInfo:
     """Measure a .glb file (spec §15, models)."""
     data = path.read_bytes()
@@ -174,7 +187,7 @@ def inspect(path: Path) -> GlbInfo:
                 acc = accessors[prim["attributes"]["POSITION"]]
                 if "min" not in acc or "max" not in acc:
                     raise GlbError("POSITION accessors must have min and max")
-                amin, amax = acc["min"], acc["max"]
+                amin, amax = _dequantize(acc, acc["min"]), _dequantize(acc, acc["max"])
                 for cx in (amin[0], amax[0]):
                     for cy in (amin[1], amax[1]):
                         for cz in (amin[2], amax[2]):

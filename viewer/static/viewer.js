@@ -246,7 +246,9 @@ async function renderSpecies(id) {
       let mat;
       if (state.painted) {
         const hex = litColour(look.palette, part, state.month, amounts);
-        mat = new THREE.MeshToonMaterial({ color: hex ? new THREE.Color(hex) : base.color, gradientMap: gradient });
+        mat = new THREE.MeshToonMaterial({
+          color: hex ? new THREE.Color(hex) : base.color, gradientMap: gradient, map: base.map, alphaTest: base.alphaTest,
+        });
       } else {
         mat = base.clone();
       }

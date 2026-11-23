@@ -1,0 +1,366 @@
+{
+  "$schema": "../../../../schemas/refs.v1.json",
+  "format": "genes.refs.v1",
+  "id": "neltuma-alba",
+  "photos": [
+    {
+      "angle": "side",
+      "author": "(c) María Zeta, some rights reserved (CC BY)",
+      "file": "r01.jpg",
+      "id": "r01",
+      "licence": "cc-by",
+      "observed_on": "2024-03-17",
+      "place": "Santa Fe, AR",
+      "shows": [
+        "whole",
+        "summer"
+      ],
+      "source": "inaturalist",
+      "tree_box": [
+        0.13,
+        0.07,
+        0.7,
+        0.88
+      ],
+      "url": "https://www.inaturalist.org/photos/358417207",
+      "used_for": [
+        "silhouette: umbrella crown on a short trunk"
+      ]
+    },
+    {
+      "angle": "side",
+      "author": "(c) Víctor Dávalos, some rights reserved (CC BY)",
+      "file": "r02.jpg",
+      "id": "r02",
+      "licence": "cc-by",
+      "observed_on": "2016-12-04",
+      "place": "Formosa, AR",
+      "shows": [
+        "whole",
+        "summer"
+      ],
+      "source": "inaturalist",
+      "tree_box": [
+        0.1,
+        0.09,
+        0.88,
+        0.85
+      ],
+      "url": "https://www.inaturalist.org/photos/145111445",
+      "used_for": [
+        "silhouette: a wide dome on a short trunk"
+      ]
+    },
+    {
+      "angle": "side",
+      "author": "(c) Lauu, some rights reserved (CC BY)",
+      "file": "r03.jpg",
+      "id": "r03",
+      "licence": "cc-by",
+      "observed_on": "2022-06-23",
+      "place": "Jiménez, AR-SE, AR",
+      "shows": [
+        "whole"
+      ],
+      "source": "inaturalist",
+      "tree_box": [
+        0.1,
+        0.16,
+        0.62,
+        0.89
+      ],
+      "url": "https://www.inaturalist.org/photos/208856208",
+      "used_for": [
+        "silhouette: winter in Santiago del Estero, crown nearly full"
+      ]
+    },
+    {
+      "angle": "side",
+      "author": "(c) Lauu, some rights reserved (CC BY)",
+      "file": "r04.jpg",
+      "id": "r04",
+      "licence": "cc-by",
+      "observed_on": "2022-06-22",
+      "place": "Santiago del Estero, AR",
+      "shows": [
+        "whole"
+      ],
+      "source": "inaturalist",
+      "tree_box": [
+        0.01,
+        0.08,
+        0.66,
+        0.83
+      ],
+      "url": "https://www.inaturalist.org/photos/208847364",
+      "used_for": [
+        "silhouette: limbs reaching down at the crown's edge"
+      ]
+    },
+    {
+      "angle": "side",
+      "author": "(c) Valentín Alfano, some rights reserved (CC BY)",
+      "file": "r05.jpg",
+      "id": "r05",
+      "licence": "cc-by",
+      "observed_on": "2024-10-07",
+      "place": "Salta, AR",
+      "shows": [
+        "whole",
+        "summer"
+      ],
+      "source": "inaturalist",
+      "tree_box": [
+        0.49,
+        0.27,
+        0.96,
+        0.69
+      ],
+      "url": "https://www.inaturalist.org/photos/441483678",
+      "used_for": [
+        "silhouette: a younger tree in the Salta chaco"
+      ]
+    },
+    {
+      "angle": "side",
+      "author": "no rights reserved",
+      "file": "r06.jpg",
+      "id": "r06",
+      "licence": "cc0",
+      "observed_on": "2026-10-03",
+      "place": "Ñeembucú, PY",
+      "shows": [
+        "whole",
+        "summer"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/744982538",
+      "used_for": [
+        "crown seen from a path: crown wider than tall, two leaning stems"
+      ]
+    },
+    {
+      "angle": "below",
+      "author": "(c) Tomás Carranza Perales, some rights reserved (CC BY)",
+      "file": "r07.jpg",
+      "id": "r07",
+      "licence": "cc-by",
+      "observed_on": "2022-02-13",
+      "place": "Córdoba, AR",
+      "shows": [
+        "branch",
+        "winter"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/179272670",
+      "used_for": [
+        "limbs seen from under the crown, in Córdoba"
+      ]
+    },
+    {
+      "angle": "detail",
+      "author": "(c) Eduardo Luis Beltrocco, some rights reserved (CC BY)",
+      "file": "r08.jpg",
+      "id": "r08",
+      "licence": "cc-by",
+      "observed_on": "2023-04-05",
+      "place": "La Capital, AR-SF, AR",
+      "shows": [
+        "trunk"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/265679196",
+      "used_for": [
+        "short thick trunk forked low"
+      ]
+    },
+    {
+      "angle": "detail",
+      "author": "(c) Pablo H Capovilla, some rights reserved (CC BY)",
+      "file": "r09.jpg",
+      "id": "r09",
+      "licence": "cc-by",
+      "observed_on": "2024-03-17",
+      "place": "Santa Fe, AR",
+      "shows": [
+        "trunk",
+        "old"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/358334395",
+      "used_for": [
+        "twisted, ridged old trunk"
+      ]
+    },
+    {
+      "angle": "detail",
+      "author": "(c) María Zeta, some rights reserved (CC BY)",
+      "file": "r10.jpg",
+      "id": "r10",
+      "licence": "cc-by",
+      "observed_on": "2024-03-17",
+      "place": "Santa Fe, AR",
+      "shows": [
+        "trunk"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/358417145",
+      "used_for": [
+        "trunk girth beside a person, spiralled fissures"
+      ]
+    },
+    {
+      "angle": "detail",
+      "author": "(c) Giuliana Pernazza, some rights reserved (CC BY)",
+      "file": "r11.jpg",
+      "id": "r11",
+      "licence": "cc-by",
+      "observed_on": "2021-09-18",
+      "place": "Chaco, AR",
+      "shows": [
+        "bark"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/159163737",
+      "used_for": [
+        "bark: long vertical fissures, grey-brown"
+      ]
+    },
+    {
+      "angle": "detail",
+      "author": "no rights reserved",
+      "file": "r12.jpg",
+      "id": "r12",
+      "licence": "cc0",
+      "observed_on": "2026-10-03",
+      "place": "Ñeembucú, PY",
+      "shows": [
+        "flowers"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/744982539",
+      "used_for": [
+        "flower spikes, hanging, pale yellow"
+      ]
+    },
+    {
+      "angle": "detail",
+      "author": "(c) Thomaz Ricardo Favreto Sinani, some rights reserved (CC BY)",
+      "file": "r13.jpg",
+      "id": "r13",
+      "licence": "cc-by",
+      "observed_on": "2024-01-10",
+      "place": "La Paz, BO",
+      "shows": [
+        "flowers"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/345565942",
+      "used_for": [
+        "flower spikes among the leaves"
+      ]
+    },
+    {
+      "angle": "detail",
+      "author": "(c) Rosario Douglas, some rights reserved (CC BY)",
+      "file": "r14.jpg",
+      "id": "r14",
+      "licence": "cc-by",
+      "observed_on": "2026-02-08",
+      "place": "Salta, AR",
+      "shows": [
+        "fruit"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/617993971",
+      "used_for": [
+        "curved pods hanging in bunches"
+      ]
+    },
+    {
+      "angle": "detail",
+      "author": "(c) Pablo H Capovilla, some rights reserved (CC BY)",
+      "file": "r15.jpg",
+      "id": "r15",
+      "licence": "cc-by",
+      "observed_on": "2018-02-15",
+      "place": "San Cristóbal, AR-SF, AR",
+      "shows": [
+        "fruit"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/66423097",
+      "used_for": [
+        "pod length against a tape: about 15 to 20 cm"
+      ]
+    },
+    {
+      "angle": "detail",
+      "author": "(c) Eduardo Luis Beltrocco, some rights reserved (CC BY)",
+      "file": "r16.jpg",
+      "id": "r16",
+      "licence": "cc-by",
+      "observed_on": "2023-01-19",
+      "place": "La Capital, AR-SF, AR",
+      "shows": [
+        "fruit"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/252816447",
+      "used_for": [
+        "straw-yellow pods hanging under the crown"
+      ]
+    },
+    {
+      "angle": "detail",
+      "author": "(c) Victoria Prosdocimo, some rights reserved (CC BY)",
+      "file": "r17.jpg",
+      "id": "r17",
+      "licence": "cc-by",
+      "observed_on": "2023-02-05",
+      "place": "Buenos Aires, AR",
+      "shows": [
+        "leaves"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/255058882",
+      "used_for": [
+        "bipinnate leaf, fine leaflets"
+      ]
+    },
+    {
+      "angle": "detail",
+      "author": "(c) Victoria Prosdocimo, some rights reserved (CC BY)",
+      "file": "r18.jpg",
+      "id": "r18",
+      "licence": "cc-by",
+      "observed_on": "2023-02-05",
+      "place": "Buenos Aires, AR",
+      "shows": [
+        "branch"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/255058861",
+      "used_for": [
+        "paired spines at a node of a vigorous shoot"
+      ]
+    },
+    {
+      "angle": "side",
+      "author": "(c) Tomás Tamagno, some rights reserved (CC BY)",
+      "file": "r19.jpg",
+      "id": "r19",
+      "licence": "cc-by",
+      "observed_on": "2022-12-31",
+      "place": "Santa Fe, AR",
+      "shows": [
+        "young"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/249937283",
+      "used_for": [
+        "a young tree: narrow, open crown"
+      ]
+    }
+  ]
+}

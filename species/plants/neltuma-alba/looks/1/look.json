@@ -1,0 +1,427 @@
+{
+  "$schema": "../../../../../schemas/look.v1.json",
+  "for_sheet": 1,
+  "form": {
+    "branching": [
+      {
+        "angle_deg": [
+          40,
+          70
+        ],
+        "count": [
+          4,
+          7
+        ],
+        "curve": [
+          0.1,
+          0.4
+        ],
+        "droop": [
+          0.1,
+          0.3
+        ],
+        "length": [
+          0.5,
+          0.75
+        ],
+        "level": 1,
+        "radius_ratio": [
+          0.45,
+          0.65
+        ],
+        "start": [
+          0.25,
+          0.95
+        ],
+        "wander": 0.35
+      },
+      {
+        "angle_deg": [
+          30,
+          55
+        ],
+        "count": [
+          6,
+          10
+        ],
+        "curve": 0,
+        "droop": [
+          0.4,
+          0.7
+        ],
+        "length": [
+          0.35,
+          0.55
+        ],
+        "level": 2,
+        "radius_ratio": [
+          0.4,
+          0.6
+        ],
+        "start": [
+          0.2,
+          1.0
+        ],
+        "wander": 0.3
+      },
+      {
+        "angle_deg": [
+          25,
+          50
+        ],
+        "count": [
+          4,
+          7
+        ],
+        "curve": 0,
+        "droop": [
+          0.5,
+          0.8
+        ],
+        "length": [
+          0.3,
+          0.5
+        ],
+        "level": 3,
+        "radius_ratio": [
+          0.4,
+          0.6
+        ],
+        "start": [
+          0.3,
+          1.0
+        ],
+        "wander": 0.25
+      }
+    ],
+    "crown": {
+      "base": [
+        0.12,
+        0.22
+      ],
+      "clump_size_m": [
+        0.7,
+        1.0
+      ],
+      "clump_spacing": 1.1,
+      "envelope": "umbrella",
+      "flat_top": [
+        0.5,
+        0.8
+      ],
+      "irregular": 0.3,
+      "openness": [
+        0.35,
+        0.5
+      ],
+      "widest": 0.6,
+      "width_to_height": [
+        1.3,
+        1.6
+      ]
+    },
+    "dead": {
+      "broken_top": [
+        0.55,
+        0.85
+      ],
+      "lost_twigs": 0.8
+    },
+    "flowers": {
+      "cover": 0.45,
+      "form": "spike",
+      "length_cm": [
+        7,
+        11
+      ],
+      "per_clump": [
+        1,
+        3
+      ],
+      "show_scale": 1.6,
+      "where": "axils"
+    },
+    "foliage": {
+      "cards_per_clump": 3,
+      "density": 0.5,
+      "leaf_size_cm": [
+        6,
+        14
+      ],
+      "leaf_type": "bipinnate",
+      "leafy_from": 0.3
+    },
+    "fruit": {
+      "cover": 0.35,
+      "form": "pod_curved",
+      "hanging": true,
+      "length_cm": [
+        12,
+        25
+      ],
+      "per_bunch": [
+        2,
+        5
+      ],
+      "show_scale": 1.4,
+      "width_cm": [
+        1.1,
+        2.0
+      ]
+    },
+    "old": {
+      "broken_limbs": [
+        1,
+        2
+      ],
+      "crown_thinning": 0.3,
+      "extra_lean_deg": [
+        0,
+        8
+      ]
+    },
+    "stages": {
+      "sapling": {
+        "crown": {
+          "base": [
+            0.2,
+            0.3
+          ],
+          "envelope": "globose",
+          "width_to_height": [
+            0.5,
+            0.8
+          ]
+        },
+        "levels": 2
+      },
+      "seedling": {
+        "crown": {
+          "base": [
+            0.2,
+            0.3
+          ],
+          "envelope": "globose",
+          "width_to_height": [
+            0.5,
+            0.7
+          ]
+        }
+      },
+      "young": {
+        "crown": {
+          "base": [
+            0.25,
+            0.35
+          ],
+          "width_to_height": [
+            0.75,
+            1.05
+          ]
+        },
+        "flowers": {
+          "cover": 0.2
+        },
+        "fruit": {
+          "cover": 0.1
+        },
+        "trunk": {
+          "split_height": [
+            0.2,
+            0.4
+          ]
+        }
+      }
+    },
+    "thorns": {
+      "kind": "short_paired",
+      "length_cm": [
+        2,
+        4
+      ],
+      "spacing_m": 0.4,
+      "where": "young_twigs"
+    },
+    "trunk": {
+      "bark": {
+        "depth": 0.7,
+        "pattern": "deep_fissures",
+        "tile_m": 0.5
+      },
+      "count": [
+        2,
+        3
+      ],
+      "flare": 0.3,
+      "fork_angle_deg": [
+        45,
+        65
+      ],
+      "gnarl": [
+        0.4,
+        0.6
+      ],
+      "leader_curve": [
+        -0.45,
+        -0.15
+      ],
+      "leader_reach": [
+        0.85,
+        1.0
+      ],
+      "lean_deg": [
+        4,
+        14
+      ],
+      "radius_per_height": [
+        0.035,
+        0.045
+      ],
+      "split_height": [
+        0.12,
+        0.26
+      ],
+      "taper": 0.65,
+      "twist": [
+        0.35,
+        0.6
+      ]
+    }
+  },
+  "format": "genes.look.v1",
+  "generator": "plant@1",
+  "id": "neltuma-alba",
+  "lods": [
+    "lod0",
+    "lod1"
+  ],
+  "look": 1,
+  "palette": {
+    "bark": {
+      "lit": "#7a6a58",
+      "shade": "#45405a"
+    },
+    "flowers": {
+      "lit": "#e6dc8a",
+      "shade": "#9a9a78"
+    },
+    "foliage": {
+      "dry": {
+        "lit": "#b9a35c",
+        "shade": "#6b6070"
+      },
+      "mature": {
+        "lit": "#8fa155",
+        "shade": "#4c5f6a"
+      },
+      "new": {
+        "lit": "#b5c46a",
+        "shade": "#5f7a6e"
+      }
+    },
+    "fruit": {
+      "accent": "#c79a4a",
+      "lit": "#e3c46b",
+      "shade": "#9c8466"
+    },
+    "thorns": {
+      "lit": "#8a7a66",
+      "shade": "#4a4458"
+    }
+  },
+  "recognisable": [
+    {
+      "params": [
+        "trunk.count",
+        "trunk.split_height",
+        "trunk.lean_deg",
+        "trunk.twist",
+        "trunk.gnarl"
+      ],
+      "trait": "short thick trunk forked low into two or three limbs, leaning and twisted"
+    },
+    {
+      "params": [
+        "crown.envelope",
+        "crown.width_to_height",
+        "crown.flat_top",
+        "crown.openness",
+        "foliage.leaf_type"
+      ],
+      "trait": "wide, low, airy crown, wider than tall, flat-topped"
+    },
+    {
+      "params": [
+        "trunk.fork_angle_deg",
+        "trunk.leader_curve",
+        "branching.2.droop",
+        "branching.3.droop",
+        "crown.base"
+      ],
+      "trait": "limbs arch out wide and droop at the tips, almost to the ground"
+    },
+    {
+      "params": [
+        "fruit.form",
+        "fruit.length_cm",
+        "fruit.per_bunch",
+        "fruit.cover"
+      ],
+      "trait": "straw-yellow curved pods hanging in bunches in summer"
+    }
+  ],
+  "references": [
+    "r01",
+    "r02",
+    "r03",
+    "r04",
+    "r05",
+    "r11",
+    "r12",
+    "r14",
+    "r17",
+    "r18"
+  ],
+  "stages": {
+    "adult": {
+      "ref_height_m": 7.5,
+      "variants": 3
+    },
+    "dead_standing": {
+      "ref_height_m": 7,
+      "variants": 2
+    },
+    "fallen": {
+      "ref_height_m": 1.3,
+      "variants": 2
+    },
+    "old": {
+      "ref_height_m": 8.5,
+      "variants": 3
+    },
+    "sapling": {
+      "ref_height_m": 1.3,
+      "variants": 3
+    },
+    "seedling": {
+      "ref_height_m": 0.35,
+      "variants": 3
+    },
+    "young": {
+      "ref_height_m": 3.5,
+      "variants": 3
+    }
+  },
+  "textures": [
+    {
+      "for": "foliage",
+      "made_by": "code",
+      "model": "tools/blender/plant/textures.py: foliage_atlas"
+    },
+    {
+      "for": "bark",
+      "made_by": "code",
+      "model": "tools/blender/plant/textures.py: bark"
+    }
+  ]
+}
