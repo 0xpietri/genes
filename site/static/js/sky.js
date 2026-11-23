@@ -1,18 +1,25 @@
-// Day and night around the tree: a gradient dome, a sun among drifting clouds by day, a moon
-// and twinkling stars by night. Textures are drawn on canvases here, so nothing is downloaded.
+// Day and night around the tree: marcos's painted skies wrapped round a dome (mirrored so the
+// seams match), a sun by day, a moon and twinkling stars by night. Until the paintings load
+// (or if they cannot), a gradient dome with drawn clouds stands in.
 
 import * as THREE from '/static/vendor/three/three.module.js';
 
 const DAY = {
-  top: new THREE.Color('#5d9bd0'), horizon: new THREE.Color('#d6e7ee'), bottom: new THREE.Color('#c9c59a'),
+  top: new THREE.Color('#3d78b8'), horizon: new THREE.Color('#e4d6bc'), bottom: new THREE.Color('#c9c59a'),
   hemiSky: new THREE.Color('#e3eef8'), hemiGround: new THREE.Color('#8f8460'), hemi: 1.35,
   key: new THREE.Color('#fff0d4'), keyI: 2.4, ground: new THREE.Color('#a2a66e'),
 };
 const NIGHT = {
-  top: new THREE.Color('#02040c'), horizon: new THREE.Color('#16223d'), bottom: new THREE.Color('#0d1320'),
+  top: new THREE.Color('#141638'), horizon: new THREE.Color('#1f4b5b'), bottom: new THREE.Color('#0d1320'),
   hemiSky: new THREE.Color('#5a6f9c'), hemiGround: new THREE.Color('#1a1f26'), hemi: 0.75,
   key: new THREE.Color('#b9c9ff'), keyI: 0.9, ground: new THREE.Color('#3a4434'),
 };
+// The painted soil keeps its own colours by day and turns blue-grey at night.
+const PAINTED_GROUND = { day: new THREE.Color('#f2ece0'), night: new THREE.Color('#5d6a80') };
+const SKY_URL = '/static/site/art/scene';
+// The painting's bottom edge sits a little under the horizon and its top this high up.
+const PAINT_LOW = -0.04;
+const PAINT_HIGH = 0.62;
 const SUN_DIR = new THREE.Vector3(0.55, 0.62, 0.55).normalize();
 const MOON_DIR = new THREE.Vector3(-0.5, 0.58, 0.64).normalize();
 
@@ -93,11 +100,32 @@ export class Sky {
       new THREE.SphereGeometry(450, 32, 16),
       new THREE.ShaderMaterial({
         side: THREE.BackSide, depthWrite: false, fog: false,
-        uniforms: { top: { value: DAY.top.clone() }, horizon: { value: DAY.horizon.clone() }, bottom: { value: DAY.bottom.clone() } },
+        uniforms: {
+          top: { value: DAY.top.clone() }, horizon: { value: DAY.horizon.clone() }, bottom: { value: DAY.bottom.clone() },
+          dayMap: { value: null }, nightMap: { value: null }, painted: { value: 0 }, blend: { value: 0 },
+          dayTop: { value: new THREE.Color('#235894') }, nightTop: { value: new THREE.Color('#242056') },
+        },
         vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
         fragmentShader: `uniform vec3 top; uniform vec3 horizon; uniform vec3 bottom; varying vec3 vP;
-          void main(){ float h = vP.y; vec3 c = h > 0.0 ? mix(horizon, top, pow(smoothstep(0.0, 0.85, h), 0.7)) : mix(horizon, bottom, smoothstep(0.0, 0.12, -h));
-          gl_FragColor = vec4(c, 1.0); }`,
+          uniform sampler2D dayMap; uniform sampler2D nightMap; uniform float painted; uniform float blend;
+          uniform vec3 dayTop; uniform vec3 nightTop;
+          void main(){
+            float h = vP.y;
+            vec3 c = h > 0.0 ? mix(horizon, top, pow(smoothstep(0.0, 0.85, h), 0.7)) : mix(horizon, bottom, smoothstep(0.0, 0.12, -h));
+            if (painted > 0.0) {
+              // Four mirrored copies round the circle, so every seam matches.
+              float u = fract(atan(vP.z, vP.x) / 6.2831853 * 2.0 + 0.5);
+              u = 1.0 - abs(u * 2.0 - 1.0);
+              float v = clamp((h - ${PAINT_LOW.toFixed(2)}) / ${(PAINT_HIGH - PAINT_LOW).toFixed(2)}, 0.004, 0.996);
+              vec3 d = texture2D(dayMap, vec2(u, v)).rgb;
+              vec3 n = texture2D(nightMap, vec2(u, v)).rgb;
+              vec3 p = mix(d, n, blend);
+              vec3 zenith = mix(dayTop, nightTop, blend);
+              p = mix(p, zenith, smoothstep(${PAINT_HIGH.toFixed(2)} - 0.12, ${PAINT_HIGH.toFixed(2)} + 0.05, h));
+              p = mix(p, bottom, smoothstep(0.0, 0.1, -h));
+              c = mix(c, p, painted);
+            }
+            gl_FragColor = vec4(c, 1.0); }`,
       }),
     );
     this.dome.renderOrder = -10;
@@ -162,7 +190,28 @@ export class Sky {
     this.stars = new THREE.Points(g, this.starMat);
     this.stars.renderOrder = -6;
     scene.add(this.stars);
+    this.painted = 0;
     this.apply();
+    this.loadPaintings();
+  }
+
+  /** marcos's day and night skies; the drawn clouds leave once both are in. */
+  loadPaintings() {
+    const loader = new THREE.TextureLoader();
+    const load = (name) => new Promise((resolve, reject) => {
+      loader.load(`${SKY_URL}/${name}.webp`, (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        resolve(tex);
+      }, undefined, reject);
+    });
+    Promise.all([load('sky-day'), load('sky-night')]).then(([day, night]) => {
+      const u = this.dome.material.uniforms;
+      u.dayMap.value = day;
+      u.nightMap.value = night;
+      this.painted = 1;
+      this.apply();
+    }).catch(() => { /* the gradient sky stays */ });
   }
 
   setNight(night, instant = false) {
@@ -170,9 +219,11 @@ export class Sky {
     if (instant) { this.blend = this.target; this.apply(); }
   }
 
-  /** The ground's colour now (the stage paints its disc with it). */
-  groundColour(out) {
-    return out.copy(DAY.ground).lerp(NIGHT.ground, this.blend);
+  /** The ground's colour now; `painted` when the disc wears marcos's painted soil. */
+  groundColour(out, painted = false) {
+    return painted
+      ? out.copy(PAINTED_GROUND.day).lerp(PAINTED_GROUND.night, this.blend)
+      : out.copy(DAY.ground).lerp(NIGHT.ground, this.blend);
   }
 
   apply() {
@@ -181,6 +232,8 @@ export class Sky {
     u.top.value.copy(DAY.top).lerp(NIGHT.top, b);
     u.horizon.value.copy(DAY.horizon).lerp(NIGHT.horizon, b);
     u.bottom.value.copy(DAY.bottom).lerp(NIGHT.bottom, b);
+    u.blend.value = b;
+    u.painted.value = this.painted;
     this.scene.fog.color.copy(u.horizon.value);
     this.hemi.color.copy(DAY.hemiSky).lerp(NIGHT.hemiSky, b);
     this.hemi.groundColor.copy(DAY.hemiGround).lerp(NIGHT.hemiGround, b);
@@ -192,8 +245,9 @@ export class Sky {
     this.sun.visible = b < 0.99;
     this.moon.material.opacity = b;
     this.moon.visible = b > 0.01;
-    this.starMat.uniforms.opacity.value = Math.max(0, b * 1.3 - 0.3);
+    this.starMat.uniforms.opacity.value = Math.max(0, b * 1.3 - 0.3) * (this.painted ? 0.55 : 1);
     const cloud = new THREE.Color('#ffffff').lerp(new THREE.Color('#3a4560'), b);
+    this.clouds.visible = !this.painted;
     for (const c of this.clouds.children) {
       c.material.color.copy(cloud);
       c.material.opacity = 0.9 - b * 0.55;

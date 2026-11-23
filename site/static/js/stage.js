@@ -32,27 +32,40 @@ function blobTexture() {
   return new THREE.CanvasTexture(c);
 }
 
+/** The disc's edge: opaque in the middle, fading out towards the rim. */
+function groundFade() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d');
+  const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  r.addColorStop(0, '#fff');
+  r.addColorStop(0.55, '#f2f2f2');
+  r.addColorStop(1, '#000');
+  g.fillStyle = r;
+  g.fillRect(0, 0, 256, 256);
+  return new THREE.CanvasTexture(c);
+}
+
+/** Drawn speckles of dry grass and soil, until marcos's painted soil loads. */
 function groundTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 512;
   const g = c.getContext('2d');
-  const r = g.createRadialGradient(256, 256, 0, 256, 256, 256);
-  r.addColorStop(0, 'rgba(255,255,255,1)');
-  r.addColorStop(0.55, 'rgba(255,255,255,0.95)');
-  r.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = r;
+  g.fillStyle = '#fff';
   g.fillRect(0, 0, 512, 512);
-  // Speckles of dry grass and soil.
   for (let i = 0; i < 2600; i++) {
-    const a = Math.random() * Math.PI * 2;
-    const d = Math.sqrt(Math.random()) * 240;
     g.fillStyle = `rgba(${Math.random() < 0.5 ? '90,80,50' : '210,200,150'},${0.06 + Math.random() * 0.1})`;
-    g.fillRect(256 + Math.cos(a) * d, 256 + Math.sin(a) * d, 2 + Math.random() * 3, 1 + Math.random() * 2);
+    g.fillRect(Math.random() * 512, Math.random() * 512, 2 + Math.random() * 3, 1 + Math.random() * 2);
   }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(8, 8);
   return t;
 }
+
+// One tile of the painted soil covers this many metres; the disc is 120 m across.
+const GROUND_TILE_M = 5;
 
 export class Stage {
   constructor(canvas, { look, sheet, modelsBase }) {
@@ -82,8 +95,20 @@ export class Stage {
 
     this.ground = new THREE.Mesh(
       new THREE.CircleGeometry(60, 96),
-      new THREE.MeshLambertMaterial({ map: groundTexture(), transparent: true, depthWrite: false, color: '#a3a56f' }),
+      new THREE.MeshLambertMaterial({ map: groundTexture(), alphaMap: groundFade(), transparent: true, depthWrite: false, color: '#a3a56f' }),
     );
+    this.groundPainted = false;
+    new THREE.TextureLoader().load('/static/site/art/scene/ground.webp', (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = tex.wrapT = THREE.MirroredRepeatWrapping;
+      tex.repeat.set(120 / GROUND_TILE_M, 120 / GROUND_TILE_M);
+      tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+      const old = this.ground.material.map;
+      this.ground.material.map = tex;
+      this.ground.material.needsUpdate = true;
+      old.dispose();
+      this.groundPainted = true;
+    });
     this.ground.rotation.x = -Math.PI / 2;
     this.ground.renderOrder = -1;
     this.scene.add(this.ground);
@@ -267,7 +292,7 @@ export class Stage {
     if (!this.visible) return;
     const t = this.clock.getElapsed();
     this.sky.update(dt, t);
-    this.sky.groundColour(this.ground.material.color);
+    this.sky.groundColour(this.ground.material.color, this.groundPainted);
     // A light wind: the crown leans a little, more when it is in leaf.
     const leafy = this.state?.s.alive ? 1 : 0.2;
     this.holder.rotation.z = Math.sin(t * 0.9) * 0.006 * leafy;

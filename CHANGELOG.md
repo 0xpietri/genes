@@ -10,7 +10,9 @@
   `docs/DEPLOY.md`. The review viewer moved to `/review/`. Second pass: a cartoon dashboard
   with glass modules, marcos's painted icons and stage pictures, illustrated charts (height
   to scale, wood dial, trunk logs, rain gauge, thermometer, life stages) and a toy map
-  without provinces.
+  without provinces. Third pass: English and Spanish pages (`/es/`), one language per page, with
+  a switch; tags as icons with hover; marcos's painted skies and soil in the 3D and his
+  little algarrobos and mountains on the map; no town-centred text.
 - The species recipe for any agent: `docs/HOW_TO_ADD_A_SPECIES.md` rewritten with marcos's
   rules, sources, the leaf colour calendar and the viewer checks;
   `docs/PLANT_FORM_PARAMETERS.md` written from the schema (`genes form-reference`);

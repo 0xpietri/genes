@@ -3,10 +3,12 @@
 
 import { mountAccount } from './account.js';
 import { STAGE_LABEL, MONTHS, sampleAt, stageAt, indexForMonth } from './life.js';
+import { t, num } from './i18n.js';
 
 const body = document.body;
 const $ = (sel) => document.querySelector(sel);
-const SEASON_OF = (m) => ['Summer', 'Autumn', 'Winter', 'Spring'][Math.floor((m % 12) / 3)];
+// The first month of the season (southern hemisphere) that month `m` is in: 1, 4, 7 or 10.
+const SEASON_OF = (m) => [1, 4, 7, 10][Math.floor((m % 12) / 3)];
 
 async function getJSON(url) {
   const res = await fetch(url);
@@ -33,7 +35,7 @@ function setupDayNight(stage) {
   const apply = (instant) => {
     body.dataset.mode = night ? 'night' : 'day';
     btn.setAttribute('aria-pressed', String(night));
-    label.textContent = night ? 'Day' : 'Night';
+    label.textContent = t(night ? 'Day' : 'Night');
     stage?.setNight(night, instant);
   };
   btn.addEventListener('click', () => { night = !night; store('genes.mode', night ? 'night' : 'day'); apply(false); });
@@ -47,7 +49,7 @@ function setWheel(month) {
   const text = $('[data-wheel-month]');
   if (!needle) return;
   needle.setAttribute('transform', `rotate(${((month - 0.5) / 12) * 360} 160 160)`);
-  text.textContent = MONTHS[month - 1];
+  text.textContent = t(MONTHS[month - 1]);
 }
 
 // ---------------------------------------------------------------- the simulated life
@@ -82,22 +84,22 @@ function setupLife(stage, life, look) {
     const st = stageAt(life, i, stages);
     stage.show(st, s);
     age.value = String(i);
-    const statusText = s.alive ? (s.status === 'healthy' ? '' : ` · ${s.status}`) : '';
+    const statusText = s.alive ? (s.status === 'healthy' ? '' : ` · ${t(s.status)}`) : '';
     readout.innerHTML = '';
     const parts = [
-      ['Year ', Math.floor(s.ageYears)],
-      [` · ${MONTHS[s.month - 1]} ${s.year} · `, `${s.heightM.toFixed(1)} m`],
-      [s.alive ? ' tall, crown ' : '', s.alive ? `${s.crownM.toFixed(1)} m` : ''],
+      [t('Year '), Math.floor(s.ageYears)],
+      [` · ${t(MONTHS[s.month - 1])} ${s.year} · `, `${num(s.heightM)} m`],
+      [s.alive ? t(' tall, crown ') : '', s.alive ? `${num(s.crownM)} m` : ''],
     ];
     for (const [t, b] of parts) {
       readout.append(t);
       if (b !== '') { const el = document.createElement('b'); el.textContent = b; readout.append(el); }
     }
-    readout.append(` · ${STAGE_LABEL[st] ?? st}${statusText}`);
+    readout.append(` · ${t(STAGE_LABEL[st] ?? st)}${statusText}`);
     for (const c of chips) c.setAttribute('aria-current', c.dataset.stageChip === st ? 'step' : 'false');
     for (const b of jumps) b.setAttribute('aria-current', b.dataset.stagePic === st ? 'step' : 'false');
     const season = SEASON_OF(s.month);
-    for (const b of seasons) b.setAttribute('aria-pressed', String(b.textContent === season));
+    for (const b of seasons) b.setAttribute('aria-pressed', String(Number(b.dataset.season) === season));
     setWheel(s.month);
     if (chart) {
       const x = Number(chart.dataset.x0) + s.ageYears * Number(chart.dataset.sx);
@@ -112,7 +114,7 @@ function setupLife(stage, life, look) {
   function setPlaying(on) {
     playing = on;
     play.setAttribute('aria-pressed', String(on));
-    play.setAttribute('aria-label', on ? 'Pause' : "Play the tree's life");
+    play.setAttribute('aria-label', t(on ? 'Pause' : "Play the tree's life"));
     if (on) {
       stage.preload(stages);
       if (Math.round(pos) >= n - 1) pos = 0;
@@ -207,7 +209,7 @@ async function main() {
     body.dataset.ready = '1';
   } catch (err) {
     console.error(err);
-    loading.textContent = 'The 3D model could not load.';
+    loading.textContent = t('The 3D model could not load.');
     body.dataset.error = String(err.message ?? err);
   }
 }

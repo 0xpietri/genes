@@ -14,6 +14,8 @@ from html import escape
 from pathlib import Path
 from typing import Any
 
+from genes.site_i18n import T, num
+
 INK = "#1d2a26"
 ART_DIR = Path(__file__).resolve().parents[2] / "site" / "static" / "art"
 ART_URL = "/static/site/art"
@@ -48,7 +50,7 @@ def _e(value: Any) -> str:
 
 
 def _n(x: float) -> str:
-    return f"{x:g}"
+    return num(x)
 
 
 def _minus(text: str) -> str:
@@ -195,6 +197,11 @@ ICONS: dict[str, str] = {
         f'<path d="M6 10c6-2 12-2 18 2v28c-6-4-12-4-18-2Z" fill="#e9f0dc" {_O}/>'
         f'<path d="M42 10c-6-2-12-2-18 2v28c6-4 12-4 18-2Z" fill="#cfe6b4" {_O}/>'
     ),
+    "conservation": (
+        f'<path d="M24 5l15 6v11c0 10-6 17-15 21C15 39 9 32 9 22V11Z" fill="#f0c75e" {_O}/>'
+        f'<path d="M17 29c0-8 6-13 14-13 0 8-5 14-14 13Z" fill="#74c27f" {_O}/>'
+        f'<path d="M17 29l8-8" fill="none" {_O}/>'
+    ),
 }
 
 
@@ -283,7 +290,7 @@ def height_scene(
             f'<svg x="{82 - p * 0.55:.1f}" y="{base - p:.1f}" width="{p * 1.1:.1f}" height="{p:.1f}" viewBox="6 2 36 42" preserveAspectRatio="xMidYMax meet">'
             f"{ICONS['person']}</svg>"
         )
-    parts.append(f'<text class="scale-sub" x="82" y="{base + 30}">you, 1.75 m</text>')
+    parts.append(f'<text class="scale-sub" x="82" y="{base + 30}">{T("you, 1.75 m")}</text>')
     which = {"min": "young", "typical": "adult", "max": "adult"}
     xs = {"min": 150, "typical": 262, "max": 462}
     for key, label in (("max", "tallest"), ("typical", "usually"), ("min", "small")):
@@ -313,12 +320,12 @@ def height_scene(
         parts.append(
             f'<g class="chip"><rect x="{x - 26}" y="{base - th - 30:.1f}" width="52" height="22" rx="11"/>'
             f'<text x="{x}" y="{base - th - 15:.1f}">{_n(hh)} m</text></g>'
-            f'<text class="scale-sub" x="{x}" y="{base + 30}">{label}</text>'
+            f'<text class="scale-sub" x="{x}" y="{base + 30}">{T(label)}</text>'
         )
     return (
-        f'<svg class="scene" viewBox="0 0 {W} {H}" role="img" aria-label="Adult height '
-        f"{_n(h['min'])} to {_n(h['max'])} m, usually {_n(h.get('typical', h['max']))} m, next to a "
-        f'1.75 m person">' + "".join(parts) + "</svg>"
+        f'<svg class="scene" viewBox="0 0 {W} {H}" role="img" aria-label="{T("Adult height")} '
+        f"{_n(h['min'])}–{_n(h['max'])} m, {T('usually')} {_n(h.get('typical', h['max']))} m, "
+        f'{T("next to a 1.75 m person")}">' + "".join(parts) + "</svg>"
     )
 
 
@@ -350,7 +357,9 @@ def wood_gauge(density: dict[str, Any] | None) -> str:
     for v in (0, 300, 600, 900, 1200):
         a = ang(v)
         x0, y0 = cx - (r - 22) * math.cos(a), cy - (r - 22) * math.sin(a)
-        parts.append(f'<text class="axis dial-tick" x="{x0:.1f}" y="{y0 + 4:.1f}">{v:,}</text>')
+        parts.append(
+            f'<text class="axis dial-tick" x="{x0:.1f}" y="{y0 + 4:.1f}">{num(v, ",")}</text>'
+        )
     a = ang(1000)
     wx, wy = cx - (r + 24) * math.cos(a), cy - (r + 24) * math.sin(a)
     tx0, ty0 = cx - (r - 14) * math.cos(a), cy - (r - 14) * math.sin(a)
@@ -365,13 +374,13 @@ def wood_gauge(density: dict[str, Any] | None) -> str:
         f'<line x1="{cx}" y1="{cy}" x2="{nx:.1f}" y2="{ny:.1f}" class="dial-needle"/>'
         f'<circle cx="{cx}" cy="{cy}" r="9" class="dial-hub"/>'
     )
-    floats = "Lighter than water" if density["max"] < 1000 else "Heavier than water"
+    floats = T("Lighter than water" if density["max"] < 1000 else "Heavier than water")
     return (
-        '<svg class="dial" viewBox="0 0 300 200" role="img" aria-label="Wood density '
-        f"{_n(density['min'])} to {_n(density['max'])} kg per cubic metre, usually {_n(typ)}; "
-        f'water is 1,000">' + "".join(parts) + "</svg>"
-        f'<p class="dial-read"><strong>{_n(typ)}</strong> kg/m³ usually · {floats} '
-        "<small>(water: 1,000)</small></p>"
+        f'<svg class="dial" viewBox="0 0 300 200" role="img" aria-label="{T("Wood density")} '
+        f"{_n(density['min'])}–{_n(density['max'])} kg/m³, {T('usually')} {_n(typ)}; "
+        f'{T("water is 1,000")}">' + "".join(parts) + "</svg>"
+        f'<p class="dial-read"><strong>{_n(typ)}</strong> kg/m³ {T("usually")} · {floats} '
+        f"<small>({T('water: 1,000')})</small></p>"
     )
 
 
@@ -402,14 +411,11 @@ def trunk_rings(dbh: dict[str, Any] | None) -> str:
         if v:
             rows.append(
                 f'<text class="ring-v" x="196" y="{y}">{_n(float(v))} m</text>'
-                f'<text class="axis ring-k" x="196" y="{y + 18}">{label}</text>'
+                f'<text class="axis ring-k" x="196" y="{y + 18}">{T(label)}</text>'
             )
     return (
-        '<svg class="rings" viewBox="0 0 300 180" role="img" aria-label="Trunk diameter at '
-        f'breast height {_n(dbh["min"])} to {_n(big)} m">'
-        + "".join(rings)
-        + "".join(rows)
-        + "</svg>"
+        f'<svg class="rings" viewBox="0 0 300 180" role="img" aria-label="{T("Trunk diameter at breast height")} '
+        f'{_n(dbh["min"])}–{_n(big)} m">' + "".join(rings) + "".join(rows) + "</svg>"
     )
 
 
@@ -425,12 +431,12 @@ def rain_tube(rain: dict[str, Any] | None, top: float = 1000.0) -> str:
 
     ticks = "".join(
         f'<line class="gl" x1="{x - 6}" x2="{x}" y1="{yv(v):.1f}" y2="{yv(v):.1f}"/>'
-        f'<text class="axis" x="{x - 10}" y="{yv(v) + 4:.1f}">{v:,}</text>'
+        f'<text class="axis" x="{x - 10}" y="{yv(v) + 4:.1f}">{num(v, ",")}</text>'
         for v in range(0, int(top) + 1, 250)
     )
     return (
-        '<svg class="tube" viewBox="0 0 150 250" role="img" aria-label="Rainfall it lives with: '
-        f'{_n(rain["min"])} to {_n(rain["max"])} mm a year">'
+        f'<svg class="tube" viewBox="0 0 170 250" role="img" aria-label="{T("Rainfall it lives with")}: '
+        f'{_n(rain["min"])}–{_n(rain["max"])} {T("mm a year")}">'
         '<defs><linearGradient id="rt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fdcff"/>'
         '<stop offset="1" stop-color="#3f8fc4"/></linearGradient></defs>'
         f'<rect x="{x}" y="{y0 - 6}" width="{w}" height="{y1 - y0 + 12}" rx="14" class="tube-glass"/>'
@@ -438,7 +444,7 @@ def rain_tube(rain: dict[str, Any] | None, top: float = 1000.0) -> str:
         + ticks
         + f'<text class="tube-v" x="{x + w + 8}" y="{yv(rain["max"]) + 5:.1f}">{_n(rain["max"])}</text>'
         f'<text class="tube-v" x="{x + w + 8}" y="{yv(rain["min"]) + 5:.1f}">{_n(rain["min"])}</text>'
-        f'<text class="axis tube-u" x="{x + w / 2}" y="{y1 + 30}">mm a year</text>'
+        f'<text class="axis tube-u" x="{x + w / 2}" y="{y1 + 30}">{T("mm a year")}</text>'
         "</svg>"
     )
 
@@ -461,13 +467,13 @@ def thermometer(frost: dict[str, Any] | None, lo: float = -15.0, hi: float = 5.0
     typ = frost.get("typical")
     mark = (
         f'<line x1="{x - 4}" x2="{x + w + 4}" y1="{yv(typ):.1f}" y2="{yv(typ):.1f}" stroke="{INK}" stroke-width="3" stroke-linecap="round"/>'
-        f'<text class="tube-v" x="{x + w + 10}" y="{yv(typ) + 5:.1f}">{_minus(_n(typ))}° usually</text>'
+        f'<text class="tube-v" x="{x + w + 10}" y="{yv(typ) + 5:.1f}">{_minus(_n(typ))}° {T("usually")}</text>'
         if typ is not None
         else ""
     )
     return (
-        '<svg class="tube" viewBox="0 0 150 250" role="img" aria-label="Frost that kills an adult: '
-        f'{_minus(_n(frost["min"]))} to {_minus(_n(frost["max"]))} °C">'
+        f'<svg class="tube" viewBox="0 0 170 250" role="img" aria-label="{T("Frost that kills an adult")}: '
+        f'{_minus(_n(frost["min"]))} – {_minus(_n(frost["max"]))} °C">'
         f'<rect x="{x}" y="{y0 - 8}" width="{w}" height="{y1 - y0 + 16}" rx="{w / 2}" class="tube-glass"/>'
         f'<rect x="{x + 5}" y="{yv(frost["max"]):.1f}" width="{w - 10}" height="{yv(frost["min"]) - yv(frost["max"]):.1f}" rx="5" fill="#9fdcff" stroke="{INK}" stroke-width="2"/>'
         f'<rect x="{x + 7}" y="{yv(frost["min"]):.1f}" width="{w - 14}" height="{y1 + 12 - yv(frost["min"]):.1f}" fill="#3f8fc4"/>'
@@ -492,5 +498,5 @@ def level_meter(label: str, r: dict[str, Any] | None, ico: str) -> str:
     return (
         f'<div class="level">{icon(ico, "ico ico-sm")}<span class="level-k">{_e(label)}</span>'
         f'<span class="level-dots" aria-hidden="true">{dots}</span>'
-        f'<strong class="level-v">{_e(v)}</strong></div>'
+        f'<strong class="level-v">{_e(T(v))}</strong></div>'
     )

@@ -90,6 +90,32 @@ and size, and a smaller map that shows only where the plant is.
 Still to come: the painted sky, ground and map pieces (second Gemini sheet), which replace
 the code-drawn sky dome and ground texture and the drawn map trees.
 
+## Third pass: two languages and painted sky, soil and map
+
+marcos asked for a language selector with no mixing, for the page not to be centred on one
+town, and for the leaf habit, form and conservation tags to become icons with a hover.
+
+- **English and Spanish, one per page.** English at `/` and `/species/<id>/`, Spanish at
+  `/es/` and `/es/species/<id>/`, linked with `hreflang` and an EN/ES switch in the top bar.
+  Page code is written in English and every visible text passes through
+  `genes.site_i18n.T`: the site's own words are in `UI_ES`, a species' sheet and look texts
+  in `species/<kind>/<id>/i18n/es.json`. A text with no Spanish is collected in `MISSING`
+  and a test fails. Numbers use a decimal comma on Spanish pages. The scripts' few words
+  (simulator readout, day/night, map tips) come from `site/static/js/i18n.js`, which reads
+  `<html lang>`. Markdown copies and `llms.txt` stay in English.
+- **Not about one town.** No "status in the Sierras Chicas" badge, no house on the map, the
+  life text says "the real weather of central Argentina".
+- **Tags as icons.** Leaf habit, form and conservation are three icons; the words show on
+  hover or keyboard focus and are kept for screen readers.
+- **marcos's second sheet** (cut out here, originals in the project files): the day and night
+  skies wrap round the 3D dome (four mirrored copies so seams match; gradient sky until they
+  load), the painted soil tiles the ground disc (5 m a tile, mirrored), and the map uses his
+  six little algarrobos as pins and his mountains on real peaks of the Andes and the Sierras
+  (decoration only). Files: `site/static/art/scene/` and `site/static/art/map/`, each with
+  `sizes.json`. The house, hill and lagoon were not used.
+
+Try it: `uv run genes serve --port 8000`, then open http://localhost:8000/es/species/neltuma-alba/.
+
 ## Decisions to confirm
 
 1. **The life is pietri.dev's, recorded into genes.** Growth, health and death belong to
