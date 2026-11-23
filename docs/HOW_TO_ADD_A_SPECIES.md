@@ -439,7 +439,8 @@ rebuild:
 uv run genes serve
 ```
 
-Open `http://127.0.0.1:8810/species/<id>`. The page is the same for every species: the
+Open `http://127.0.0.1:8810/review/species/<id>` (the public page is
+`/species/<id>/`; see `docs/reports/CATALOG_SITE.md`). The review page is the same for every species: the
 3D model, the stage, variant and detail (Close, Far) selectors, the season buttons
 (Summer, Autumn, Winter, Spring) and month slider, the photos, the facts with their
 sources, and the leaf colour calendar. Check every one of these:
@@ -488,7 +489,7 @@ git checkout species/<id>
 uv run genes serve
 ```
 
-and the page to open: `http://127.0.0.1:8810/species/<id>`, with what to look at
+and the page to open: `http://127.0.0.1:8810/review/species/<id>`, with what to look at
 (for example: "probá el botón Invierno y la vista desde arriba").
 
 ## When you are stuck

@@ -1,0 +1,33 @@
+{
+  "about": "The tree at each stage of its life, cut from marcos's Gemini illustration sheet, 2026-11-23. Width and height in pixels.",
+  "sizes": {
+    "adult": [
+      480,
+      458
+    ],
+    "dead_standing": [
+      227,
+      351
+    ],
+    "fallen": [
+      353,
+      182
+    ],
+    "old": [
+      424,
+      417
+    ],
+    "sapling": [
+      206,
+      216
+    ],
+    "seedling": [
+      88,
+      67
+    ],
+    "young": [
+      337,
+      402
+    ]
+  }
+}

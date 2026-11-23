@@ -349,6 +349,52 @@ def _refs_problems(sp: Species) -> list[Problem]:
 # ---------------------------------------------------------------- frozen versions
 
 
+LIFECYCLE_COLUMNS = (
+    "date",
+    "age_days",
+    "h_mm",
+    "crown_radius_mm",
+    "stem_mm",
+    "status",
+    "health",
+    "decay",
+)
+
+
+def _lifecycle_problems(sp: Species) -> list[Problem]:
+    """A recorded life from pietri.dev's simulator (the species page replays it)."""
+    folder = sp.folder / "lifecycle"
+    if not folder.is_dir():
+        return []
+    out: list[Problem] = []
+    for path in sorted(folder.iterdir()):
+        rel = _rel(path)
+        if path.suffix != ".json" or not path.stem.isdigit():
+            out.append(Problem(rel, "lifecycle files are <n>.json"))
+            continue
+        try:
+            life = jsonio.load(path)
+        except ValueError as exc:
+            out.append(Problem(rel, f"cannot read JSON ({exc})"))
+            continue
+        if life.get("format") != "pietri.lifecycle.v1":
+            out.append(Problem(rel, "format must be pietri.lifecycle.v1"))
+            continue
+        if not isinstance(life.get("recorded"), dict) or "commit" not in life["recorded"]:
+            out.append(Problem(rel, "recorded{repository, commit, command} is missing"))
+        samples = life.get("samples", {})
+        lengths = {k: len(samples.get(k, [])) for k in LIFECYCLE_COLUMNS}
+        if len(set(lengths.values())) != 1 or not lengths["date"]:
+            out.append(Problem(rel, f"sample columns differ in length or are empty: {lengths}"))
+            continue
+        statuses = life.get("statuses", [])
+        if any(not 0 <= s < len(statuses) for s in samples["status"]):
+            out.append(Problem(rel, "a status index is outside statuses[]"))
+        if samples["age_days"] != sorted(samples["age_days"]):
+            out.append(Problem(rel, "samples are not in time order"))
+    return out
+
+
 def _git(args: list[str], cwd: Path) -> subprocess.CompletedProcess[bytes]:
     return subprocess.run(["git", *args], cwd=cwd, capture_output=True, check=False)
 
@@ -424,6 +470,7 @@ def validate(
                 out.extend(_look_problems(sp, v, budgets))
         if sp.refs is not None and sp.refs.data is not None:
             out.extend(_refs_problems(sp))
+        out.extend(_lifecycle_problems(sp))
     if base:
         out.extend(frozen_problems(species, base))
     return out

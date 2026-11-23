@@ -24,13 +24,16 @@ uv sync
 uv run genes serve
 ```
 
-Then open <http://127.0.0.1:8810/species/neltuma-alba>. `uv run genes validate` checks every
+Then open <http://127.0.0.1:8810/> (the public catalog), the species page
+<http://127.0.0.1:8810/species/neltuma-alba/>, or the model review viewer
+<http://127.0.0.1:8810/review/species/neltuma-alba/>. `uv run genes validate` checks every
 species and `uv run pytest` runs the tests.
 
 To add a species, follow [`docs/HOW_TO_ADD_A_SPECIES.md`](docs/HOW_TO_ADD_A_SPECIES.md).
 
 - Specification: [`docs/spec/GENES_SPEC_v0.1.md`](docs/spec/GENES_SPEC_v0.1.md)
 - Phase reports: [`docs/reports/`](docs/reports/)
+- Putting genes.pietri.dev online: [`docs/DEPLOY.md`](docs/DEPLOY.md)
 - Rules for AI agents working here: [`AGENTS.md`](AGENTS.md) (`CLAUDE.md` and `GEMINI.md` point to it)
 - Adding a species: [`docs/HOW_TO_ADD_A_SPECIES.md`](docs/HOW_TO_ADD_A_SPECIES.md); every form parameter: [`docs/PLANT_FORM_PARAMETERS.md`](docs/PLANT_FORM_PARAMETERS.md)
 

@@ -8,6 +8,7 @@ genes refs candidates <id> --taxon N         shareable iNaturalist photos to cho
 genes refs add <id> <n> --shows .. --angle ..  store a chosen photo (spec §9)
 genes build-models <id> [--stage S] ...      build a look's models (needs `uv sync --group blender`)
 genes contact-sheet <id>                     models beside the reference photos (spec §7.1)
+genes occurrences <id> [--taxon N]           GBIF sightings counted per cell, for the map
 genes doctor                                 is this computer ready to add a species?
 genes form-reference                         rewrite docs/PLANT_FORM_PARAMETERS.md from the schema
 """
@@ -118,6 +119,11 @@ def main(argv: list[str] | None = None) -> int:
     p_sheet.add_argument("species")
     p_sheet.add_argument("--out", type=Path, help="default: looks/<n>/sheet.png")
 
+    p_occ = sub.add_parser("occurrences", help="GBIF sightings counted per cell, for the map")
+    p_occ.add_argument("species")
+    p_occ.add_argument("--taxon", type=int, help="GBIF taxon key (default: the sheet's)")
+    p_occ.add_argument("--max", type=int, default=3000, help="records to read at most")
+
     sub.add_parser("doctor", help="check this computer is ready to add a species")
     sub.add_parser("form-reference", help="rewrite docs/PLANT_FORM_PARAMETERS.md")
 
@@ -183,6 +189,19 @@ def main(argv: list[str] | None = None) -> int:
         box = [float(x) for x in args.box.split(",")] if args.box else None
         entry = refs.add(folder, args.number, args.shows.split(","), args.angle, box, args.used_for)
         print(f"{entry['id']}: {entry['url']} ({entry['licence']}, {entry['author']})")
+        return 0
+
+    if args.command == "occurrences":
+        from genes import jsonio, occurrences
+
+        folder = _species_dir(args.species)
+        taxon = args.taxon
+        if taxon is None:
+            sheets = sorted((folder / "sheets").glob("*.json"), key=lambda p: int(p.stem))
+            taxon = jsonio.load(sheets[-1])["external"]["gbif"]
+        counted = occurrences.write(folder, int(taxon), args.max)
+        where = folder / "occurrences.json"
+        print(f"{counted['total']} sightings in {len(counted['cells'])} cells → {where}")
         return 0
 
     if args.command == "build-models":
