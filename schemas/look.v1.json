@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://genes.pietri.dev/schemas/look.v1.json",
+  "title": "genes: a species look (form parameters, palette, stages)",
+  "description": "Spec §6. The built models sit next to this file, one per stage, variant and LOD: <stage>-<variant>.<lod>.glb (spec §8).",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "format": { "const": "genes.look.v1" },
+    "id": { "$ref": "common.v1.json#/$defs/species_id" },
+    "look": { "$ref": "common.v1.json#/$defs/version" },
+    "for_sheet": { "$ref": "common.v1.json#/$defs/version", "description": "The sheet version this look was made against." },
+    "generator": {
+      "description": "Which generator built the models, name@version: plant@1 (the bpy generator, phase 2), example@1 (code-made test shapes).",
+      "type": "string",
+      "pattern": "^[a-z]+@[0-9]+$"
+    },
+    "recognisable": {
+      "description": "Three or four traits that make the species recognisable, each with the parameters that serve it (spec §6.1).",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "properties": {
+          "trait": { "type": "string", "minLength": 1 },
+          "params": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+        },
+        "required": ["trait", "params"],
+        "additionalProperties": false
+      }
+    },
+    "form": {
+      "description": "The generator's parameters. Their shape belongs to the generator; params_hash in every model is the hash of this object (spec §8).",
+      "type": "object"
+    },
+    "palette": {
+      "description": "Per part: tones, or tones per phase (spec §6.4).",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/part" },
+      "additionalProperties": {
+        "oneOf": [
+          { "$ref": "common.v1.json#/$defs/tones" },
+          {
+            "type": "object",
+            "propertyNames": { "enum": ["new", "mature", "dry", "autumn", "winter", "summer"] },
+            "additionalProperties": { "$ref": "common.v1.json#/$defs/tones" },
+            "minProperties": 1
+          }
+        ]
+      }
+    },
+    "stages": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/stage" },
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "ref_height_m": { "type": "number", "exclusiveMinimum": 0 },
+          "ref_crown_m": { "type": "number", "exclusiveMinimum": 0 },
+          "variants": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "scale_range": {
+            "type": "array",
+            "prefixItems": [{ "type": "number", "exclusiveMinimum": 0 }, { "type": "number", "exclusiveMinimum": 0 }],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "required": ["ref_height_m", "variants"],
+        "additionalProperties": false
+      }
+    },
+    "lods": {
+      "type": "array",
+      "items": { "enum": ["lod0", "lod1", "impostor"] },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "textures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "for": { "$ref": "#/$defs/part" },
+          "made_by": { "enum": ["code", "blender-script", "fal.ai", "hand"] },
+          "model": { "type": "string" },
+          "prompt": { "type": "string" },
+          "from_references": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["for", "made_by"],
+        "additionalProperties": false
+      }
+    },
+    "references": {
+      "description": "Ids of the reference photos this look was checked against.",
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    }
+  },
+  "required": ["format", "id", "look", "for_sheet", "generator", "recognisable", "form", "palette", "stages", "lods"],
+  "additionalProperties": false,
+  "$defs": {
+    "part": { "enum": ["bark", "foliage", "flowers", "fruit", "thorns"] },
+    "stage": { "enum": ["seedling", "sapling", "young", "adult", "old", "dead_standing", "fallen", "tuft"] }
+  }
+}

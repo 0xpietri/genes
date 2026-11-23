@@ -1,0 +1,106 @@
+:root {
+  --bg: #f4efe6;
+  --panel: #fffaf2;
+  --ink: #2f2a26;
+  --muted: #7a6f64;
+  --line: #e2d8c8;
+  --accent: #6d8a4a;
+  --accent-ink: #ffffff;
+  --sky-top: #a9c4dd;
+  --warn: #b5482f;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+a { color: var(--accent); }
+
+.top {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.brand { font-weight: 700; font-size: 18px; text-decoration: none; color: var(--ink); letter-spacing: 0.02em; }
+.tagline { color: var(--muted); font-size: 13px; }
+
+#app { flex: 1; min-height: 0; display: flex; }
+.loading, .error { padding: 24px 16px; color: var(--muted); }
+.error { color: var(--warn); }
+
+/* ---------- catalog */
+.catalog { padding: 16px; width: 100%; max-width: 960px; margin: 0 auto; }
+.catalog h1 { font-size: 20px; margin: 4px 0 12px; }
+.cards { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.card a {
+  display: block; padding: 14px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--panel); color: var(--ink); text-decoration: none;
+}
+.card a:hover { border-color: var(--accent); }
+.card .name { font-weight: 650; font-size: 16px; }
+.card .sci { font-style: italic; color: var(--muted); }
+.card .meta { color: var(--muted); font-size: 13px; margin-top: 6px; }
+.empty { color: var(--muted); }
+
+/* ---------- species */
+.species { display: flex; width: 100%; min-height: 0; }
+.view { flex: 1; min-width: 0; position: relative; background: linear-gradient(var(--sky-top), var(--bg)); }
+.view canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.panel {
+  width: 360px; max-width: 100%; overflow-y: auto; padding: 14px 16px 24px;
+  background: var(--panel); border-left: 1px solid var(--line);
+}
+.panel h1 { font-size: 21px; margin: 0; }
+.panel .en { color: var(--muted); }
+.panel .sci { font-style: italic; color: var(--muted); margin: 2px 0 8px; }
+.panel .summary { margin: 6px 0; }
+.panel .summary.en { font-size: 13px; }
+.panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 18px 0 6px; }
+
+.row { display: flex; align-items: center; gap: 8px; margin: 6px 0; flex-wrap: wrap; }
+.row > label { min-width: 64px; color: var(--muted); font-size: 13px; }
+select, input[type="range"] { flex: 1; min-width: 120px; }
+select { padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff; font: inherit; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button {
+  border: 0; background: #fff; padding: 4px 10px; font: inherit; cursor: pointer; color: var(--ink);
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.checks { display: flex; gap: 14px; flex-wrap: wrap; font-size: 14px; }
+.month-note { font-size: 13px; color: var(--muted); width: 100%; }
+
+.stats { font-size: 13px; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; }
+.stats .over { color: var(--warn); font-weight: 600; }
+
+.facts { list-style: none; padding: 0; margin: 0; font-size: 14px; }
+.facts li { padding: 4px 0; border-bottom: 1px dotted var(--line); }
+.facts .k { color: var(--muted); }
+.facts .src { font-size: 12px; color: var(--muted); }
+.sources { font-size: 12px; padding-left: 18px; color: var(--muted); }
+
+.refs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.ref { border: 1px solid var(--line); border-radius: 8px; padding: 6px; font-size: 12px; background: #fff; }
+.ref img { width: 100%; height: 90px; object-fit: cover; border-radius: 4px; display: block; }
+.ref .who { color: var(--muted); }
+.ref button { margin-top: 4px; font: inherit; font-size: 12px; cursor: pointer; }
+
+.foot { margin-top: 18px; font-size: 12px; color: var(--muted); }
+
+@media (max-width: 760px) {
+  .species { flex-direction: column; }
+  .view { min-height: 55vh; }
+  .panel { width: 100%; border-left: 0; border-top: 1px solid var(--line); }
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://genes.pietri.dev/schemas/refs.v1.json",
+  "title": "genes: a species's reference photos",
+  "description": "Spec §9. A photo is stored (file) only under a shareable licence; others are links only.",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "format": { "const": "genes.refs.v1" },
+    "id": { "$ref": "common.v1.json#/$defs/species_id" },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+          "url": { "type": "string", "minLength": 1 },
+          "author": { "type": "string", "minLength": 1 },
+          "licence": { "enum": ["cc0", "cc-by", "cc-by-sa", "cc-by-nc", "cc-by-nc-sa", "cc-by-nd", "cc-by-nc-nd", "all-rights-reserved"] },
+          "source": { "enum": ["inaturalist", "wikimedia", "marcos", "other"] },
+          "observed_on": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          "place": { "type": "string" },
+          "shows": {
+            "type": "array",
+            "items": { "enum": ["whole", "trunk", "bark", "branch", "leaves", "flowers", "fruit", "seedling", "young", "old", "dead", "winter", "summer", "habitat"] },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "angle": { "enum": ["side", "below", "above", "detail"] },
+          "used_for": { "type": "array", "items": { "type": "string" } },
+          "file": { "type": "string", "pattern": "^[a-z0-9_-]+\\.(jpg|webp)$", "description": "Stored copy next to refs.json, at most 1280 px." }
+        },
+        "required": ["id", "url", "author", "licence", "source", "shows", "angle"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["format", "id", "photos"],
+  "additionalProperties": false
+}

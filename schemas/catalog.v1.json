@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://genes.pietri.dev/schemas/catalog.v1.json",
+  "title": "genes: the published catalog (/v1/catalog.json)",
+  "description": "Spec §12. Within v1 fields may be added, never renamed, removed or changed in meaning.",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "genes.catalog.v1"
+    },
+    "catalog": {
+      "description": "The release number: how many sheet and look versions the catalog holds. It only grows, because merged versions are never removed.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "species": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "common.v1.json#/$defs/species_id"
+          },
+          "kind": {
+            "enum": [
+              "plant",
+              "animal"
+            ]
+          },
+          "growth_form": {
+            "type": "string"
+          },
+          "class": {
+            "type": "string"
+          },
+          "scientific_name": {
+            "type": "string"
+          },
+          "names": {
+            "type": "object"
+          },
+          "status_in_sierras_chicas": {
+            "type": "string"
+          },
+          "sheets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/file_version"
+            }
+          },
+          "looks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "path": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/file"
+                  }
+                }
+              },
+              "required": [
+                "version",
+                "path",
+                "sha256",
+                "files"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "references": {
+            "$ref": "#/$defs/file"
+          },
+          "related": {
+            "description": "Relations from other species pointing here, added by the builder (spec §5.5).",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "scientific_name",
+          "names",
+          "sheets",
+          "looks"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "format",
+    "catalog",
+    "species"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "file": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "path",
+        "sha256",
+        "bytes"
+      ],
+      "additionalProperties": false
+    },
+    "file_version": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "path",
+        "sha256"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
