@@ -43,8 +43,8 @@ def test_the_same_look_builds_the_same_model(look: dict[str, Any]) -> None:
 def test_a_variant_keeps_its_traits_in_every_stage(look: dict[str, Any]) -> None:
     """An individual's draws hang on its variant, not its stage (spec §6.2)."""
     young, adult = resolve(look, "young", "a"), resolve(look, "adult", "a")
-    assert young.ind("trunk.lean_deg") == adult.ind("trunk.lean_deg")
-    assert adult.ind("trunk.lean_deg") != resolve(look, "adult", "b").ind("trunk.lean_deg")
+    assert young.ind("trunk.tortuosity") == adult.ind("trunk.tortuosity")
+    assert adult.ind("trunk.tortuosity") != resolve(look, "adult", "b").ind("trunk.tortuosity")
 
 
 @pytest.mark.parametrize(
@@ -223,3 +223,31 @@ def test_no_limb_is_left_bare(look: dict[str, Any], stage: str) -> None:
             if not b.removed and not b.broken and b.level >= 1 and i not in carrying
         ]
         assert not bare, (variant, bare)
+
+
+def test_variants_differ_only_in_crookedness(look: dict[str, Any]) -> None:
+    forms = [resolve(look, "adult", v) for v in "abc"]
+    for path in ("crown.width_to_height", "crown.base", "trunk.split_height", "trunk.lean_deg"):
+        assert len({f.ind(path) for f in forms}) == 1, path
+    assert len({f.ind_int("trunk.count") for f in forms}) == 1
+    assert len({round(f.ind("trunk.tortuosity"), 6) for f in forms}) == 3
+
+
+@pytest.mark.parametrize("stage", ["young", "adult", "old"])
+def test_every_variant_is_even_on_all_sides(look: dict[str, Any], stage: str) -> None:
+    widths = []
+    for variant in "abc":
+        model = build(look, stage, variant, "lod0", BUDGETS)
+        pts = model.parts["foliage"].positions + model.parts["bark"].positions
+        cx = cz = 0.0  # the trunk stands on the origin
+        # How far the tree reaches out from its foot, in four quarters round it.
+        reach = [0.0] * 4
+        for p in pts:
+            q = int(
+                ((math.atan2(p[2] - cz, p[0] - cx) + math.pi / 4) % (2 * math.pi)) // (math.pi / 2)
+            )
+            reach[q % 4] = max(reach[q % 4], math.hypot(p[0] - cx, p[2] - cz))
+        assert min(reach) >= 0.55 * max(reach), (variant, [round(r, 1) for r in reach])
+        lo, hi = bounds(model.parts)
+        widths.append(max(hi[0] - lo[0], hi[2] - lo[2]))
+    assert min(widths) >= 0.75 * max(widths), [round(w, 1) for w in widths]

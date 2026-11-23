@@ -126,8 +126,15 @@ The model carries only the flat lit colour; pietri.dev paints and lights it (spe
 
 Every parameter has a default; write only what makes this species different. The full
 list, with what each one does, is `schemas/plant-form.v1.json` (`description` fields). A
-"range" is a number or `[min, max]`; each variant draws its own value, which is how
-variants a, b and c differ.
+"range" is a number or `[min, max]`.
+
+**Rule: variants differ only in how crooked they are.** The generator gives every
+variant the middle of each range that sets the tree's proportions (crown width and
+height, where it starts, the fork, stems, lean, trunk thickness), and draws each
+variant's own value only for `trunk.tortuosity`, `trunk.twist`, `trunk.gnarl` and
+`trunk.fluting`. It also spreads the main limbs evenly on every side of the trunk. A
+look cannot turn either off: no species gets lopsided or misshapen variants. Ranges
+still matter: their middle is what is drawn.
 
 Read the photos in this order, biggest shapes first:
 
@@ -139,7 +146,6 @@ Read the photos in this order, biggest shapes first:
 | Flat top, or rounded | `crown.flat_top` |
 | Sky through the foliage (airy, not holed) | `foliage.density` (0 = a few sprays, 1 = a solid mass), `foliage.twigs` (dark twigs inside each clump), `foliage.cards_per_clump`, fewer `branching[2].count` |
 | Big gaps in the crown | `crown.openness` (holes between groups of clumps) |
-| Same amount of limb on every side | `crown.balance` (1 = even all round; lower lets a crown be lopsided) |
 | Leaves on top of the crown (every tree has them) | `crown.fill_top` (keep it 0.9–1: thin crooked branches rise to fill the top) |
 | One main stem or a fork | `trunk.count` (leaders above the fork), `trunk.split_height` |
 | Leaders spread or rise | `trunk.fork_angle_deg`, `trunk.leader_curve` (negative arches out) |

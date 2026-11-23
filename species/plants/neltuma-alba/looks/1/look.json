@@ -132,8 +132,7 @@
         1.5,
         1.75
       ],
-      "fill_top": 1.0,
-      "balance": 1.0
+      "fill_top": 1.0
     },
     "dead": {
       "broken_top": [

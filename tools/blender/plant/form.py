@@ -108,16 +108,25 @@ class Form:
         return as_range(self.get(path))
 
     def ind(self, path: str) -> float:
-        """The individual's own value of a range: the same in every stage."""
+        """The individual's own value of a range: the same in every stage. Rule: variants
+        of a species differ only in how crooked they are (VARIES); everything that sets
+        the tree's proportions takes the middle of its range, so no variant comes out
+        lopsided or out of proportion, whatever a look says."""
         lo, hi = self.range(path)
+        if path not in VARIES:
+            return (lo + hi) / 2
         return lo + (hi - lo) * unit(self.key, path)
 
     def ind_int(self, path: str) -> int:
         lo, hi = self.range(path)
-        return int(lo + (hi - lo + 1) * unit(self.key, path)) if hi > lo else int(lo)
+        return int((lo + hi) / 2 + 0.5)
 
     def unit(self, name: str) -> float:
         return unit(self.key, name)
+
+
+# The only individual traits that change between variants: the shape of the crookedness.
+VARIES = frozenset({"trunk.tortuosity", "trunk.twist", "trunk.gnarl", "trunk.fluting"})
 
 
 def draw(rng: random.Random, value: Any) -> float:

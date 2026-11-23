@@ -173,9 +173,11 @@ def grow(
     rng: random.Random,
     env: Envelope | None,
     segments: int,
+    rim: tuple[float, float, float] | None = None,
 ) -> tuple[list[Vec], list[float]]:
     """Step a branch from `start`: wander, curve and droop at every step, and stop where it
-    leaves the envelope."""
+    leaves the envelope, or (for branches outside the crown on purpose) where it passes
+    the rim: (x, z, radius) of a circle round the crown's axis."""
     n = max(2, segments)
     dl = length / n
     d = vec.norm(direction)
@@ -232,6 +234,8 @@ def grow(
             if len(pts) == 1:
                 pts.append(vec.add(p, vec.mul(step, dl * 0.5)))
             break
+        if rim is not None and math.hypot(nxt[0] - rim[0], nxt[2] - rim[1]) > rim[2]:
+            break
         pts.append(nxt)
         p = nxt
     count = len(pts)
@@ -277,8 +281,6 @@ def _balanced(
             if spread < env.radius * 0.15 or turn < math.radians(110):
                 d = (flat * math.cos(heading), d[1], flat * math.sin(heading))
                 break
-    tip = vec.add(start, vec.mul(d, length))
-    sectors[_sector(tree, tip)] += length * max(flat, 0.2)
     return d
 
 
@@ -445,7 +447,8 @@ def _grow_level(
     aged = form.stage in ("old", "dead_standing")
     sag = float(form.get("old.limb_sag")) if aged else 0.0
     sagging = float(form.get("old.sagging_limbs")) if aged and sag > 0 else 0.0
-    balance = float(form.get("crown.balance"))
+    balance = 1.0  # rule: every tree spreads the same on all sides
+    rim = (env.centre[0], env.centre[1], env.radius * 1.1)
     for pi in parents:
         parent = tree.branches[pi]
         plen = parent.length
@@ -512,10 +515,16 @@ def _grow_level(
                 rng,
                 None if rest else env,
                 _segments(level, length, tree.height, g.bend) + (5 if rest else 0),
+                rim if (rest or parent.free) else None,
             )
             if len(pts) < 2:
                 continue
             free = rest or parent.free
+            if level == 1:
+                # Count where the limb really ended, after the crown trimmed it.
+                spread = math.hypot(pts[-1][0] - pts[0][0], pts[-1][2] - pts[0][2])
+                sectors = tree.rest_sectors if rest else tree.sectors
+                sectors[_sector(tree, pts[-1])] += max(spread, 0.2 * length)
             tree.branches.append(Branch(level, pts, radii, parent=pi, at=t, free=free))
             idx = len(tree.branches) - 1
             parent.children.append(idx)

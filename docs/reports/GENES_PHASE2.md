@@ -230,3 +230,14 @@ small forking twigs should carry much more foliage. Changes:
 - Algarrobo look: branches and twigs start near their parent's base (level 2 from 0.1,
   level 3 from 0.15) and foliage from 0.15 of each twig, so the green reaches the trunk.
 - Scores: mean 0.56 (0.49, 0.54, 0.61, 0.61, 0.56). Look 5.39 MB of 6 MB.
+- **Rule, in the generator (marcos asked for it so no other model can make misshapen
+  trees):** variants differ only in how crooked they are. Every range that sets the
+  tree's proportions gives all variants its middle; only `trunk.tortuosity`,
+  `trunk.twist`, `trunk.gnarl` and `trunk.fluting` are drawn per variant (`form.VARIES`).
+  Main limbs are always balanced round the trunk (`crown.balance` was removed: it is not
+  a choice), counted by where each limb really ended after the crown trimmed it, and
+  branches outside the crown on purpose (sagging limbs and what grows on them) stop at a
+  rim 10 % past the crown's edge. Tests check that all variants share their proportions,
+  reach out evenly in four quarters round the trunk, and stay within 25 % of each other's
+  width. Recipe updated.
+- Scores after the rule: mean 0.56 (0.52, 0.53, 0.61, 0.61, 0.55).

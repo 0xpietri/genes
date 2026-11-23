@@ -273,11 +273,6 @@
           ],
           "description": "Size of one painted foliage clump on an adult. Smaller stages scale it down."
         },
-        "balance": {
-          "$ref": "#/$defs/fraction",
-          "default": 0.5,
-          "description": "How evenly the main limbs spread round the trunk: 0 = wherever they grow (lopsided crowns happen), 1 = the same amount of limb on every side, low sagging limbs too."
-        },
         "fill_top": {
           "$ref": "#/$defs/fraction",
           "default": 0.9,
