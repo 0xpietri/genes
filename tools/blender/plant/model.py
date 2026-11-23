@@ -17,7 +17,7 @@ from typing import Any
 
 from genes import jsonio
 from plant import GENERATOR, vec
-from plant.form import Form, draw, draw_int, resolve, seed
+from plant.form import Form, as_range, draw, draw_int, resolve, seed
 from plant.geometry import (
     DOWN,
     Clump,
@@ -30,7 +30,7 @@ from plant.geometry import (
     spike,
     tube,
 )
-from plant.skeleton import BOLE, LEADER, Branch, Tree, fill_crown, grow_tree
+from plant.skeleton import BOLE, LEADER, Branch, Growth, Tree, fill_crown, grow, grow_tree
 from plant.vec import UP, Vec
 
 PARTS = ("bark", "foliage", "flowers", "fruit", "thorns")
@@ -380,6 +380,63 @@ def _proxy(clumps: list[Clump], tree: Tree) -> tuple[Vec, Vec]:
     return centre, (radii[0], radii[1], radii[2])
 
 
+def _twiglets(
+    tree: Tree, form: Form, bark: Part, r_min: float, cap: int, rng: random.Random
+) -> int:
+    """Fine crooked twigs bristling from the end of every drawn branch (spec §7.2), added
+    to the bark within `cap` triangles; the highest ends get them first. Returns how
+    many were made."""
+    lo_n, hi_n = as_range(form.get("tips.twiglets"))
+    crook = float(form.get("tips.crookedness"))
+    forks = float(form.get("tips.forks"))
+    tile = float(form.get("trunk.bark.tile_m"))
+    drawn = [b for b in tree.alive() if b.level >= 1 and b.radii[0] >= r_min and len(b.points) > 1]
+    ends: list[Branch] = []
+    for b in drawn:
+        kids = [tree.branches[c] for c in b.children]
+        if not any(not k.removed and k.radii[0] >= r_min for k in kids if k.at > 0.6):
+            ends.append(b)
+    ends.sort(key=lambda b: -b.points[-1][1])
+    floor_r = max(tree.twig_radius * 0.6, 0.0015)
+    start_tris = bark.triangle_count
+    made = 0
+
+    def sprout(p: Vec, d: Vec, length: float, r0: float, level: int) -> Vec | None:
+        nonlocal made
+        g = Growth(
+            curve=0.1,
+            droop=0.0,
+            wander=0.5 * crook,
+            bend=crook,
+            bend_waves=(1.2, 2.4),
+        )
+        pts, radii = grow(p, d, length, r0, floor_r, g, rng, None, 4)
+        if len(pts) < 2:
+            return None
+        tube(bark, Branch(level, pts, radii), 3, tile, 0.0, 0.0, tree.height, 0.0)
+        made += 1
+        return pts[len(pts) // 2]
+
+    for b in ends:
+        if bark.triangle_count - start_tris >= cap - 30:
+            break
+        count = int(lo_n) if hi_n == lo_n else rng.randint(int(lo_n), int(hi_n))
+        for _ in range(count):
+            t = rng.uniform(0.75, 1.0)
+            p, tangent, r = b.point_at(t)
+            axis = vec.rotate(vec.perpendicular(tangent), tangent, rng.uniform(0, 2 * math.pi))
+            d = vec.norm(vec.rotate(tangent, axis, math.radians(rng.uniform(15, 55))))
+            d = vec.norm(vec.add(d, (0.0, 0.25, 0.0)))  # twigs reach for the light
+            length = draw(rng, form.get("tips.length")) * tree.height
+            r0 = max(min(r * 0.6, 0.02 * length), floor_r * 1.3)
+            mid = sprout(p, d, length, r0, 4)
+            if mid is not None and rng.random() < forks:
+                axis = vec.rotate(vec.perpendicular(d), d, rng.uniform(0, 2 * math.pi))
+                d2 = vec.norm(vec.rotate(d, axis, math.radians(rng.uniform(25, 50))))
+                sprout(mid, d2, length * 0.55, floor_r * 1.1, 5)
+    return made
+
+
 def _bark(tree: Tree, form: Form, coarse: bool, cap: int, seed_value: float) -> tuple[Part, float]:
     """The bark mesh within `cap` triangles: the thinnest branches are left to the clumps."""
     tile = float(form.get("trunk.bark.tile_m"))
@@ -614,12 +671,28 @@ def build(
         need = min(len(shown) * cards * 2, int(budget * 0.6))
         need += fl.triangle_count + fr.triangle_count
         bark_cap = max(int(budget * 0.4), budget - thorn_cap - need)
-    bark, r_min = _bark(tree, form, coarse, bark_cap, form.unit("bark_seed") * 10)
+    tipped = (
+        not coarse
+        and stage in form.get("tips.stages")
+        and as_range(form.get("tips.twiglets"))[1] > 0
+    )
+    tip_cap = int(bark_cap * float(form.get("tips.share"))) if tipped else 0
+    bark, r_min = _bark(tree, form, coarse, bark_cap - tip_cap, form.unit("bark_seed") * 10)
     if r_min > 0:
         notes.append(
             f"{stage}-{variant}.{lod}: "
             f"branches thinner than {r_min * 100:.1f} cm left to the clumps"
         )
+    if tipped:
+        made = _twiglets(
+            tree,
+            form,
+            bark,
+            r_min,
+            bark_cap - bark.triangle_count,
+            random.Random(seed(form.key, stage, "tips")),
+        )
+        notes.append(f"{stage}-{variant}.{lod}: {made} twiglets")
     parts: dict[str, Part] = {"bark": bark}
     if not leafless:
         _near_wood(tree, clumps, r_min)

@@ -150,6 +150,8 @@ Read the photos in this order, biggest shapes first:
 | One main stem or a fork | `trunk.count` (leaders above the fork), `trunk.split_height` |
 | Leaders spread or rise | `trunk.fork_angle_deg`, `trunk.leader_curve` (negative arches out) |
 | Crooked trunk | `trunk.tortuosity` (0 straight … 1 contorted), `trunk.bends` (how many bends), `trunk.bend_style` (`smooth` S-curves or `elbows`) |
+| Crooked all along, hardly a straight part | `trunk.crooked_to_tip` (0 = calm towards the crown … 1 = crooked to every tip) |
+| Brushes of tiny crooked twigs at the branch ends (bare crowns) | `tips.twiglets`, `tips.length`, `tips.crookedness`, `tips.forks`, `tips.stages` |
 | Crooked branches | `branching[].tortuosity`, `branching[].bend_style` (old algarrobo: smooth limbs, elbowed branches) |
 | Leaning, knotty trunk | `trunk.lean_deg`, `trunk.twist` (small zig-zag), `trunk.gnarl`, `trunk.flare`, `trunk.fluting` (spiral ribs, as if stems had fused) |
 | Trunk thickness | `trunk.radius_per_height` (sheet: dbh / 2 / adult_height) |

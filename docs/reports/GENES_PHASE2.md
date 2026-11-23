@@ -251,3 +251,27 @@ old 0.65), stems that rise (leader curve −0.15–0.05, fork 35–50°) and rea
 top, thinner main limbs (radius ratio 0.45–0.6), branches that curve up (curve 0.2–0.4,
 droop 0.1–0.25), crown from 0.28–0.34 of the height and 1.3–1.5 times as wide (old
 1.4–1.6), airier (openness 0.3–0.4, density 0.16). Scores: mean 0.49. Look 5.5 MB.
+
+## Review round 6 (marcos, 2026-11-23, 12:48)
+
+He sent a photo of a bare old algarrobo: every branch ends in a brush of tiny crooked
+twigs, and the trunk and limbs are curved all along, with hardly a straight part. He
+asked for both as parameters (changing the tool if needed), for adult, old and dead
+standing trees, and for a season selector in the viewer.
+
+- `trunk.crooked_to_tip` (new, 0–1, default 0): 0 = bends calm towards the crown (as
+  before); 1 = crooked from the foot to every tip, with up to twice the bends. The
+  algarrobo is at 1, with 1.4–2 bends and smooth bends on every level (tortuosity
+  0.5–0.7 on levels 2 and 3).
+- `tips` (new group): `twiglets` per drawn branch end (algarrobo 3–5), `length` (fraction
+  of the height), `crookedness`, `forks` (chance of a second fork), `share` of the bark's
+  triangles kept for them (the highest ends first) and `stages` (default adult, old,
+  dead_standing). They are thin three-sided tubes in the bark.
+- **Budgets raised** (marcos said to change the tools if they could not do it; please
+  confirm): lod0 adult and old 12,000 → 20,000 triangles, dead_standing 8,000 → 14,000;
+  file 500 KB → 800 KB; look 6 MB → 9 MB. With 12,000, crooked wood used the whole
+  budget and only branches over 15–20 cm were drawn. Now adult and old draw branches
+  down to 2–5 cm, with about 100 twiglets each; dead trees about 200.
+- Viewer: Season buttons (summer, autumn, winter, spring, southern hemisphere) jump the
+  month slider to the middle of each season.
+- Scores: mean 0.52. Look 7.3 MB of 9 MB.

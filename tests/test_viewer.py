@@ -77,7 +77,13 @@ def test_species_page_loads_without_errors(site: str) -> None:
         page.wait_for_selector("body[data-ready], body[data-error]", timeout=30000)
         assert page.evaluate("document.body.dataset.error") is None
         assert page.locator("h1").inner_text() == "Árbol de prueba"
-        assert "2,708 of 12,000" in page.locator(".stats").inner_text()
+        assert "2,708 of 20,000" in page.locator(".stats").inner_text()
+        # The season buttons jump to the middle month of each (southern) season.
+        page.locator("[aria-label=Season] button", has_text="Winter").click()
+        assert page.locator("label[for=month]").inner_text() == "July"
+        assert (
+            page.locator("[aria-label=Season] button[aria-pressed=true]").inner_text() == "Winter"
+        )
         page.select_option("select[aria-label=Stage]", "dead_standing")
         page.locator(".stats", has_text="dead_standing-a.lod0.glb").wait_for()
         page.goto(site + "/")

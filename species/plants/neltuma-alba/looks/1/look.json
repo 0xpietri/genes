@@ -40,7 +40,7 @@
           30,
           55
         ],
-        "bend_style": "elbows",
+        "bend_style": "smooth",
         "count": [
           4,
           7
@@ -67,8 +67,8 @@
           1.0
         ],
         "tortuosity": [
-          0.2,
-          0.4
+          0.5,
+          0.7
         ],
         "wander": 0.3
       },
@@ -104,10 +104,10 @@
         ],
         "wander": 0.25,
         "tortuosity": [
-          0.3,
-          0.5
+          0.5,
+          0.7
         ],
-        "bend_style": "elbows"
+        "bend_style": "smooth"
       }
     ],
     "crown": {
@@ -245,7 +245,7 @@
               30,
               55
             ],
-            "bend_style": "elbows",
+            "bend_style": "smooth",
             "count": [
               3,
               5
@@ -270,7 +270,7 @@
             ],
             "tortuosity": [
               0.5,
-              0.8
+              0.7
             ],
             "wander": 0.3
           },
@@ -279,7 +279,7 @@
               25,
               50
             ],
-            "bend_style": "elbows",
+            "bend_style": "smooth",
             "count": [
               4,
               6
@@ -306,7 +306,7 @@
               1.0
             ],
             "tortuosity": [
-              0.4,
+              0.5,
               0.7
             ],
             "wander": 0.25
@@ -391,7 +391,7 @@
               30,
               55
             ],
-            "bend_style": "elbows",
+            "bend_style": "smooth",
             "count": [
               3,
               5
@@ -419,7 +419,7 @@
             ],
             "tortuosity": [
               0.5,
-              0.8
+              0.7
             ],
             "wander": 0.3
           },
@@ -428,7 +428,7 @@
               25,
               50
             ],
-            "bend_style": "elbows",
+            "bend_style": "smooth",
             "count": [
               4,
               6
@@ -455,7 +455,7 @@
               1.0
             ],
             "tortuosity": [
-              0.4,
+              0.5,
               0.7
             ],
             "wander": 0.25
@@ -605,7 +605,24 @@
       "twist": [
         0.35,
         0.6
+      ],
+      "crooked_to_tip": 1.0,
+      "bends": [
+        1.4,
+        2.0
       ]
+    },
+    "tips": {
+      "twiglets": [
+        3,
+        5
+      ],
+      "length": [
+        0.03,
+        0.06
+      ],
+      "crookedness": 0.85,
+      "forks": 0.6
     }
   },
   "format": "genes.look.v1",

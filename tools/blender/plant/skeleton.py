@@ -285,13 +285,20 @@ def _balanced(
 
 
 def _bend_style(form: Form) -> tuple[tuple[float, float], bool]:
-    return form.range("trunk.bends"), form.get("trunk.bend_style") == "elbows"
+    """How many bends (waves along a branch) and whether they are elbows. A tree crooked
+    to the tips gets up to twice the bends, so no long part stays straight."""
+    lo, hi = form.range("trunk.bends")
+    more = 1 + float(form.get("trunk.crooked_to_tip"))
+    return (lo * more, hi * more), form.get("trunk.bend_style") == "elbows"
 
 
-def _segments(level: int, length: float, height: float, bend: float = 0.0) -> int:
+def _segments(
+    level: int, length: float, height: float, bend: float = 0.0, waves: float = 1.0
+) -> int:
     most = {BOLE: 8, LEADER: 10, 1: 7, 2: 5, 3: 3}[level]
-    if bend > 0 and level <= 1:
-        most += round(4 * min(bend, 1.0))  # bends need more rings to stay round
+    if bend > 0 and level <= 2:
+        # Bends need more rings to stay round, and more bends need more still.
+        most += round(3 * min(bend, 1.0) * min(max(1.0, waves), 2.0))
     step = height * (0.035 - 0.015 * min(bend, 1.0))
     return max(2, min(most, round(length / max(step, 0.05))))
 
@@ -358,7 +365,7 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
             bole_growth,
             rng,
             None,
-            _segments(BOLE, length, height, bend),
+            _segments(BOLE, length, height, bend, sum(style[0]) / 2),
         )
         branches.append(Branch(BOLE, pts, radii))
         fork, fork_r = pts[-1], radii[-1]
@@ -371,7 +378,8 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
         droop=0.0,
         wander=twist * 0.45,
         bend=bend,
-        bend_fade=0.7,  # crooked low down, still reaching the crown's edge
+        # Crooked low down and calm towards the crown, unless crooked all along.
+        bend_fade=0.7 * (1 - float(form.get("trunk.crooked_to_tip"))),
         full=1.6,
         bend_waves=style[0],
         elbows=style[1],
@@ -408,7 +416,7 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
             leader_growth,
             rng,
             env if count > 1 else None,
-            _segments(LEADER, length, height, bend),
+            _segments(LEADER, length, height, bend, sum(style[0]) / 2),
         )
         if len(pts) < 2:
             pts.append(vec.add(fork, vec.mul(d, height * 0.05)))
@@ -514,7 +522,8 @@ def _grow_level(
                 g,
                 rng,
                 None if rest else env,
-                _segments(level, length, tree.height, g.bend) + (5 if rest else 0),
+                _segments(level, length, tree.height, g.bend, sum(style[0]) / 2)
+                + (5 if rest else 0),
                 rim if (rest or parent.free) else None,
             )
             if len(pts) < 2:

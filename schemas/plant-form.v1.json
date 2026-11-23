@@ -67,6 +67,11 @@
           "default": "smooth",
           "description": "smooth = slow S-curves that turn in space (algarrobo); elbows = straight runs broken by sharp kinks (tala, espinillo)."
         },
+        "crooked_to_tip": {
+          "$ref": "#/$defs/fraction",
+          "default": 0,
+          "description": "How far up the bends reach: 0 = the trunk and stems are crooked low down and calm towards the crown; 1 = crooked all along, from the foot to every tip, with hardly a straight part (algarrobo). Also gives more bends to long limbs."
+        },
         "fluting": {
           "$ref": "#/$defs/fraction_range",
           "default": 0,
@@ -334,6 +339,44 @@
       },
       "additionalProperties": false
     },
+    "tips": {
+      "type": "object",
+      "description": "Twiglets: the fine crooked twigs that bristle from the end of every branch, so a bare crown reads as a net and not as cut sticks (old algarrobos in winter).",
+      "properties": {
+        "twiglets": {
+          "$ref": "#/$defs/int_range",
+          "default": 0,
+          "description": "Twiglets at the end of each drawn branch. 0 = none."
+        },
+        "length": {
+          "$ref": "#/$defs/range",
+          "default": [0.03, 0.06],
+          "description": "Length of a twiglet, as a fraction of the tree's height."
+        },
+        "crookedness": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.7,
+          "description": "0 = straight twiglets; 1 = twisting in every direction."
+        },
+        "forks": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.5,
+          "description": "Chance that a twiglet forks once more halfway."
+        },
+        "share": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.3,
+          "description": "Share of the bark's triangles kept for twiglets; the highest branch ends get them first."
+        },
+        "stages": {
+          "type": "array",
+          "items": {"enum": ["seedling", "sapling", "young", "adult", "old", "dead_standing", "fallen"]},
+          "default": ["adult", "old", "dead_standing"],
+          "description": "Stages that have twiglets."
+        }
+      },
+      "additionalProperties": false
+    },
     "thorns": {
       "type": "object",
       "properties": {
@@ -574,6 +617,9 @@
             "type": "object"
           },
           "thorns": {
+            "type": "object"
+          },
+          "tips": {
             "type": "object"
           },
           "flowers": {

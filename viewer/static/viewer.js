@@ -314,8 +314,22 @@ async function renderSpecies(id) {
   const monthLabel = el('label', { for: 'month', text: '' });
   const monthInput = el('input', { id: 'month', type: 'range', min: 1, max: 12, step: 1, value: state.month,
     oninput: (e) => { state.month = Number(e.target.value); updateMonth(); if (current) applyMaterials(current); } });
+  // Seasons of the southern hemisphere (Córdoba): each button jumps to its middle month.
+  const SEASONS = [['Summer', 1], ['Autumn', 4], ['Winter', 7], ['Spring', 10]];
+  const seasonOf = (m) => SEASONS[Math.floor((m % 12) / 3)][0];
+  const seasonSeg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Season' });
+  function buildSeasons() {
+    seasonSeg.replaceChildren(...SEASONS.map(([name, m]) => el('button', {
+      type: 'button', 'aria-pressed': String(seasonOf(state.month) === name), text: name,
+      onclick: () => {
+        state.month = m; monthInput.value = String(m); updateMonth();
+        if (current) applyMaterials(current);
+      },
+    })));
+  }
   function updateMonth() {
     const a = partAmounts(sheet, state.month);
+    buildSeasons();
     monthLabel.textContent = MONTHS[state.month - 1];
     const parts = [`leaves ${Math.round(a.foliage * 100)} %`];
     if (a.flowers > 0) parts.push('flowering');
@@ -337,6 +351,7 @@ async function renderSpecies(id) {
     el('div', { class: 'row' }, el('label', { text: 'Stage' }), stageSelect),
     el('div', { class: 'row' }, el('label', { text: 'Variant' }), variantSeg),
     el('div', { class: 'row' }, el('label', { text: 'Detail' }), lodSeg),
+    el('div', { class: 'row' }, el('label', { text: 'Season' }), seasonSeg),
     el('div', { class: 'row' }, monthLabel, monthInput, monthNote),
     el('div', { class: 'row checks' }, check('person', 'Person 1.75 m'), check('turn', 'Turn'), check('painted', 'Painted preview')),
   );
