@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- The species recipe for any agent: `docs/HOW_TO_ADD_A_SPECIES.md` rewritten with marcos's
+  rules, sources, the leaf colour calendar and the viewer checks;
+  `docs/PLANT_FORM_PARAMETERS.md` written from the schema (`genes form-reference`);
+  `genes doctor` checks a computer is ready; `AGENTS.md` holds the rules (`CLAUDE.md` and
+  `GEMINI.md` point to it); `docs/NEW_SPECIES_PROMPT.md` starts an agent on a species.
 - Phase 2: the plant generator (`plant@1`, Blender headless through `bpy`, meshopt
   through gltf-transform), `genes build-models`, `genes refs candidates|add`,
   `genes contact-sheet`, `docs/HOW_TO_ADD_A_SPECIES.md`, and the first species, algarrobo

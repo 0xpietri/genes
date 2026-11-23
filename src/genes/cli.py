@@ -8,6 +8,8 @@ genes refs candidates <id> --taxon N         shareable iNaturalist photos to cho
 genes refs add <id> <n> --shows .. --angle ..  store a chosen photo (spec §9)
 genes build-models <id> [--stage S] ...      build a look's models (needs `uv sync --group blender`)
 genes contact-sheet <id>                     models beside the reference photos (spec §7.1)
+genes doctor                                 is this computer ready to add a species?
+genes form-reference                         rewrite docs/PLANT_FORM_PARAMETERS.md from the schema
 """
 
 from __future__ import annotations
@@ -116,7 +118,24 @@ def main(argv: list[str] | None = None) -> int:
     p_sheet.add_argument("species")
     p_sheet.add_argument("--out", type=Path, help="default: looks/<n>/sheet.png")
 
+    sub.add_parser("doctor", help="check this computer is ready to add a species")
+    sub.add_parser("form-reference", help="rewrite docs/PLANT_FORM_PARAMETERS.md")
+
     args = parser.parse_args(argv)
+
+    if args.command == "form-reference":
+        from genes import formdoc
+
+        formdoc.write()
+        print(formdoc.DOC.relative_to(REPO_ROOT))
+        return 0
+
+    if args.command == "doctor":
+        from genes import doctor
+
+        checks = doctor.run()
+        print(doctor.report(checks), end="")
+        return 0 if all(c.ok for c in checks) else 1
 
     if args.command == "validate":
         ok = _check(args.examples, args.base)
