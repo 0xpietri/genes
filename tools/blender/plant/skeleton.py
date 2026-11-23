@@ -31,12 +31,24 @@ class Branch:
     children: list[int] = field(default_factory=list)
     removed: bool = False
     broken: bool = False  # ends in a break, not a tip
+    free: bool = False  # grows outside the crown on purpose (sagging limbs, gap fillers)
 
     @property
     def length(self) -> float:
         return sum(
             vec.length(vec.sub(b, a)) for a, b in zip(self.points, self.points[1:], strict=False)
         )
+
+    def fraction(self, k: int) -> float:
+        """Where point k sits along the branch, 0–1 of its length."""
+        total = self.length
+        if total <= 0:
+            return 0.0
+        run = sum(
+            vec.length(vec.sub(self.points[i + 1], self.points[i]))
+            for i in range(min(k, len(self.points) - 1))
+        )
+        return run / total
 
     def point_at(self, t: float) -> tuple[Vec, Vec, float]:
         """Position, tangent and radius at fraction t of the length."""
@@ -452,8 +464,141 @@ def _grow_level(
             )
             if len(pts) < 2:
                 continue
-            tree.branches.append(Branch(level, pts, radii, parent=pi, at=t))
+            free = rest or parent.free
+            tree.branches.append(Branch(level, pts, radii, parent=pi, at=t, free=free))
             idx = len(tree.branches) - 1
             parent.children.append(idx)
             made.append(idx)
+    return made
+
+
+def _top_at(env: Envelope, x: float, z: float) -> float | None:
+    """The crown's upper surface above (x, z): the highest height still inside it."""
+    step = max(env.top * 0.015, 0.02)
+    y = env.top
+    while y > env.base:
+        if env.inside((x, y, z)):
+            return y
+        y -= step
+    return None
+
+
+def _twig_growth(form: Form, level: int, age: float) -> Growth:
+    """The crooked thin growth of the crown's upper twigs."""
+    lv = next((x for x in form.levels if int(x["level"]) == level), None)
+    if lv is not None and "tortuosity" in lv:
+        tort = lv["tortuosity"]
+        lo, hi = (tort, tort) if isinstance(tort, (int, float)) else tort
+        bend = (float(lo) + float(hi)) / 2 * age
+    else:
+        bend = form.ind("trunk.tortuosity") * 0.6 * age
+    style = lv.get("bend_style") if lv is not None else None
+    elbows = (style or form.get("trunk.bend_style")) == "elbows"
+    return Growth(
+        curve=0.15, droop=0.0, wander=0.25, bend=bend, bend_waves=(1.0, 2.0), elbows=elbows
+    )
+
+
+def fill_crown(
+    tree: Tree, form: Form, covered: list[Vec], size: float, rng: random.Random
+) -> list[int]:
+    """Trees have leaves on top. Where no foliage reaches the crown's upper surface, a thin
+    crooked branch rises from the nearest limb below, with twigs at its end; returns the new
+    branches. `covered` are the centres of the foliage clumps already there."""
+    amount = float(form.get("crown.fill_top"))
+    alive = [(i, b) for i, b in enumerate(tree.branches) if not b.removed]
+    deepest = max(b.level for _, b in alive)
+    if amount <= 0 or deepest < 1 or tree.height < 1.0:
+        return []
+    env = tree.envelope
+    age = min(1.0, tree.height / max(tree.adult_height, 1e-6)) ** 0.8
+    spacing = size * 1.05
+    reach = env.radius * 1.2
+    cells = int(2 * reach / spacing) + 1
+    upper = env.base + 0.4 * (env.top - env.base)
+    # The top is where the tree's foliage already reaches, not above it.
+    roof = max((c[1] for c in covered), default=env.top)
+    targets: list[Vec] = []
+    for i in range(cells):
+        for j in range(cells):
+            x = env.centre[0] - reach + (i + rng.uniform(0.2, 0.8)) * spacing
+            z = env.centre[1] - reach + (j + rng.uniform(0.2, 0.8)) * spacing
+            y = _top_at(env, x, z)
+            if y is None or y < upper:
+                continue
+            targets.append((x, min(y, roof) - size * rng.uniform(0.25, 0.6), z))
+    rng.shuffle(targets)
+    sources = [
+        (i, b)
+        for i, b in alive
+        if (LEADER <= b.level < deepest or (deepest == 1 and b.level == LEADER)) and not b.free
+    ]
+    near = size * 0.95
+    have = list(covered)
+    made: list[int] = []
+    for tgt in targets:
+        if rng.random() > amount:
+            continue
+        if any(
+            math.hypot(tgt[0] - c[0], tgt[2] - c[2]) < near and c[1] > tgt[1] - size for c in have
+        ):
+            continue
+        best: tuple[float, int, int] | None = None
+        for i, b in sources:
+            for k, p in enumerate(b.points[:-1]):
+                if p[1] > tgt[1] - size * 0.4 or b.radii[k] < tree.twig_radius * 2:
+                    continue
+                d = vec.length(vec.sub(tgt, p))
+                if best is None or d < best[0]:
+                    best = (d, i, k)
+        if best is None or best[0] > tree.height * 0.3:
+            continue
+        dist, pi, k = best
+        parent = tree.branches[pi]
+        start = parent.points[k]
+        level = min(parent.level + 1, deepest)
+        level = max(level, 1)
+        g = _twig_growth(form, level, age)
+        r0 = max(tree.twig_radius * 1.5, min(parent.radii[k] * 0.5, 0.035 * best[0]))
+        pts, radii = grow(
+            start,
+            vec.norm(vec.sub(tgt, start)),
+            dist,
+            r0,
+            tree.twig_radius,
+            g,
+            rng,
+            None,
+            _segments(max(level, 2), dist, tree.height, g.bend),
+        )
+        if len(pts) < 2:
+            continue
+        riser = Branch(level, pts, radii, parent=pi, at=parent.fraction(k), free=True)
+        tree.branches.append(riser)
+        idx = len(tree.branches) - 1
+        parent.children.append(idx)
+        made.append(idx)
+        have.append(pts[-1])
+        if level >= deepest:
+            continue
+        # A few crooked twigs fan out from its upper half, so the top is a net, not a stick.
+        tg = _twig_growth(form, deepest, age)
+        for _ in range(rng.randint(2, 4)):
+            t = rng.uniform(0.45, 0.95)
+            p, tangent, pr = riser.point_at(t)
+            axis = vec.rotate(vec.perpendicular(tangent), tangent, rng.uniform(0, 2 * math.pi))
+            out = vec.norm(vec.rotate(tangent, axis, math.radians(rng.uniform(30, 60))))
+            flat = vec.horizontal(out)
+            if vec.length(flat) > 1e-3:  # they spread under the crown's surface, not above it
+                out = vec.norm(vec.add(vec.norm(flat), vec.mul(UP, 0.25)))
+            length = min(max(dist * rng.uniform(0.3, 0.5), size * 0.6), size * 1.3)
+            tp, tr = grow(
+                p, out, length, max(pr * 0.7, tree.twig_radius), tree.twig_radius, tg, rng, None, 3
+            )
+            if len(tp) < 2:
+                continue
+            tree.branches.append(Branch(deepest, tp, tr, parent=idx, at=t, free=True))
+            riser.children.append(len(tree.branches) - 1)
+            made.append(len(tree.branches) - 1)
+            have.append(tp[-1])
     return made

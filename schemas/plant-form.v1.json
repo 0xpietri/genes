@@ -273,6 +273,11 @@
           ],
           "description": "Size of one painted foliage clump on an adult. Smaller stages scale it down."
         },
+        "fill_top": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.9,
+          "description": "How fully the top of the crown is covered: where no foliage reaches the crown's upper surface, a thin crooked branch rises from the nearest limb with leaves at its tips. 0 = leave gaps; 1 = every gap filled. Trees always have leaves on top, so keep it high."
+        },
         "clump_spacing": {
           "type": "number",
           "exclusiveMinimum": 0,

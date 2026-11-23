@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import copy
 import math
+import random
 from typing import Any
 
 import pytest
 from plant import GENERATOR
-from plant.form import resolve
-from plant.model import PARTS, bounds, build
+from plant.form import resolve, seed
+from plant.model import PARTS, _old_and_dead, _stage_height, bounds, build, crown_clumps
+from plant.skeleton import grow_tree
 
 from genes import jsonio
 from genes.paths import REPO_ROOT, SPECIES_DIR
@@ -171,3 +173,53 @@ def test_a_fallen_trunk_lies_on_the_ground(look: dict[str, Any]) -> None:
     lo, hi = bounds(model.parts)
     assert hi[1] - lo[1] <= float(look["stages"]["fallen"]["ref_height_m"]) * 2
     assert max(hi[0] - lo[0], hi[2] - lo[2]) > 3 * (hi[1] - lo[1])
+
+
+@pytest.mark.parametrize("stage", ["young", "adult", "old"])
+def test_every_variant_has_leaves_on_top(look: dict[str, Any], stage: str) -> None:
+    for variant in "abc":
+        model = build(look, stage, variant, "lod0", BUDGETS)
+        lo, hi = bounds(model.parts)
+        height = hi[1] - lo[1]
+        leaves = model.parts["foliage"].positions
+        assert max(p[1] for p in leaves) > 0.9 * height, variant
+        # Seen from above, the crown's middle is covered too, not a ring round a hole: most
+        # spots of the inner crown have leaves above half the tree's height.
+        top = [p for p in leaves if p[1] > 0.5 * height]
+        cx = (min(p[0] for p in leaves) + max(p[0] for p in leaves)) / 2
+        cz = (min(p[2] for p in leaves) + max(p[2] for p in leaves)) / 2
+        reach = max(math.hypot(p[0] - cx, p[2] - cz) for p in leaves)
+        step = reach / 5
+        spots = [
+            (cx + i * step, cz + j * step)
+            for i in range(-3, 4)
+            for j in range(-3, 4)
+            if math.hypot(i, j) <= 3
+        ]
+        covered = sum(
+            1 for x, z in spots if any(math.hypot(p[0] - x, p[2] - z) < step for p in top)
+        )
+        assert covered >= 0.8 * len(spots), (variant, covered, len(spots))
+
+
+@pytest.mark.parametrize("stage", ["adult", "old"])
+def test_no_limb_is_left_bare(look: dict[str, Any], stage: str) -> None:
+    for variant in "abc":
+        form = resolve(look, stage, variant)
+        height, adult = _stage_height(look, stage)
+        rng = random.Random(seed(form.key, stage))
+        tree = grow_tree(form, height, adult, rng)
+        _old_and_dead(tree, form, rng)
+        clumps = crown_clumps(tree, form, 0.8, rng)
+        carrying: set[int] = set()
+        for c in clumps:
+            i: int | None = c.branch
+            while i is not None:
+                carrying.add(i)
+                i = tree.branches[i].parent
+        bare = [
+            i
+            for i, b in enumerate(tree.branches)
+            if not b.removed and not b.broken and b.level >= 1 and i not in carrying
+        ]
+        assert not bare, (variant, bare)

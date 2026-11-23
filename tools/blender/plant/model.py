@@ -30,7 +30,7 @@ from plant.geometry import (
     spike,
     tube,
 )
-from plant.skeleton import BOLE, LEADER, Tree, grow_tree
+from plant.skeleton import BOLE, LEADER, Branch, Tree, fill_crown, grow_tree
 from plant.vec import UP, Vec
 
 PARTS = ("bark", "foliage", "flowers", "fruit", "thorns")
@@ -176,37 +176,56 @@ def _lay_down(tree: Tree, form: Form, max_height: float) -> None:
             run += seg
 
 
+def _branch_clumps(
+    tree: Tree, index: int, t0: float, spacing: float, size: float, rng: random.Random
+) -> list[Clump]:
+    """Clumps along one branch from t0 to its tip, facing out from the crown's axis."""
+    b = tree.branches[index]
+    env = tree.envelope
+    c_axis = (env.centre[0], (env.base + env.top) / 2, env.centre[1])
+    length = b.length
+    if length <= 0:
+        return []
+    out: list[Clump] = []
+    steps = max(2 if b.level <= LEADER else 1, int((1 - t0) * length / spacing))
+    for k in range(steps + 1):
+        t = t0 + (1 - t0) * (k / steps if steps else 1)
+        p, tangent, _ = b.point_at(t)
+        side = vec.rotate(vec.perpendicular(tangent), tangent, rng.uniform(0, 2 * math.pi))
+        centre = vec.add(p, vec.mul(side, size * rng.uniform(0.05, 0.4)))
+        if k == steps:
+            centre = vec.add(centre, vec.mul(tangent, size * 0.3))
+        out_dir = vec.horizontal(vec.sub(centre, c_axis))
+        outward = vec.norm(out_dir) if vec.length(out_dir) > 1e-3 else vec.perpendicular(UP)
+        out.append(Clump(centre, size, rng.random(), outward, index))
+    return out
+
+
+def _t0(tree: Tree, index: int, deepest: int, leafy_from: float) -> float | None:
+    """Where foliage starts on a branch, or None if it carries none of its own."""
+    b = tree.branches[index]
+    if b.level == BOLE:
+        return None
+    if b.level == deepest:
+        return leafy_from if b.level >= 1 else max(0.4, tree.envelope.base / tree.height)
+    if b.level == deepest - 1 and b.level >= LEADER:
+        return 0.75
+    return None
+
+
 def _clumps(tree: Tree, form: Form, size: float, rng: random.Random) -> list[Clump]:
     alive = tree.alive()
     deepest = max(b.level for b in alive)
     leafy_from = float(form.get("foliage.leafy_from"))
     spacing = size * float(form.get("crown.clump_spacing"))
     env = tree.envelope
-    c_axis = (env.centre[0], (env.base + env.top) / 2, env.centre[1])
     out: list[Clump] = []
-    for b in alive:
-        if b.level == BOLE:
+    for i, b in enumerate(tree.branches):
+        if b.removed:
             continue
-        if b.level == deepest:
-            t0 = leafy_from if b.level >= 1 else max(0.4, env.base / tree.height)
-        elif b.level == deepest - 1 and b.level >= LEADER:
-            t0 = 0.75
-        else:
-            continue
-        length = b.length
-        if length <= 0:
-            continue
-        steps = max(2 if b.level <= LEADER else 1, int((1 - t0) * length / spacing))
-        for k in range(steps + 1):
-            t = t0 + (1 - t0) * (k / steps if steps else 1)
-            p, tangent, _ = b.point_at(t)
-            side = vec.rotate(vec.perpendicular(tangent), tangent, rng.uniform(0, 2 * math.pi))
-            centre = vec.add(p, vec.mul(side, size * rng.uniform(0.05, 0.4)))
-            if k == steps:
-                centre = vec.add(centre, vec.mul(tangent, size * 0.3))
-            out_dir = vec.horizontal(vec.sub(centre, c_axis))
-            outward = vec.norm(out_dir) if vec.length(out_dir) > 1e-3 else vec.perpendicular(UP)
-            out.append(Clump(centre, size, rng.random(), outward))
+        t0 = _t0(tree, i, deepest, leafy_from)
+        if t0 is not None:
+            out += _branch_clumps(tree, i, t0, spacing, size, rng)
     openness = form.ind("crown.openness")
     small = tree.height < 2.5  # seedlings and saplings keep every leaf they have
     cell = max(tree.height * 0.13, size * 2.5)
@@ -214,7 +233,8 @@ def _clumps(tree: Tree, form: Form, size: float, rng: random.Random) -> list[Clu
     for c in out:
         if c.centre[1] - size / 2 < 0.02:
             continue
-        if not small and not env.inside(c.centre, margin=size * 0.35):
+        free = tree.branches[c.branch].free
+        if not small and not free and not env.inside(c.centre, margin=size * 0.35):
             continue
         if not small and _value_noise(c.centre, cell, form.key + "/gaps") < openness * 0.55:
             continue
@@ -225,6 +245,80 @@ def _clumps(tree: Tree, form: Form, size: float, rng: random.Random) -> list[Clu
         thin = float(form.get("old.crown_thinning"))
         kept = [c for c in kept if rng.random() >= thin]
     return kept
+
+
+def _bare_ends(
+    tree: Tree, form: Form, clumps: list[Clump], size: float, rng: random.Random
+) -> list[Clump]:
+    """No limb is left bare: a branch with no foliage on it or beyond it gets leaves at its
+    end (a bare limb reads as a sick tree)."""
+    carrying: set[int] = set()
+    for c in clumps:
+        i: int | None = c.branch
+        while i is not None and i >= 0 and i not in carrying:
+            carrying.add(i)
+            i = tree.branches[i].parent
+    spacing = size * float(form.get("crown.clump_spacing"))
+    out: list[Clump] = []
+    for i, b in enumerate(tree.branches):
+        if b.removed or b.level < 1 or b.broken:
+            continue
+        # A limb that sagged to the ground carries leaves where it rises again.
+        resting = (
+            b.free and b.level == 1 and b.parent is not None and not tree.branches[b.parent].free
+        )
+        if not resting:
+            if i in carrying:
+                continue
+            if any(not tree.branches[c].removed for c in b.children):
+                continue  # its children get theirs
+        out += [
+            c
+            for c in _branch_clumps(tree, i, 0.3 if resting else 0.55, spacing, size, rng)
+            if c.centre[1] - size / 2 >= 0.02
+        ]
+    # A parent whose children all came out bare is covered by them now.
+    return out
+
+
+def _near_wood(tree: Tree, clumps: list[Clump], r_min: float) -> None:
+    """Every clump sits close to wood that is drawn: one whose twig was left out of the bark
+    (too thin for the triangle budget) moves towards the nearest drawn branch it grows from."""
+    if r_min <= 0:
+        return
+
+    def drawn(b: Branch) -> bool:
+        return b.level < 1 or b.radii[0] >= r_min
+
+    for c in clumps:
+        if c.branch < 0:
+            continue
+        i: int | None = c.branch
+        while i is not None and not drawn(tree.branches[i]):
+            i = tree.branches[i].parent
+        if i is None or i == c.branch:
+            continue
+        pts = tree.branches[i].points
+        near = min(pts, key=lambda p: vec.length(vec.sub(p, c.centre)))
+        d = vec.length(vec.sub(c.centre, near))
+        limit = c.size * 0.7
+        if d > limit:
+            c.centre = vec.add(near, vec.mul(vec.sub(c.centre, near), limit / d))
+
+
+def crown_clumps(tree: Tree, form: Form, size: float, rng: random.Random) -> list[Clump]:
+    """All the foliage of a living tree: on its twigs, over the whole top of the crown, and
+    at the end of every limb."""
+    clumps = _clumps(tree, form, size, rng)
+    filled = fill_crown(tree, form, [c.centre for c in clumps], size, rng)
+    spacing = size * float(form.get("crown.clump_spacing"))
+    deepest = max(b.level for b in tree.alive())
+    leafy_from = float(form.get("foliage.leafy_from"))
+    for i in filled:
+        t0 = _t0(tree, i, deepest, leafy_from)
+        if t0 is not None:
+            clumps += _branch_clumps(tree, i, t0, spacing, size, rng)
+    return clumps + _bare_ends(tree, form, clumps, size, rng)
 
 
 def _fit(clumps: list[Clump], cap: int) -> tuple[list[Clump], float]:
@@ -412,7 +506,7 @@ def _flowers_and_fruit(
                 start = vec.add(
                     anchor, vec.mul(vec.from_spherical(az, math.pi / 2), rng.uniform(0, 0.06))
                 )
-                o = min(0.999, order + rng.uniform(-0.05, 0.05))
+                o = min(0.999, max(0.0, order + rng.uniform(-0.05, 0.05)))
                 if r_form.startswith("pod") or r_form == "samara":
                     bend = {
                         "pod_straight": 0.15,
@@ -499,12 +593,26 @@ def build(
         lo, hi = form.range("crown.clump_size_m")
         size = (lo + hi) / 2 * min(1.0, (height / adult_height) ** 0.6)
         size = max(size, 0.06)
-        clumps = _clumps(tree, form, size, rng)
+        clumps = crown_clumps(tree, form, size, rng)
 
     mesh_rng = random.Random(seed(form.key, stage, lod))
+    cards = int(form.get("foliage.cards_per_clump"))
+    if coarse:
+        cards = max(1, min(2, cards))
     thorn_cap = 0 if coarse else int(budget * 0.04)
     flower_cap, fruit_cap = int(budget * (0.05 if coarse else 0.1)), int(budget * 0.14)
-    bark_cap = int(budget * (0.4 if not leafless else 0.95) - thorn_cap)
+    if leafless:
+        bark_cap = int(budget * 0.95)
+    else:
+        # The bark gets what the foliage does not need, so sparse crowns keep their wood.
+        shown = clumps if not coarse else _cluster(clumps, max(1, len(clumps) // 6), size)
+        # A dry run with the same seed: how much the flowers and fruit will really take.
+        fl, fr = _flowers_and_fruit(
+            shown, form, random.Random(seed(form.key, stage, lod)), coarse, (flower_cap, fruit_cap)
+        )
+        need = min(len(shown) * cards * 2, int(budget * 0.5))
+        need += fl.triangle_count + fr.triangle_count
+        bark_cap = max(int(budget * 0.4), budget - thorn_cap - need)
     bark, r_min = _bark(tree, form, coarse, bark_cap, form.unit("bark_seed") * 10)
     if r_min > 0:
         notes.append(
@@ -513,9 +621,7 @@ def build(
         )
     parts: dict[str, Part] = {"bark": bark}
     if not leafless:
-        cards = int(form.get("foliage.cards_per_clump"))
-        if coarse:
-            cards = max(1, min(2, cards))
+        _near_wood(tree, clumps, r_min)
         flowers, fruit = _flowers_and_fruit(
             clumps if not coarse else _cluster(clumps, max(1, len(clumps) // 6), size),
             form,

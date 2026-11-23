@@ -66,7 +66,7 @@ def _noise(*parts: float) -> float:
 def sides_for(radius: float, coarse: bool) -> int:
     if coarse:
         return max(3, min(6, round(3 + radius * 25)))
-    return max(3, min(12, round(3.5 + radius * 45)))
+    return max(3, min(10, round(3 + radius * 32)))
 
 
 def tube(
@@ -155,6 +155,7 @@ class Clump:
     size: float
     order: float
     outward: Vec
+    branch: int = -1  # the branch it grows on
 
 
 def ellipsoid_normal(p: Vec, centre: Vec, radii: Vec) -> Vec:

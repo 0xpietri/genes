@@ -139,6 +139,7 @@ Read the photos in this order, biggest shapes first:
 | Flat top, or rounded | `crown.flat_top` |
 | Sky through the foliage (airy, not holed) | `foliage.density` (0 = a few sprays, 1 = a solid mass), `foliage.twigs` (dark twigs inside each clump), `foliage.cards_per_clump`, fewer `branching[2].count` |
 | Big gaps in the crown | `crown.openness` (holes between groups of clumps) |
+| Leaves on top of the crown (every tree has them) | `crown.fill_top` (keep it 0.9–1: thin crooked branches rise to fill the top) |
 | One main stem or a fork | `trunk.count` (leaders above the fork), `trunk.split_height` |
 | Leaders spread or rise | `trunk.fork_angle_deg`, `trunk.leader_curve` (negative arches out) |
 | Crooked trunk | `trunk.tortuosity` (0 straight … 1 contorted), `trunk.bends` (how many bends), `trunk.bend_style` (`smooth` S-curves or `elbows`) |

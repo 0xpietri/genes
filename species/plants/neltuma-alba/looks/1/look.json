@@ -75,8 +75,8 @@
           50
         ],
         "count": [
-          2,
-          4
+          3,
+          5
         ],
         "curve": 0,
         "droop": [
@@ -96,7 +96,12 @@
           0.3,
           1.0
         ],
-        "wander": 0.25
+        "wander": 0.25,
+        "tortuosity": [
+          0.3,
+          0.5
+        ],
+        "bend_style": "elbows"
       }
     ],
     "crown": {
@@ -116,14 +121,15 @@
       ],
       "irregular": 0.3,
       "openness": [
-        0.35,
-        0.5
+        0.2,
+        0.35
       ],
       "widest": 0.6,
       "width_to_height": [
         1.3,
         1.6
-      ]
+      ],
+      "fill_top": 1.0
     },
     "dead": {
       "broken_top": [
@@ -148,7 +154,7 @@
     },
     "foliage": {
       "cards_per_clump": 2,
-      "density": 0.18,
+      "density": 0.2,
       "leaf_size_cm": [
         6,
         14
@@ -180,7 +186,7 @@
         0,
         1
       ],
-      "crown_thinning": 0.15,
+      "crown_thinning": 0,
       "extra_lean_deg": [
         0,
         8
@@ -198,8 +204,8 @@
               70
             ],
             "count": [
-              4,
-              7
+              3,
+              5
             ],
             "curve": [
               0.1,
@@ -235,8 +241,8 @@
             ],
             "bend_style": "elbows",
             "count": [
-              4,
-              7
+              3,
+              5
             ],
             "curve": 0,
             "droop": [
@@ -269,8 +275,8 @@
             ],
             "bend_style": "elbows",
             "count": [
-              2,
-              4
+              3,
+              5
             ],
             "curve": 0,
             "droop": [
@@ -340,8 +346,8 @@
               70
             ],
             "count": [
-              4,
-              7
+              3,
+              5
             ],
             "curve": [
               0.1,
@@ -377,8 +383,8 @@
             ],
             "bend_style": "elbows",
             "count": [
-              4,
-              7
+              3,
+              5
             ],
             "curve": 0,
             "droop": [
@@ -411,8 +417,8 @@
             ],
             "bend_style": "elbows",
             "count": [
-              2,
-              4
+              3,
+              5
             ],
             "curve": 0,
             "droop": [
@@ -446,7 +452,7 @@
           ]
         },
         "foliage": {
-          "density": 0.12,
+          "density": 0.2,
           "twigs": 0.85
         },
         "trunk": {
@@ -543,8 +549,8 @@
         0.25
       ],
       "fork_angle_deg": [
-        50,
-        70
+        45,
+        60
       ],
       "gnarl": [
         0.5,
@@ -560,7 +566,7 @@
       ],
       "lean_deg": [
         4,
-        14
+        10
       ],
       "radius_per_height": [
         0.04,

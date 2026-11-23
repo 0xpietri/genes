@@ -164,3 +164,30 @@ He sent two photos of an old algarrobo. Changes:
   old: 10 m tall, trunk split 0.8, limb sag 1, elbowed branches; dead standing 8.5 m.
 - **Scores** fell to a mean of 0.48: the see-through crown lets sky through the model's
   silhouette as well. The recipe now says the number matters less for airy crowns.
+
+## Review round 2 (marcos, 2026-11-23 morning)
+
+What he saw: variants with an empty top (two leaders splayed in a V, leaves only at the
+sides), limbs with no twigs or leaves at all ("looks like a sick tree"), and on the old
+tree leaves floating in the air with no branch near them and too little foliage. Every
+tree, young, adult or old, needs leaves on top, held by many thin crooked twigs.
+Changes:
+
+- **Every living tree has leaves on top** (`crown.fill_top`, new, default 0.9): where no
+  foliage reaches the crown's upper surface, a thin crooked branch rises from the nearest
+  limb below with a few twigs fanning out under the surface, each with leaves.
+- **No bare limb**: a limb with no foliage on it or beyond it gets leaves at its end; a limb
+  that sagged to the ground carries leaves where it rises again; foliage on those is never
+  trimmed to the crown's shape.
+- **No floating leaves**: a clump whose twig was too thin to draw within the triangle budget
+  moves to sit by the nearest drawn branch it grows from.
+- **More wood within the budget**: the bark now gets every triangle the foliage, flowers and
+  fruit do not use (it had a fixed 40 %), and thin branches use fewer sides. The old tree
+  draws branches down to about 2 to 6 cm (they were cut below 11 to 18 cm, which is why its
+  leaves floated).
+- A fruit vertex could get an order below 0; fixed.
+- **Algarrobo look**: density 0.2 (old 0.2, was 0.12), openness 0.2–0.35, no crown thinning
+  on the old tree, fill_top 1, more and crooked twigs (level 3 count 3–5, tortuosity
+  0.3–0.5, elbows); the old tree has fewer, bigger limbs (levels 1 and 2 count 3–5).
+  Variants now differ less in shape (fork 45–60°, lean 4–10°) and mostly in crookedness.
+- Scores: mean 0.54 (0.47, 0.53, 0.56, 0.56, 0.56). Look 5.77 MB of 6 MB.
