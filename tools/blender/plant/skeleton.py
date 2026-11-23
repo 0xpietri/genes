@@ -19,6 +19,7 @@ from plant.vec import UP, Vec
 BOLE = -1
 LEADER = 0
 OLD_STAGES = ("old", "dead_standing", "fallen")
+SECTORS = 8
 
 
 @dataclass
@@ -95,6 +96,9 @@ class Tree:
     branches: list[Branch]
     twig_radius: float
     adult_height: float = 0.0
+    # How much limb has gone each way so far (8 compass sectors), to keep the crown even.
+    sectors: list[float] = field(default_factory=lambda: [0.0] * SECTORS)
+    rest_sectors: list[float] = field(default_factory=lambda: [0.0] * SECTORS)
 
     def alive(self) -> list[Branch]:
         return [b for b in self.branches if not b.removed]
@@ -237,6 +241,47 @@ def grow(
     return pts, radii
 
 
+def _sector(tree: Tree, p: Vec) -> int:
+    env = tree.envelope
+    az = math.atan2(p[2] - env.centre[1], p[0] - env.centre[0]) % (2 * math.pi)
+    return int(az / (2 * math.pi / SECTORS)) % SECTORS
+
+
+def _balanced(
+    tree: Tree,
+    start: Vec,
+    d: Vec,
+    length: float,
+    rest: bool,
+    balance: float,
+    rng: random.Random,
+) -> Vec:
+    """Turn a main limb so that it ends on the side of the crown that has the least so far:
+    the tree spreads the same on every side, its sagging limbs reach the ground all round.
+    A limb never turns back across its own stem (at most about 110 degrees from outwards)."""
+    sectors = tree.rest_sectors if rest else tree.sectors
+    env = tree.envelope
+    flat = math.hypot(d[0], d[2])
+    width = 2 * math.pi / SECTORS
+    if flat > 1e-3 and rng.random() < balance:
+        off = (start[0] - env.centre[0], start[2] - env.centre[1])
+        spread = math.hypot(*off)
+        out = math.atan2(off[1], off[0])
+        order = sorted(range(SECTORS), key=lambda k: (sectors[k], rng.random()))
+        for k in order:
+            az = (k + rng.uniform(0.2, 0.8)) * width
+            reach = max(env.radius * 0.75, spread + flat * length * 0.5)
+            target = (env.centre[0] + reach * math.cos(az), env.centre[1] + reach * math.sin(az))
+            heading = math.atan2(target[1] - start[2], target[0] - start[0])
+            turn = abs((heading - out + math.pi) % (2 * math.pi) - math.pi)
+            if spread < env.radius * 0.15 or turn < math.radians(110):
+                d = (flat * math.cos(heading), d[1], flat * math.sin(heading))
+                break
+    tip = vec.add(start, vec.mul(d, length))
+    sectors[_sector(tree, tip)] += length * max(flat, 0.2)
+    return d
+
+
 def _bend_style(form: Form) -> tuple[tuple[float, float], bool]:
     return form.range("trunk.bends"), form.get("trunk.bend_style") == "elbows"
 
@@ -374,6 +419,9 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
             branches[bole].children.append(len(branches) - 1)
 
     tree = Tree(height, env, branches, twig_r, adult_height)
+    for b in branches:
+        if b.level == LEADER and len(b.points) > 1:
+            tree.sectors[_sector(tree, b.points[-1])] += b.length * 0.5
     parents = [i for i, b in enumerate(branches) if b.level == LEADER]
     for lv in form.levels:
         parents = _grow_level(tree, parents, lv, form, rng)
@@ -397,6 +445,7 @@ def _grow_level(
     aged = form.stage in ("old", "dead_standing")
     sag = float(form.get("old.limb_sag")) if aged else 0.0
     sagging = float(form.get("old.sagging_limbs")) if aged and sag > 0 else 0.0
+    balance = float(form.get("crown.balance"))
     for pi in parents:
         parent = tree.branches[pi]
         plen = parent.length
@@ -429,6 +478,8 @@ def _grow_level(
             length = draw(rng, lv["length"]) * plen * (1 - 0.5 * near_tip)
             if rest:
                 length = max(length, plen * rng.uniform(0.9, 1.25))
+            if level == 1:
+                d = _balanced(tree, p, d, length, rest, balance, rng)
             length = max(length, tree.height * 0.03)
             r0 = min(pr * draw(rng, lv["radius_ratio"]), pr * 0.9)
             r0 = max(r0, tree.twig_radius)
@@ -551,7 +602,7 @@ def fill_crown(
                 d = vec.length(vec.sub(tgt, p))
                 if best is None or d < best[0]:
                     best = (d, i, k)
-        if best is None or best[0] > tree.height * 0.3:
+        if best is None or best[0] > tree.height * 0.5:
             continue
         dist, pi, k = best
         parent = tree.branches[pi]

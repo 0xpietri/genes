@@ -191,3 +191,28 @@ Changes:
   0.3–0.5, elbows); the old tree has fewer, bigger limbs (levels 1 and 2 count 3–5).
   Variants now differ less in shape (fork 45–60°, lean 4–10°) and mostly in crookedness.
 - Scores: mean 0.54 (0.47, 0.53, 0.56, 0.56, 0.56). Look 5.77 MB of 6 MB.
+
+## Review round 3 (marcos, 2026-11-23, late morning)
+
+What he saw: lopsided trees (more limbs on one side, sagging limbs on one side only), an
+uneven top with holes, too few small branches up top, a crown too small and compact to
+give shade, and the trunk too short below it. Changes:
+
+- **Even crowns** (`crown.balance`, new, default 0.5): each main limb turns so it ends on
+  the side of the crown that has the least so far (8 compass sectors, the stems count
+  too), never more than about 110° back across its own stem; sagging limbs are balanced
+  among themselves, so they reach the ground all round. An old tree's broken limb is now a
+  main limb, never a whole stem.
+- When clumps are over the triangle budget, the low hidden ones go first and the top, which
+  gives the shade, stays full.
+- Seedlings and saplings use the half-size foliage atlas (they are small), which brings the
+  look back under its byte budget.
+- **Algarrobo look**: balance 1; 3–4 stems, lean 2–6°; crown base 0.4–0.48 and fork at
+  0.28–0.36 (a longer trunk below the crown); crown 1.5–1.75 times as wide as tall (old
+  1.6–1.9); flatter, even top (flat_top 0.7–0.9, irregular 0.15); more and bigger clumps
+  (spacing 1.3, size 0.9–1.2 m, old 1.1–1.5 m) at density 0.22; more curved twigs (level 3
+  count 4–6, curve 0.1–0.3); old main limbs count 4–6; a fallen tree keeps 2 stems.
+- Scores: mean 0.52 (0.47, 0.50, 0.57, 0.56, 0.51). Look 5.50 MB of 6 MB.
+- Limit: an old tree 15–18 m wide within 12,000 triangles still draws only branches
+  thicker than 6 to 21 cm; the twigs are painted inside the foliage. A fuller old tree
+  would need a bigger budget for `old` (budgets.json, marcos's call).

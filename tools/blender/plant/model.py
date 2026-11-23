@@ -93,12 +93,8 @@ def _stage_height(look: dict[str, Any], stage: str) -> tuple[float, float]:
 def _old_and_dead(tree: Tree, form: Form, rng: random.Random) -> None:
     stage = form.stage
     if stage == "old":
-        leaders = [i for i, b in enumerate(tree.branches) if b.level == LEADER]
-        pool = (
-            leaders
-            if len(leaders) >= 3
-            else [i for i, b in enumerate(tree.branches) if b.level == 1]
-        )
+        # A broken main limb, never a whole stem: the crown keeps its round outline.
+        pool = [i for i, b in enumerate(tree.branches) if b.level == 1 and not b.free]
         pool = sorted(pool, key=lambda i: -tree.branches[i].radii[0])[:6]
         for i in rng.sample(pool, min(len(pool), draw_int(rng, form.get("old.broken_limbs")))):
             tree.cut(i, rng.uniform(0.3, 0.6))
@@ -322,18 +318,21 @@ def crown_clumps(tree: Tree, form: Form, size: float, rng: random.Random) -> lis
 
 
 def _fit(clumps: list[Clump], cap: int) -> tuple[list[Clump], float]:
-    """At most `cap` clumps: keep a random share, grown so the crown stays as full."""
+    """At most `cap` clumps, grown so the crown stays as full: a random share, low ones
+    first."""
     if cap <= 0:
         return [], 1.0
     if len(clumps) <= cap:
         return clumps, 1.0
     grow = math.sqrt(len(clumps) / cap) ** 0.85
-    kept = sorted(clumps, key=lambda c: c.order)[:cap]
+    # The clumps hidden low inside the crown go first; the top, which shades, stays full.
+    top = max(c.centre[1] for c in clumps) or 1.0
+    kept = sorted(clumps, key=lambda c: c.order - 0.6 * c.centre[1] / top)[:cap]
     # The kept clumps had the lowest orders: spread them over 0–1 again, keeping their
     # ranking, so a season's amount still shows that share of the crown (spec §6.3).
     ranked = {id(c): (i + 0.5) / len(kept) for i, c in enumerate(kept)}
     kept = sorted(kept, key=lambda c: (c.centre[1], c.centre[0], c.centre[2]))
-    return [Clump(c.centre, c.size * grow, ranked[id(c)], c.outward) for c in kept], grow
+    return [Clump(c.centre, c.size * grow, ranked[id(c)], c.outward, c.branch) for c in kept], grow
 
 
 def _cluster(clumps: list[Clump], cap: int, base_size: float) -> list[Clump]:

@@ -75,10 +75,13 @@
           50
         ],
         "count": [
-          3,
-          5
+          4,
+          6
         ],
-        "curve": 0,
+        "curve": [
+          0.1,
+          0.3
+        ],
         "droop": [
           0.3,
           0.55
@@ -106,30 +109,31 @@
     ],
     "crown": {
       "base": [
-        0.3,
-        0.4
+        0.4,
+        0.48
       ],
       "clump_size_m": [
-        0.7,
-        1.0
+        0.9,
+        1.2
       ],
-      "clump_spacing": 1.8,
+      "clump_spacing": 1.3,
       "envelope": "umbrella",
       "flat_top": [
-        0.5,
-        0.8
+        0.7,
+        0.9
       ],
-      "irregular": 0.3,
+      "irregular": 0.15,
       "openness": [
         0.2,
         0.35
       ],
       "widest": 0.6,
       "width_to_height": [
-        1.3,
-        1.6
+        1.5,
+        1.75
       ],
-      "fill_top": 1.0
+      "fill_top": 1.0,
+      "balance": 1.0
     },
     "dead": {
       "broken_top": [
@@ -154,7 +158,7 @@
     },
     "foliage": {
       "cards_per_clump": 2,
-      "density": 0.2,
+      "density": 0.22,
       "leaf_size_cm": [
         6,
         14
@@ -204,8 +208,8 @@
               70
             ],
             "count": [
-              3,
-              5
+              4,
+              6
             ],
             "curve": [
               0.1,
@@ -275,10 +279,13 @@
             ],
             "bend_style": "elbows",
             "count": [
-              3,
-              5
+              4,
+              6
             ],
-            "curve": 0,
+            "curve": [
+              0.1,
+              0.3
+            ],
             "droop": [
               0.3,
               0.55
@@ -335,7 +342,8 @@
           "tortuosity": [
             0.7,
             0.9
-          ]
+          ],
+          "count": 2
         }
       },
       "old": {
@@ -346,8 +354,8 @@
               70
             ],
             "count": [
-              3,
-              5
+              4,
+              6
             ],
             "curve": [
               0.1,
@@ -417,10 +425,13 @@
             ],
             "bend_style": "elbows",
             "count": [
-              3,
-              5
+              4,
+              6
             ],
-            "curve": 0,
+            "curve": [
+              0.1,
+              0.3
+            ],
             "droop": [
               0.3,
               0.55
@@ -447,12 +458,16 @@
         ],
         "crown": {
           "width_to_height": [
-            1.4,
-            1.8
+            1.6,
+            1.9
+          ],
+          "clump_size_m": [
+            1.1,
+            1.5
           ]
         },
         "foliage": {
-          "density": 0.2,
+          "density": 0.22,
           "twigs": 0.85
         },
         "trunk": {
@@ -508,7 +523,8 @@
           "width_to_height": [
             0.75,
             1.05
-          ]
+          ],
+          "clump_spacing": 1.8
         },
         "flowers": {
           "cover": 0.2
@@ -540,8 +556,8 @@
         "tile_m": 0.5
       },
       "count": [
-        2,
-        3
+        3,
+        4
       ],
       "flare": 0.3,
       "fluting": [
@@ -565,16 +581,16 @@
         1.0
       ],
       "lean_deg": [
-        4,
-        10
+        2,
+        6
       ],
       "radius_per_height": [
         0.04,
         0.05
       ],
       "split_height": [
-        0.18,
-        0.32
+        0.28,
+        0.36
       ],
       "taper": 0.5,
       "tortuosity": [

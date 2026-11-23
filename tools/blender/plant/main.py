@@ -52,7 +52,8 @@ def main(argv: list[str] | None = None) -> int:
 
     def textures_for(stage: str, lod: str) -> dict[str, Any]:
         """A stage with its own foliage (an old tree's sparser leaves) gets its own atlas;
-        lod1 is seen from further away, so its textures are half size."""
+        lod1 is seen from further away, and seedlings and saplings are small, so their
+        textures are half size."""
         foliage = resolve(look, stage, "a").data["foliage"]
         key = json.dumps(foliage, sort_keys=True)
         if key not in atlases:
@@ -60,7 +61,8 @@ def main(argv: list[str] | None = None) -> int:
                 {"foliage": foliage}, (lo + hi) / 2, seed(look["id"], "foliage")
             )
         atlas = atlases[key]
-        if lod == "lod0":
+        small = float(look["stages"][stage]["ref_height_m"]) < 2.5
+        if lod == "lod0" and not small:
             return {"foliage": atlas, "bark": bark}
         return {"foliage": textures.half(atlas), "bark": textures.half_bark(bark)}
 
