@@ -28,6 +28,16 @@
           },
           "angle": { "enum": ["side", "below", "above", "detail"] },
           "used_for": { "type": "array", "items": { "type": "string" } },
+          "tree_box": {
+            "description": "Where the whole tree is in the photo, as fractions of its width and height: [left, top, right, bottom], bottom at the foot of the trunk. The contact sheet lays the model's silhouette over it (spec §7.1).",
+            "type": "array",
+            "prefixItems": [
+              { "type": "number", "minimum": 0, "maximum": 1 }, { "type": "number", "minimum": 0, "maximum": 1 },
+              { "type": "number", "minimum": 0, "maximum": 1 }, { "type": "number", "minimum": 0, "maximum": 1 }
+            ],
+            "minItems": 4,
+            "maxItems": 4
+          },
           "file": { "type": "string", "pattern": "^[a-z0-9_-]+\\.(jpg|webp)$", "description": "Stored copy next to refs.json, at most 1280 px." }
         },
         "required": ["id", "url", "author", "licence", "source", "shows", "angle"],

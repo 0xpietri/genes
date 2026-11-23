@@ -182,7 +182,11 @@ must cover every fact today's `plant.schema.json` takes as a fact, section
 - **Life**: age of first flowering, typical and maximum lifespan.
 - **Leaves and phenology**: `leaf_habit` (`evergreen` | `semi_deciduous` |
   `deciduous`), months and triggers of leaf-out, flowering, fruiting, leaf
-  fall; leaf type (simple, compound, bipinnate, needle, scale).
+  fall; leaf type (simple, compound, bipinnate, needle, scale). Also, when
+  sources give them: `leaf_tones` (which leaf colour shows in which months,
+  section 6.4), `winter_leaf_share` (share of the leaves still on at the
+  barest moment of the year) and `spread_days` (how many days one tree runs
+  ahead of or behind another in the same place).
 - **Water**: rainfall range it lives in (mm a year), drought tolerance
   (`low` | `medium` | `high` with sources), root depth, waterlogging
   tolerance.
@@ -297,6 +301,44 @@ darkness). Phases for foliage: `new`, `mature`, `dry` (stress), `autumn` if
 it colours. Starting colours are picked by the agent from the reference
 photos (the median lit and shaded tone of the part), then tuned with marcos
 on renders.
+
+**Leaf colour through the year (amended in phase 2, asked by marcos).** The
+look holds the colours; the sheet holds *when* each shows, as sourced facts,
+so any agent or simulator reads the same calendar:
+
+- `plant.phenology.leaf_tones` is a list of `{ tone, months, trigger?,
+  weeks_per_leaf?, source, note? }`. `tone` names a foliage tone of the
+  palette (`new`, `mature`, `autumn`, `dry`); `months` are the months it
+  shows in a usual year at the species' place in the Sierras Chicas, listed
+  in the order they come; `trigger` is what starts it when the weather
+  decides (same values as the other phases); `weeks_per_leaf` is how long
+  one leaf keeps that tone, only when a source says so. The tones together
+  cover every month a leaf is on the tree; at most two tones share a month.
+- `dry` as a tone in the calendar means leaves killed by frost or the
+  winter drought before they drop. Drought stress in summer is not in the
+  calendar: pietri.dev shows `dry` from its own water state.
+- `leaf_fall.months` is the approximate date of leaf fall; its `trigger` says
+  what brings it forward or holds it back (for example `first_frost`).
+  `winter_leaf_share` (a 0–1 range) is how much of the crown stays on at the
+  barest point; without a source, the habit's default applies: evergreen 1,
+  semi-deciduous 0.35, deciduous 0.
+- `spread_days` (a range) is the natural spread between trees: pietri.dev
+  gives each individual a fixed offset within it, so a stand does not change
+  colour on the same day.
+
+**How a month is painted (the gradient).** In a month with one tone, every
+shown clump has it. In a month two tones share, the tone that arrives takes
+a share of the shown clumps that grows through the overlap: in the i-th of
+k shared months it is i / (k + 1). It takes the clumps with the highest
+`_ORDER` first (those are the first to fall and the last to come out), except
+when new leaves age to `mature`: then the lowest go first (the first leaves
+out are the first to age). The edge between the two tones is soft, about a
+tenth of the order range wide, so the change runs across
+the crown as a gradient instead of a switch. The viewer previews exactly this
+from the sheet's months; in the world pietri.dev moves the same calendar with
+the weather (trigger, `spread_days`) and the leaf amount of section 6.3.
+A species without `leaf_tones` shows `mature` all year (and `autumn` while
+its leaves fall, if the palette has it).
 
 ### 6.5 Animal looks (later)
 
@@ -687,7 +729,13 @@ against sources; phase 2 replaces them with sourced ones.
       "leaf_out":  { "months": [9, 10], "trigger": "first_spring_rains", "source": ["s1"] },
       "flowering": { "months": [9, 10, 11], "source": ["s1"] },
       "fruiting":  { "months": [12, 1, 2], "source": ["s1"] },
-      "leaf_fall": { "months": [7, 8], "trigger": "first_frost", "source": ["s1"] }
+      "leaf_fall": { "months": [7, 8], "trigger": "first_frost", "source": ["s1"] },
+      "leaf_tones": [
+        { "tone": "new",    "months": [9, 10], "source": ["s1"] },
+        { "tone": "mature", "months": [10, 11, 12, 1, 2, 3, 4, 5, 6, 7], "source": ["s1"] },
+        { "tone": "dry",    "months": [7, 8], "trigger": "first_frost", "source": ["s1"] }
+      ],
+      "spread_days": { "min": 10, "max": 15, "source": ["s1"] }
     },
     "water": {
       "rainfall_mm_year": { "min": 350, "typical": 700, "max": 1200, "source": ["s1"] },

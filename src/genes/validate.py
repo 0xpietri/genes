@@ -61,10 +61,12 @@ def schema_validator(name: str) -> Draft202012Validator:
     return _VALIDATORS[name]
 
 
-def _schema_problems(name: str, data: Any, path: Path) -> list[Problem]:
+def _schema_problems(name: str, data: Any, path: Path, prefix: str = "") -> list[Problem]:
     out = []
     for err in sorted(schema_validator(name).iter_errors(data), key=lambda e: list(e.path)):
-        where = "/".join(str(p) for p in err.path) or "(root)"
+        where = (
+            "/".join([prefix, *map(str, err.path)] if prefix else map(str, err.path)) or "(root)"
+        )
         out.append(Problem(_rel(path), f"{where}: {err.message}"))
     return out
 
@@ -122,6 +124,8 @@ def _sheet_problems(
             if len(numbers) == 3 and not numbers[0] <= numbers[2] <= numbers[1]:
                 out.append(Problem(path, f"{where}: needs min ≤ typical ≤ max"))
 
+    out += _tone_problems(sheet, path)
+
     for i, rel in enumerate(sheet.get("relations", [])):
         if not isinstance(rel, dict):
             continue
@@ -132,6 +136,29 @@ def _sheet_problems(
             out.append(
                 Problem(path, f"relations/{i}: species {other!r} is not in genes (mark it planned)")
             )
+    return out
+
+
+def _tone_problems(sheet: dict[str, Any], path: str) -> list[Problem]:
+    """Leaf tones (spec §6.4): at most two share a month, and together they cover every
+    month a leaf is on: all year unless the tree is deciduous."""
+    ph = (sheet.get("plant") or {}).get("phenology") or {}
+    tones = ph.get("leaf_tones")
+    if not isinstance(tones, list):
+        return []
+    out: list[Problem] = []
+    count = dict.fromkeys(range(1, 13), 0)
+    for t in tones:
+        for m in t.get("months", []) if isinstance(t, dict) else []:
+            if m in count:
+                count[m] += 1
+    crowded = [m for m, n in count.items() if n > 2]
+    if crowded:
+        out.append(Problem(path, f"leaf_tones: more than two tones in months {crowded}"))
+    if ph.get("leaf_habit") != "deciduous":
+        empty = [m for m, n in count.items() if n == 0]
+        if empty:
+            out.append(Problem(path, f"leaf_tones: no tone in months {empty}"))
     return out
 
 
@@ -208,12 +235,19 @@ def _model_problems(
     return out
 
 
+# Generators whose `form` has its own schema (the others are free-form).
+FORM_SCHEMAS = {"plant@1": "plant-form.v1"}
+
+
 def _look_problems(sp: Species, v: Version, budgets: dict[str, Any]) -> list[Problem]:
     look = v.data
     path = _rel(v.path)
     out = _schema_problems("look.v1", look, v.path)
     if not isinstance(look, dict):
         return out
+    form_schema = FORM_SCHEMAS.get(str(look.get("generator")))
+    if form_schema and "form" in look:
+        out.extend(_schema_problems(form_schema, look["form"], v.path, "form"))
     if look.get("id") != sp.id:
         out.append(Problem(path, f"id {look.get('id')!r} differs from its folder {sp.id!r}"))
     if look.get("look") != v.number:
@@ -237,6 +271,15 @@ def _look_problems(sp: Species, v: Version, budgets: dict[str, Any]) -> list[Pro
                     f"adult ref_height_m {adult['ref_height_m']} is outside "
                     f"the sheet's {lo}–{hi} m",
                 )
+            )
+
+    foliage = (look.get("palette") or {}).get("foliage") or {}
+    ph = (sheet.get("plant") or {}).get("phenology") or {}
+    for t in ph.get("leaf_tones") or []:
+        tone = t.get("tone") if isinstance(t, dict) else None
+        if tone and "lit" not in foliage and tone not in foliage:
+            out.append(
+                Problem(path, f"palette.foliage has no {tone!r} tone the sheet's leaf_tones use")
             )
 
     if sp.refs is not None and isinstance(sp.refs.data, dict):
@@ -293,6 +336,13 @@ def _refs_problems(sp: Species) -> list[Problem]:
                 )
             if not (v.path.parent / photo["file"]).exists():
                 out.append(Problem(path, f"photo {pid!r}: file {photo['file']} is missing"))
+        box = photo.get("tree_box")
+        if isinstance(box, list) and len(box) == 4 and not (box[0] < box[2] and box[1] < box[3]):
+            out.append(
+                Problem(path, f"photo {pid!r}: tree_box needs left < right and top < bottom")
+            )
+        if box and "file" not in photo:
+            out.append(Problem(path, f"photo {pid!r}: a tree_box needs a stored file"))
     return out
 
 

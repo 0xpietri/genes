@@ -120,3 +120,13 @@ def test_not_a_glb(tmp_path: Path) -> None:
     path.write_bytes(b"hello world, this is not a model at all")
     with pytest.raises(glb.GlbError):
         glb.inspect(path)
+
+
+def test_quantized_bounds_are_read_back() -> None:
+    """meshopt stores positions as normalized integers; their min/max are integers too."""
+    assert glb._dequantize({"normalized": True, "componentType": 5122}, [-32767, 16384]) == [
+        -1.0,
+        16384 / 32767,
+    ]
+    assert glb._dequantize({"normalized": True, "componentType": 5121}, [255]) == [1.0]
+    assert glb._dequantize({"componentType": 5126}, [2.5]) == [2.5]

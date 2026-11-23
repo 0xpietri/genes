@@ -1,0 +1,95 @@
+{
+  "$schema": "../../../../schemas/sheet.v1.json",
+  "format": "genes.sheet.v1",
+  "id": "neltuma-alba",
+  "version": 1,
+  "kind": "plant",
+  "scientific_name": "Neltuma alba",
+  "synonyms": ["Prosopis alba"],
+  "family": "Fabaceae",
+  "external": { "gbif": 5358528, "inaturalist": 1493104 },
+  "names": {
+    "es": ["algarrobo blanco", "árbol blanco", "ibopé", "igopé"],
+    "en": ["white algarrobo", "Argentine mesquite"],
+    "note": "In the Chaco it is simply \"el árbol\". Often confused with the algarrobo negro (Neltuma nigra), with which it hybridises."
+  },
+  "status_in_sierras_chicas": "native",
+  "conservation": "Near threatened (IUCN 1998, criteria version 2.3).",
+  "range_note": "Gran Chaco and central Argentina (Córdoba among the provinces), Bolivia, Paraguay, Peru, Chile and Uruguay; in low, salty sites and where groundwater is near.",
+  "summary": {
+    "es": "Árbol del Chaco de tronco corto y copa ancha, redonda y liviana, de hojas bipinnadas finas. En primavera se llena de espigas amarillentas y en verano cuelgan sus vainas amarillas, dulces, que comen la gente y el ganado. Aguanta sequía y sal; necesita sol pleno.",
+    "en": "A Chaco tree with a short trunk and a wide, round, airy crown of fine bipinnate leaves. In spring it fills with yellowish flower spikes and in summer its sweet straw-yellow pods hang down, eaten by people and livestock. It stands drought and salt and needs full sun."
+  },
+  "sources": [
+    { "id": "icraf", "kind": "database", "title": "Orwa C. et al. 2009. Agroforestree Database 4.0: Prosopis alba. World Agroforestry Centre", "url": "https://apps.worldagroforestry.org/treedb/AFTPDFS/Prosopis_alba.PDF", "accessed": "2026-11-23" },
+    { "id": "inta2020", "kind": "paper", "title": "Gómez A., Salim N., Gómez C. 2020. Algarrobo blanco, \"el árbol\" y los servicios ecosistémicos. INTA EEA Santiago del Estero, Hoja Informativa 20", "url": "https://repositorio.inta.gob.ar/xmlui/bitstream/handle/20.500.12123/7591/INTA_CRTucuman-Santiago_EEASantiagodelEstero_Gomez_A_Algarrobo_blanco_el_%C3%A1rbol.pdf?sequence=1&isAllowed=y", "accessed": "2026-11-23" },
+    { "id": "wikipedia", "kind": "encyclopedia", "title": "Neltuma alba. Wikipedia (English), revision 1349874965 of 2026-04-19", "url": "https://en.wikipedia.org/wiki/Neltuma_alba", "accessed": "2026-11-23" },
+    { "id": "cba", "kind": "encyclopedia", "title": "Algarrobos (Prosopis sp): algarrobos blancos y negro de Córdoba. Gobierno de Córdoba, SIPEC (compiled from Wikipedia in Spanish, 2011)", "url": "http://www.igualdadycalidadcba.gov.ar/SIPEC-CBA/publicaciones/proyarboles/Algarrobo(Prosopis%20sp).pdf", "accessed": "2026-11-23" },
+    { "id": "avesarg", "kind": "field_guide", "title": "Aves Argentinas: ficha de planta, algarrobo blanco", "url": "https://avesargentinas.org.ar/ficha-planta/algarrobo-blanco", "accessed": "2026-11-23" },
+    { "id": "inat", "kind": "observations", "title": "iNaturalist research-grade observations of Neltuma alba (taxon 1493104): phenology annotations by month and the photos in references/", "url": "https://api.inaturalist.org/v1/observations/histogram?taxon_id=1493104&quality_grade=research&date_field=observed&interval=month_of_year&term_id=12", "accessed": "2026-11-23" },
+    { "id": "felker_cold", "kind": "paper", "title": "Felker P. et al. Screening Prosopis (mesquite) for cold tolerance. Forest Science (OSTI 5900747)", "url": "https://www.osti.gov/biblio/5900747", "accessed": "2026-11-23" },
+    { "id": "winrock", "kind": "database", "title": "NFTA 91-02. Prosopis alba and Prosopis chilensis: subtropical semi-arid fuel and fodder trees. Winrock International", "url": "https://winrock.org/prosopis-alba-and-prosopis-chilensis-subtropical-semiarid-fuel-and-fodder-trees/", "accessed": "2026-11-23" },
+    { "id": "fao_prosopis", "kind": "database", "title": "FAO 2000. Las especies del género Prosopis (algarrobos) de América Latina con especial énfasis en aquellas de interés económico, ch. 1: Prosopis alba", "url": "https://www.fao.org/4/ad314s/ad314s01.htm", "accessed": "2026-11-23" }
+  ],
+  "plant": {
+    "growth_form": "tree",
+    "size": {
+      "adult_height_m": { "min": 5, "typical": 10, "max": 18, "source": ["icraf", "wikipedia", "cba", "inta2020", "avesarg"], "note": "5–15 m (ICRAF, Wikipedia); 9–12 m in Córdoba (cba); up to 18 m (INTA). Tall trees are rare today because of logging." },
+      "crown_width_m": { "min": 5, "typical": 8, "max": 10, "source": ["wikipedia", "cba", "inat"], "note": "Sources give only the maximum, a globose crown up to 10 m across; min and typical read from the reference photos, where the crown is about as wide as the tree is tall or wider." },
+      "trunk_dbh_m": { "min": 0.3, "typical": 0.6, "max": 1.5, "source": ["icraf", "wikipedia", "inta2020", "inat"], "note": "Up to 1 m (ICRAF, Wikipedia), 1.5 m (INTA); min and typical from the reference photos." },
+      "trunks": { "min": 1, "typical": 1, "max": 3, "source": ["icraf", "cba", "inat"], "note": "Short bole with many branches (ICRAF); short trunk (cba); the photos show one trunk forking low into two to four limbs, sometimes two or three stems." }
+    },
+    "phenology": {
+      "leaf_habit": "semi_deciduous",
+      "leaf_type": "bipinnate",
+      "leaf_out": { "months": [8, 9, 10], "source": ["cba", "inat"], "note": "New bright green leaves come with the first flowers." },
+      "flowering": { "months": [9, 10, 11], "source": ["inat", "cba"], "note": "iNaturalist flowering annotations: 2 in September, 12 in October, 6 in November; cba says August to September." },
+      "fruiting": { "months": [12, 1, 2, 3, 4], "source": ["inat"], "note": "iNaturalist fruit annotations: December 6, January 10, February 6, March 7, April 4. Ripe pods fall over the summer; some dry pods stay into autumn." },
+      "leaf_fall": { "months": [6, 7], "trigger": "first_frost", "source": ["cba", "avesarg", "fao_prosopis"], "note": "Leaves fall in winter when the frosts come, or failing that when the new leaves come out (fao_prosopis). Late and partial: never fully bare (cba); 'caedizo tardío' (avesarg)." },
+      "leaf_tones": [
+        { "tone": "new", "months": [8, 9, 10], "source": ["cba", "inat"], "note": "Bright light-green new leaves come with the first flowers (cba); the October photos r05 and r06 show whole crowns in that bright green." },
+        { "tone": "mature", "months": [10, 11, 12, 1, 2, 3, 4, 5, 6, 7], "source": ["inat"], "note": "Dull grey-green the rest of the year: photos r01 (March), r08 (April), r03 and r04 (late June, still full and green)." },
+        { "tone": "dry", "months": [7, 8], "trigger": "first_frost", "source": ["fao_prosopis", "cba"], "note": "No source describes autumn colours, and the late-June photos are still green: the leaves fall with the frosts (fao_prosopis). This tone stands for the frost-dried leaflets that hang on until they drop or the new leaves push them off." }
+      ],
+      "spread_days": { "min": 10, "max": 15, "source": ["fao_prosopis"], "note": "Phenology varies 10–15 days on one tree, between trees and between stands." }
+    },
+    "water": {
+      "rainfall_mm_year": { "min": 100, "max": 500, "source": ["icraf"], "note": "ICRAF's biophysical limits. In Argentina it also grows where rain is higher but the soil is salty or the groundwater near (INTA, ICRAF)." },
+      "drought_tolerance": { "value": "high", "source": ["wikipedia", "cba", "inta2020"], "note": "Very efficient with water; bears most fruit in drought years." }
+    },
+    "light": {
+      "shade_tolerance_seedling": { "value": "low", "source": ["inta2020"], "note": "Heliophilous: needs direct sun to grow and develop." },
+      "shade_tolerance_adult": { "value": "low", "source": ["inta2020"] }
+    },
+    "climate": {
+      "frost_kill_c_adult": { "min": -11, "typical": -7, "max": -5, "source": ["felker_cold", "wikipedia", "cba"], "note": "Stands several −5 °C freezes but not a 12-hour freeze below 0 °C (Felker); short dawn freezes near −11 °C do little harm. Wikipedia and cba say it does not tolerate frost well. How long the cold lasts matters more than how low it goes." }
+    },
+    "reproduction": {
+      "fruit": "pod"
+    },
+    "wood": {
+      "density_kg_m3": { "min": 700, "typical": 760, "max": 800, "source": ["wikipedia", "cba", "winrock"], "note": "Relative density 0.76 (Wikipedia, cba)." }
+    },
+    "gives": [
+      { "what": "fruit", "months": [12, 1, 2, 3], "to": ["people", "livestock"], "source": ["icraf", "inta2020", "inat"] },
+      { "what": "nectar", "months": [9, 10, 11], "to": ["bees"], "source": ["icraf", "inta2020"] },
+      { "what": "pollen", "months": [9, 10, 11], "to": ["bees"], "source": ["icraf"] },
+      { "what": "browse", "to": ["goats"], "source": ["inta2020"] },
+      { "what": "shade", "source": ["inta2020"] },
+      { "what": "nitrogen_fixing", "source": ["icraf", "inta2020"] },
+      { "what": "firewood", "source": ["icraf", "inta2020", "cba"] }
+    ],
+    "people": {
+      "uses": [
+        "Pods eaten fresh, as flour and as drinks (añapa, and aloja when fermented)",
+        "Pods stored as fodder for droughts",
+        "Timber for furniture, flooring, carpentry and casks",
+        "Firewood (about 4200 kcal/kg) and charcoal",
+        "Honey from its flowers",
+        "Bark and resin dye fibres; folk medicine",
+        "Shade in silvopastoral systems; windbreaks and street trees"
+      ],
+      "source": ["icraf", "inta2020", "cba", "wikipedia"]
+    }
+  }
+}

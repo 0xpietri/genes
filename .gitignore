@@ -8,3 +8,5 @@ dist/
 .env
 .DS_Store
 test-results/
+node_modules/
+.work/

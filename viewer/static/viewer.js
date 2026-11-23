@@ -5,7 +5,8 @@ import * as THREE from './vendor/three/three.module.js';
 import { GLTFLoader } from './vendor/three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from './vendor/three/addons/controls/OrbitControls.js';
 import { MeshoptDecoder } from './vendor/three/addons/libs/meshopt_decoder.module.js';
-import { partAmounts, MONTHS } from './phenology.js';
+import { partAmounts, foliageTones, MONTHS } from './phenology.js';
+import { withOrderReveal, toneUniforms } from './paint.js';
 
 const app = document.getElementById('app');
 const PERSON_HEIGHT_M = 1.75;
@@ -57,24 +58,6 @@ function renderCatalog(catalog) {
 }
 
 // ------------------------------------------------------------------ species page
-
-const ORDER_CHUNK_VERTEX = '#include <common>\nattribute float _order;\nvarying float vOrder;';
-const ORDER_CHUNK_FRAGMENT = '#include <common>\nuniform float uAmount;\nvarying float vOrder;';
-
-// Reveal clumps whose _order is under the part's amount (spec §6.3).
-function withOrderReveal(material, uniform) {
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.uAmount = uniform;
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', ORDER_CHUNK_VERTEX)
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvOrder = _order;');
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', ORDER_CHUNK_FRAGMENT)
-      .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (vOrder > uAmount) discard;');
-  };
-  material.customProgramCacheKey = () => 'genes-order';
-  return material;
-}
 
 function toonGradient() {
   // Three flat bands: a rough preview of the world's painter, not the painter itself (spec §8).
@@ -246,14 +229,18 @@ async function renderSpecies(id) {
       let mat;
       if (state.painted) {
         const hex = litColour(look.palette, part, state.month, amounts);
-        mat = new THREE.MeshToonMaterial({ color: hex ? new THREE.Color(hex) : base.color, gradientMap: gradient });
+        mat = new THREE.MeshToonMaterial({
+          color: hex ? new THREE.Color(hex) : base.color, gradientMap: gradient, map: base.map, alphaTest: base.alphaTest,
+        });
       } else {
         mat = base.clone();
       }
       mat.name = part;
       mat.side = THREE.DoubleSide;
       if (part in uniforms) {
-        if (obj.geometry.getAttribute('_order')) withOrderReveal(mat, uniforms[part]);
+        const tone = state.painted && part === 'foliage'
+          ? toneUniforms(look.palette, sheet, state.month, amounts.foliage) : null;
+        if (obj.geometry.getAttribute('_order')) withOrderReveal(mat, uniforms[part], tone);
         obj.visible = uniforms[part].value > 0;
       }
       obj.material = mat;
@@ -312,10 +299,26 @@ async function renderSpecies(id) {
   const monthLabel = el('label', { for: 'month', text: '' });
   const monthInput = el('input', { id: 'month', type: 'range', min: 1, max: 12, step: 1, value: state.month,
     oninput: (e) => { state.month = Number(e.target.value); updateMonth(); if (current) applyMaterials(current); } });
+  // Seasons of the southern hemisphere (Córdoba): each button jumps to its middle month.
+  const SEASONS = [['Summer', 1], ['Autumn', 4], ['Winter', 7], ['Spring', 10]];
+  const seasonOf = (m) => SEASONS[Math.floor((m % 12) / 3)][0];
+  const seasonSeg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Season' });
+  function buildSeasons() {
+    seasonSeg.replaceChildren(...SEASONS.map(([name, m]) => el('button', {
+      type: 'button', 'aria-pressed': String(seasonOf(state.month) === name), text: name,
+      onclick: () => {
+        state.month = m; monthInput.value = String(m); updateMonth();
+        if (current) applyMaterials(current);
+      },
+    })));
+  }
   function updateMonth() {
     const a = partAmounts(sheet, state.month);
+    buildSeasons();
     monthLabel.textContent = MONTHS[state.month - 1];
     const parts = [`leaves ${Math.round(a.foliage * 100)} %`];
+    const t = foliageTones(sheet, state.month);
+    if (t) parts.push(t.share > 0 ? `${t.from} turning ${t.to} (${Math.round(t.share * 100)} %)` : t.from);
     if (a.flowers > 0) parts.push('flowering');
     if (a.fruit > 0) parts.push('fruiting');
     monthNote.textContent = `${parts.join(' · ')} (a preview from the sheet's months; the world decides with its weather)`;
@@ -335,6 +338,7 @@ async function renderSpecies(id) {
     el('div', { class: 'row' }, el('label', { text: 'Stage' }), stageSelect),
     el('div', { class: 'row' }, el('label', { text: 'Variant' }), variantSeg),
     el('div', { class: 'row' }, el('label', { text: 'Detail' }), lodSeg),
+    el('div', { class: 'row' }, el('label', { text: 'Season' }), seasonSeg),
     el('div', { class: 'row' }, monthLabel, monthInput, monthNote),
     el('div', { class: 'row checks' }, check('person', 'Person 1.75 m'), check('turn', 'Turn'), check('painted', 'Painted preview')),
   );
@@ -388,6 +392,14 @@ function renderFacts(panel, sheet) {
       const text = monthsText(ph[key]);
       if (text) items.push(el('li', {}, el('span', { class: 'k', text: `${label}: ` }), text,
         ph[key].trigger ? ` (after ${ph[key].trigger.replaceAll('_', ' ')})` : '', el('span', { class: 'src', text: ` [${ph[key].source.join(', ')}]` })));
+    }
+    for (const t of ph.leaf_tones ?? []) {
+      items.push(el('li', {}, el('span', { class: 'k', text: `Leaves ${t.tone}: ` }), monthsText(t),
+        t.trigger ? ` (after ${t.trigger.replaceAll('_', ' ')})` : '', el('span', { class: 'src', text: ` [${t.source.join(', ')}]` })));
+    }
+    if (ph.spread_days) {
+      items.push(el('li', {}, el('span', { class: 'k', text: 'Trees differ by: ' }), fmtRange(ph.spread_days, 'days'),
+        el('span', { class: 'src', text: ` [${ph.spread_days.source.join(', ')}]` })));
     }
   }
   panel.append(el('h2', { text: 'Facts' }), el('ul', { class: 'facts' }, items));

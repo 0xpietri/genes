@@ -77,7 +77,13 @@ def test_species_page_loads_without_errors(site: str) -> None:
         page.wait_for_selector("body[data-ready], body[data-error]", timeout=30000)
         assert page.evaluate("document.body.dataset.error") is None
         assert page.locator("h1").inner_text() == "Árbol de prueba"
-        assert "2,708 of 12,000" in page.locator(".stats").inner_text()
+        assert "2,708 of 20,000" in page.locator(".stats").inner_text()
+        # The season buttons jump to the middle month of each (southern) season.
+        page.locator("[aria-label=Season] button", has_text="Winter").click()
+        assert page.locator("label[for=month]").inner_text() == "July"
+        assert (
+            page.locator("[aria-label=Season] button[aria-pressed=true]").inner_text() == "Winter"
+        )
         page.select_option("select[aria-label=Stage]", "dead_standing")
         page.locator(".stats", has_text="dead_standing-a.lod0.glb").wait_for()
         page.goto(site + "/")
@@ -109,6 +115,43 @@ def test_month_preview_matches_the_sheet(site: str) -> None:
         assert foliage == [1, 0.4, 0, 0, 0.6, 1]
         assert [r["flowers"] for r in result] == [0, 0, 0, 0, 0, 1]
         assert [r["fruit"] for r in result] == [1, 0, 0, 0, 0, 0]
+    finally:
+        browser.close()
+        pw.stop()
+
+
+def test_leaf_tones_blend_through_the_year(site: str) -> None:
+    """phenology.js (spec §6.4): one tone, or the arriving one on a growing share of clumps."""
+    pw, browser = _browser()
+    try:
+        page = browser.new_page()
+        page.goto(site + "/")
+        src = ["s"]
+        sheet = {
+            "plant": {
+                "phenology": {
+                    "leaf_tones": [
+                        {"tone": "new", "months": [9, 10], "source": src},
+                        {"tone": "mature", "months": [10, 11, 12, 1, 2, 3, 4, 5, 6], "source": src},
+                        {"tone": "dry", "months": [5, 6, 7, 8, 9], "source": src},
+                    ]
+                }
+            }
+        }
+        got = page.evaluate(
+            """async (sheet) => {
+                const m = await import('/static/phenology.js');
+                return [1, 5, 6, 7, 9, 10].map((month) => m.foliageTones(sheet, month));
+            }""",
+            sheet,
+        )
+        assert got[0] == {"from": "mature", "to": "mature", "share": 0, "lowest": False}
+        assert got[1]["to"] == "dry" and got[1]["share"] == pytest.approx(1 / 3)
+        assert got[2]["to"] == "dry" and got[2]["share"] == pytest.approx(2 / 3)
+        assert got[3]["from"] == "dry" and got[3]["share"] == 0
+        assert (got[4]["from"], got[4]["to"], got[4]["share"]) == ("dry", "new", 0.5)
+        # New leaves age to mature: the first out (lowest order) age first.
+        assert got[5] == {"from": "new", "to": "mature", "share": 0.5, "lowest": True}
     finally:
         browser.close()
         pw.stop()

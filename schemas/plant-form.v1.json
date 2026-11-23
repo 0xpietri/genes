@@ -1,0 +1,749 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://genes.pietri.dev/schemas/plant-form.v1.json",
+  "title": "genes: form parameters of the plant generator, plant@1",
+  "description": "The `form` of a plant look whose generator is plant@1 (spec §6.1, §7.2). Every parameter has a default, so a look writes only what makes its species different. A 'range' is a number or [min, max]: each variant draws its own value (an individual's trait, the same in all its stages), and per-branch values are drawn again for every branch. Lengths in metres unless the name says otherwise; fractions 0–1. docs/HOW_TO_ADD_A_SPECIES.md explains how to read a photo into these numbers.",
+  "type": "object",
+  "properties": {
+    "trunk": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "$ref": "#/$defs/int_range",
+          "default": 1,
+          "description": "Leaders above the fork. 1 = one main axis that runs to the top (a pine, a young tree); 2–4 = the trunk splits into that many limbs (algarrobo, most open-grown broadleaves)."
+        },
+        "split_height": {
+          "$ref": "#/$defs/fraction_range",
+          "default": 0.45,
+          "description": "Height of the fork as a fraction of the tree's height. Low (0.1–0.3) = short trunk forked low; 0 = several stems from the ground. With count 1 it is where the main axis starts carrying the crown."
+        },
+        "fork_angle_deg": {
+          "$ref": "#/$defs/range",
+          "default": [
+            20,
+            35
+          ],
+          "description": "Angle of each leader from the trunk's axis at the fork. Wide (40–60) gives a spreading, umbrella crown; narrow (10–25) a vase or an upright crown."
+        },
+        "leader_reach": {
+          "$ref": "#/$defs/fraction_range",
+          "default": [
+            0.8,
+            0.95
+          ],
+          "description": "How far each leader runs towards the crown's edge, as a fraction of the distance to it."
+        },
+        "leader_curve": {
+          "$ref": "#/$defs/signed_range",
+          "default": 0.1,
+          "description": "Bend of the leaders along their length: positive turns them up (upright crowns), negative arches them outwards and down (algarrobo, spreading trees)."
+        },
+        "lean_deg": {
+          "$ref": "#/$defs/range",
+          "default": [
+            0,
+            4
+          ],
+          "description": "Lean of the whole trunk from vertical. Each variant leans its own way."
+        },
+        "twist": {
+          "$ref": "#/$defs/fraction_range",
+          "default": 0.2,
+          "description": "How much the trunk and the leaders wander and twist instead of running straight."
+        },
+        "tortuosity": {
+          "$ref": "#/$defs/fraction_range",
+          "default": 0.15,
+          "description": "Big slow S-bends of the trunk and the leaders (and, at 60 %, of the level-1 limbs), snaking in three dimensions: 0 = straight, 0.5 = clearly crooked, 1 = a contorted old algarrobo. Not the small zig-zag of twist."
+        },
+        "bends": {
+          "$ref": "#/$defs/range",
+          "default": [0.8, 1.6],
+          "description": "How many bends along the trunk and each leader (waves along its length): 1 = one long S, 3 = a restless trunk."
+        },
+        "bend_style": {
+          "enum": ["smooth", "elbows"],
+          "default": "smooth",
+          "description": "smooth = slow S-curves that turn in space (algarrobo); elbows = straight runs broken by sharp kinks (tala, espinillo)."
+        },
+        "crooked_to_tip": {
+          "$ref": "#/$defs/fraction",
+          "default": 0,
+          "description": "How far up the bends reach: 0 = the trunk and stems are crooked low down and calm towards the crown; 1 = crooked all along, from the foot to every tip, with hardly a straight part (algarrobo). Also gives more bends to long limbs."
+        },
+        "fluting": {
+          "$ref": "#/$defs/fraction_range",
+          "default": 0,
+          "description": "Ribs and grooves running up the trunk and the leaders in a slow spiral, as if several stems had fused (old algarrobos, quebrachos). 0 = round."
+        },
+        "gnarl": {
+          "$ref": "#/$defs/fraction_range",
+          "default": 0.2,
+          "description": "Bumps, lobes and buttresses on the trunk's surface."
+        },
+        "radius_per_height": {
+          "$ref": "#/$defs/range",
+          "default": [
+            0.022,
+            0.03
+          ],
+          "description": "Trunk radius at 1.3 m divided by the tree's height. From the sheet: (trunk_dbh_m / 2) / adult_height_m."
+        },
+        "taper": {
+          "$ref": "#/$defs/fraction_range",
+          "default": 0.6,
+          "description": "How fast the trunk and every branch thin towards the tip."
+        },
+        "flare": {
+          "$ref": "#/$defs/fraction_range",
+          "default": 0.2,
+          "description": "Extra width at the foot of the trunk."
+        },
+        "bark": {
+          "type": "object",
+          "properties": {
+            "pattern": {
+              "enum": [
+                "smooth",
+                "fine_fissures",
+                "deep_fissures",
+                "plates",
+                "peeling"
+              ],
+              "default": "fine_fissures",
+              "description": "The bark texture's pattern."
+            },
+            "depth": {
+              "$ref": "#/$defs/fraction",
+              "default": 0.5,
+              "description": "Contrast of the pattern."
+            },
+            "tile_m": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "default": 0.6,
+              "description": "Real size of one repeat of the bark texture."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "branching": {
+      "description": "One entry per branching level below the leaders, from the thickest (1) to the twigs (3 at most). Each level grows on the one before.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "count": {
+            "$ref": "#/$defs/int_range",
+            "description": "Branches on a parent of typical length for its level (longer parents carry more)."
+          },
+          "start": {
+            "$ref": "#/$defs/interval",
+            "default": [
+              0.3,
+              1.0
+            ],
+            "description": "Part of the parent where branches grow, as fractions of its length from its base."
+          },
+          "angle_deg": {
+            "$ref": "#/$defs/range",
+            "default": [
+              35,
+              55
+            ],
+            "description": "Angle from the parent at the base of the branch."
+          },
+          "length": {
+            "$ref": "#/$defs/range",
+            "default": [
+              0.4,
+              0.6
+            ],
+            "description": "Length relative to the parent. Branches near the parent's tip are shorter; all are cut at the crown's envelope."
+          },
+          "curve": {
+            "$ref": "#/$defs/signed_range",
+            "default": 0.2,
+            "description": "Bend over the branch: positive turns up, negative turns away from up."
+          },
+          "droop": {
+            "$ref": "#/$defs/fraction_range",
+            "default": 0.2,
+            "description": "Sag under its own weight, strongest at the tip."
+          },
+          "wander": {
+            "$ref": "#/$defs/fraction_range",
+            "default": 0.3,
+            "description": "Random zig-zag."
+          },
+          "tortuosity": {
+            "$ref": "#/$defs/fraction_range",
+            "description": "Big bends of the branches of this level, like trunk.tortuosity. Default: 60 % of the trunk's for level 1, none for the others."
+          },
+          "bend_style": {
+            "enum": ["smooth", "elbows"],
+            "description": "Default: the trunk's bend_style. Old algarrobos: smooth limbs, elbowed branches."
+          },
+          "radius_ratio": {
+            "$ref": "#/$defs/range",
+            "default": [
+              0.5,
+              0.7
+            ],
+            "description": "Base radius relative to the parent's radius where it grows."
+          },
+          "roll": {
+            "enum": [
+              "spiral",
+              "opposite",
+              "alternate"
+            ],
+            "default": "spiral",
+            "description": "How branches turn around the parent."
+          }
+        },
+        "required": [
+          "level",
+          "count"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "crown": {
+      "type": "object",
+      "properties": {
+        "envelope": {
+          "enum": [
+            "umbrella",
+            "globose",
+            "columnar",
+            "conical",
+            "weeping",
+            "irregular"
+          ],
+          "default": "globose",
+          "description": "Shape the branches are pruned to."
+        },
+        "width_to_height": {
+          "$ref": "#/$defs/range",
+          "default": [
+            0.8,
+            1.0
+          ],
+          "description": "Crown width divided by tree height. From the sheet: crown_width_m / adult_height_m. Above 1 = wider than tall."
+        },
+        "base": {
+          "$ref": "#/$defs/fraction_range",
+          "default": [
+            0.3,
+            0.4
+          ],
+          "description": "Height where the crown starts, as a fraction of the tree's height."
+        },
+        "widest": {
+          "$ref": "#/$defs/fraction_range",
+          "description": "Where the crown is widest, as a fraction of its depth from its base. Default from the envelope: umbrella 0.7, globose 0.5, conical 0.05, columnar 0.5, weeping 0.6, irregular 0.5."
+        },
+        "flat_top": {
+          "$ref": "#/$defs/fraction_range",
+          "default": 0,
+          "description": "0 = rounded top; 1 = cut flat, the crown keeps its width up to the top."
+        },
+        "irregular": {
+          "$ref": "#/$defs/fraction_range",
+          "default": 0.15,
+          "description": "Lobes and gaps around the crown's outline."
+        },
+        "openness": {
+          "$ref": "#/$defs/fraction_range",
+          "default": 0.3,
+          "description": "How much sky shows through the crown: 0 = a dense ball, 0.6 = airy, branches visible."
+        },
+        "clump_size_m": {
+          "$ref": "#/$defs/range",
+          "default": [
+            0.5,
+            0.8
+          ],
+          "description": "Size of one painted foliage clump on an adult. Smaller stages scale it down."
+        },
+        "fill_top": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.9,
+          "description": "How fully the top of the crown is covered: where no foliage reaches the crown's upper surface, a thin crooked branch rises from the nearest limb with leaves at its tips. 0 = leave gaps; 1 = every gap filled. Trees always have leaves on top, so keep it high."
+        },
+        "clump_spacing": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 0.9,
+          "description": "Distance between clumps along a twig, in clump sizes."
+        }
+      },
+      "additionalProperties": false
+    },
+    "foliage": {
+      "type": "object",
+      "properties": {
+        "leaf_type": {
+          "enum": [
+            "bipinnate",
+            "pinnate",
+            "broad",
+            "needle",
+            "scale"
+          ],
+          "default": "broad",
+          "description": "Sets the painted clump texture: bipinnate is feathery and airy, broad is a dense mass."
+        },
+        "leaf_size_cm": {
+          "$ref": "#/$defs/range",
+          "default": [
+            4,
+            8
+          ],
+          "description": "Real leaf length; the texture's marks scale with it."
+        },
+        "cards_per_clump": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4,
+          "default": 3,
+          "description": "Crossed cards in one clump (two triangles each)."
+        },
+        "density": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.6,
+          "description": "How full each clump's texture is: 0 = a few sprays you see through, 1 = a solid mass. Airy trees (algarrobo, espinillo) 0.2–0.3."
+        },
+        "twigs": {
+          "$ref": "#/$defs/fraction",
+          "default": 0,
+          "description": "Dark crooked twigs painted inside each clump, under the leaves: the fine branch net that shows through airy foliage. 0 = none, 1 = a dense net (old algarrobos)."
+        },
+        "leafy_from": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.35,
+          "description": "Clumps sit on twigs from this fraction of their length to the tip."
+        }
+      },
+      "additionalProperties": false
+    },
+    "tips": {
+      "type": "object",
+      "description": "Twiglets: the fine crooked twigs that bristle from the end of every branch, so a bare crown reads as a net and not as cut sticks (old algarrobos in winter).",
+      "properties": {
+        "twiglets": {
+          "$ref": "#/$defs/int_range",
+          "default": 0,
+          "description": "Twiglets at the end of each drawn branch. 0 = none."
+        },
+        "length": {
+          "$ref": "#/$defs/range",
+          "default": [0.03, 0.06],
+          "description": "Length of a twiglet, as a fraction of the tree's height."
+        },
+        "crookedness": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.7,
+          "description": "0 = straight twiglets; 1 = twisting in every direction."
+        },
+        "forks": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.5,
+          "description": "Chance that a twiglet forks once more halfway."
+        },
+        "share": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.3,
+          "description": "Share of the bark's triangles kept for twiglets; the highest branch ends get them first."
+        },
+        "stages": {
+          "type": "array",
+          "items": {"enum": ["seedling", "sapling", "young", "adult", "old", "dead_standing", "fallen"]},
+          "default": ["adult", "old", "dead_standing"],
+          "description": "Stages that have twiglets."
+        }
+      },
+      "additionalProperties": false
+    },
+    "thorns": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "none",
+            "short_paired",
+            "long_paired",
+            "single"
+          ],
+          "default": "none"
+        },
+        "length_cm": {
+          "$ref": "#/$defs/range",
+          "default": [
+            1,
+            2
+          ]
+        },
+        "where": {
+          "enum": [
+            "young_twigs",
+            "branches",
+            "trunk",
+            "all"
+          ],
+          "default": "young_twigs"
+        },
+        "spacing_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 0.3,
+          "description": "Distance between thorn nodes along a branch."
+        }
+      },
+      "additionalProperties": false
+    },
+    "flowers": {
+      "type": "object",
+      "properties": {
+        "form": {
+          "enum": [
+            "none",
+            "spike",
+            "ball",
+            "bell",
+            "single",
+            "panicle"
+          ],
+          "default": "none"
+        },
+        "length_cm": {
+          "$ref": "#/$defs/range",
+          "default": [
+            2,
+            4
+          ],
+          "description": "Real length of one flower or inflorescence."
+        },
+        "where": {
+          "enum": [
+            "tips",
+            "axils",
+            "along"
+          ],
+          "default": "axils"
+        },
+        "cover": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.3,
+          "description": "Share of the clumps that carry flowers at peak."
+        },
+        "per_clump": {
+          "$ref": "#/$defs/int_range",
+          "default": [
+            1,
+            3
+          ]
+        },
+        "show_scale": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 3,
+          "default": 1,
+          "description": "Painted exaggeration: the real size times this, so the part still reads from a few metres away (a recognisable trait). 1 = real size."
+        }
+      },
+      "additionalProperties": false
+    },
+    "fruit": {
+      "type": "object",
+      "properties": {
+        "form": {
+          "enum": [
+            "none",
+            "pod_straight",
+            "pod_curved",
+            "pod_coiled",
+            "berry",
+            "drupe",
+            "samara",
+            "capsule"
+          ],
+          "default": "none"
+        },
+        "length_cm": {
+          "$ref": "#/$defs/range",
+          "default": [
+            1,
+            2
+          ]
+        },
+        "width_cm": {
+          "$ref": "#/$defs/range",
+          "default": [
+            1,
+            2
+          ],
+          "description": "Pods and samaras: width; round fruit: ignored (length is the diameter)."
+        },
+        "hanging": {
+          "type": "boolean",
+          "default": true,
+          "description": "Pods and bunches hang down from the twig."
+        },
+        "per_bunch": {
+          "$ref": "#/$defs/int_range",
+          "default": [
+            1,
+            3
+          ]
+        },
+        "cover": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.3,
+          "description": "Share of the clumps that carry fruit at peak."
+        },
+        "show_scale": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 3,
+          "default": 1,
+          "description": "Painted exaggeration: the real size times this, so the part still reads from a few metres away (a recognisable trait). 1 = real size."
+        }
+      },
+      "additionalProperties": false
+    },
+    "old": {
+      "type": "object",
+      "properties": {
+        "broken_limbs": {
+          "$ref": "#/$defs/int_range",
+          "default": [
+            0,
+            1
+          ],
+          "description": "Main limbs broken off, leaving a stub."
+        },
+        "extra_lean_deg": {
+          "$ref": "#/$defs/range",
+          "default": [
+            0,
+            5
+          ]
+        },
+        "trunk_split": {
+          "$ref": "#/$defs/fraction",
+          "default": 0,
+          "description": "How far an old tree's trunk has opened: 0 = one whole trunk, 1 = it splits from near the ground into stems that rise side by side with a crack between them, then part (old algarrobos). Also dead and fallen trees."
+        },
+        "limb_sag": {
+          "$ref": "#/$defs/fraction",
+          "default": 0,
+          "description": "How far down the sagging low limbs of an old (or dead standing) tree reach: 0 = they stay up in the crown, 0.5 = they arch out and sag halfway to the ground, 1 = they reach the ground, lie along it and rise again (old algarrobos)."
+        },
+        "sagging_limbs": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.35,
+          "description": "Share of the low main limbs that sag as limb_sag says."
+        },
+        "crown_thinning": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.25,
+          "description": "Share of the clumps an old tree has lost."
+        }
+      },
+      "additionalProperties": false
+    },
+    "dead": {
+      "type": "object",
+      "properties": {
+        "lost_twigs": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.7,
+          "description": "Share of the thinnest branches gone from a dead tree."
+        },
+        "broken_top": {
+          "$ref": "#/$defs/fraction_range",
+          "default": [
+            0.6,
+            0.9
+          ],
+          "description": "Leaders of a dead tree keep this fraction of their length."
+        }
+      },
+      "additionalProperties": false
+    },
+    "stages": {
+      "description": "Changes for one stage, written like the form itself (only what changes; a `branching` list replaces the whole list), plus `levels`: how many branching levels the stage grows. Defaults: seedling 0 levels, sapling 1, young 2, no flowers or fruit before young.",
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "seedling",
+          "sapling",
+          "young",
+          "adult",
+          "old",
+          "dead_standing",
+          "fallen"
+        ]
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "levels": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+            "branching": { "$ref": "#/properties/branching" },
+          "trunk": {
+            "type": "object"
+          },
+          "crown": {
+            "type": "object"
+          },
+          "foliage": {
+            "type": "object"
+          },
+          "thorns": {
+            "type": "object"
+          },
+          "tips": {
+            "type": "object"
+          },
+          "flowers": {
+            "type": "object"
+          },
+          "fruit": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "branching"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "range": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        }
+      ]
+    },
+    "fraction": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "fraction_range": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/fraction"
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/fraction"
+            },
+            {
+              "$ref": "#/$defs/fraction"
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        }
+      ]
+    },
+    "signed_range": {
+      "oneOf": [
+        {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number",
+              "minimum": -1,
+              "maximum": 1
+            },
+            {
+              "type": "number",
+              "minimum": -1,
+              "maximum": 1
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        }
+      ]
+    },
+    "int_range": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "integer",
+              "minimum": 0
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        }
+      ]
+    },
+    "interval": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/fraction"
+        },
+        {
+          "$ref": "#/$defs/fraction"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    }
+  }
+}

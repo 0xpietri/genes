@@ -124,6 +124,7 @@ def build_viewer(species: list[Species], out: Path) -> None:
     shutil.copytree(VIEWER_DIR / "static", out / "static", dirs_exist_ok=True)
     page = (VIEWER_DIR / "index.html").read_bytes()
     (out / "index.html").write_bytes(page)
+    shutil.copyfile(VIEWER_DIR / "render.html", out / "render.html")
     for sp in species:
         target = out / "species" / sp.id / "index.html"
         target.parent.mkdir(parents=True, exist_ok=True)

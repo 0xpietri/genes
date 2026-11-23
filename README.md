@@ -14,17 +14,20 @@ genes stores no users and computes nothing per request: it publishes files that 
 once released. What happens to a plant over time (growing, flowering this year, dying) is
 pietri.dev's simulator; genes only says what the species is.
 
-Status: phase 1, the base. No real species yet: the viewer shows a made-up example tree.
+Status: phase 2. The first species is the algarrobo blanco (*Neltuma alba*); the plant
+generator runs Blender headless from Python.
 
 ## Run it
 
 ```
 uv sync
-uv run genes serve --examples
+uv run genes serve
 ```
 
-Then open <http://127.0.0.1:8810/>. `uv run genes validate --examples` checks every species
-and `uv run pytest` runs the tests.
+Then open <http://127.0.0.1:8810/species/neltuma-alba>. `uv run genes validate` checks every
+species and `uv run pytest` runs the tests.
+
+To add a species, follow [`docs/HOW_TO_ADD_A_SPECIES.md`](docs/HOW_TO_ADD_A_SPECIES.md).
 
 - Specification: [`docs/spec/GENES_SPEC_v0.1.md`](docs/spec/GENES_SPEC_v0.1.md)
 - Phase reports: [`docs/reports/`](docs/reports/)
