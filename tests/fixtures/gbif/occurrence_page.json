@@ -1,0 +1,6 @@
+{"offset":0,"limit":300,"endOfRecords":true,"count":4,"results":[
+{"decimalLatitude":-31.24,"decimalLongitude":-64.31,"basisOfRecord":"HUMAN_OBSERVATION","license":"http://creativecommons.org/licenses/by-nc/4.0/legalcode","year":2023},
+{"decimalLatitude":-31.10,"decimalLongitude":-64.45,"basisOfRecord":"HUMAN_OBSERVATION","license":"http://creativecommons.org/licenses/by/4.0/legalcode","year":2019},
+{"decimalLatitude":-27.48,"decimalLongitude":-58.83,"basisOfRecord":"PRESERVED_SPECIMEN","license":"http://creativecommons.org/publicdomain/zero/1.0/legalcode","year":1951},
+{"basisOfRecord":"HUMAN_OBSERVATION","license":"http://creativecommons.org/licenses/by/4.0/legalcode"}
+]}

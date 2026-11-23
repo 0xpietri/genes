@@ -73,7 +73,7 @@ def test_species_page_loads_without_errors(site: str) -> None:
         errors: list[str] = []
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
         page.on("pageerror", lambda e: errors.append(str(e)))
-        page.goto(f"{site}/species/example-tree/?month=11")
+        page.goto(f"{site}/review/species/example-tree/?month=11")
         page.wait_for_selector("body[data-ready], body[data-error]", timeout=30000)
         assert page.evaluate("document.body.dataset.error") is None
         assert page.locator("h1").inner_text() == "Árbol de prueba"
@@ -86,7 +86,7 @@ def test_species_page_loads_without_errors(site: str) -> None:
         )
         page.select_option("select[aria-label=Stage]", "dead_standing")
         page.locator(".stats", has_text="dead_standing-a.lod0.glb").wait_for()
-        page.goto(site + "/")
+        page.goto(site + "/review/")
         page.wait_for_selector("body[data-ready]")
         assert page.locator(".card").count() == 1
         assert errors == []

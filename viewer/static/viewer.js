@@ -43,7 +43,7 @@ function fail(message) {
 
 function renderCatalog(catalog) {
   const cards = catalog.species.map((sp) => el('li', { class: 'card' },
-    el('a', { href: `/species/${sp.id}/` },
+    el('a', { href: `/review/species/${sp.id}/` },
       el('div', { class: 'name', text: sp.names.es?.[0] ?? sp.id }),
       el('div', { class: 'sci', text: sp.scientific_name }),
       el('div', { class: 'meta', text: [sp.names.en?.[0], sp.growth_form ?? sp.class, sp.status_in_sierras_chicas].filter(Boolean).join(' · ') }),
@@ -412,7 +412,7 @@ function renderFacts(panel, sheet) {
 
 async function main() {
   try {
-    const m = location.pathname.match(/^\/species\/([a-z0-9-]+)\/?$/);
+    const m = location.pathname.match(/^\/review\/species\/([a-z0-9-]+)\/?$/);
     if (m) await renderSpecies(m[1]);
     else renderCatalog(await getJSON('/v1/catalog.json'));
   } catch (err) {

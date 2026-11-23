@@ -495,12 +495,17 @@ serves it at genes.pietri.dev (phase 5). Nothing runs per request.
 
 | URL | What |
 |---|---|
-| `/` and `/species/<id>` | the viewer |
+| `/` and `/species/<id>/` | the public catalog: pages written at build time (amended 2026-11-23, catalog site) |
+| `/species/<id>/index.md`, `/llms.txt`, `/sitemap.xml`, `/robots.txt` | the same for language models and search engines |
+| `/review/` and `/review/species/<id>/` | the review viewer of section 14 |
 | `/v1/catalog.json` | every species with its versions and file hashes |
 | `/v1/species/<id>/sheets/<n>.json` | a sheet version |
 | `/v1/species/<id>/looks/<n>/look.json` | a look version |
 | `/v1/species/<id>/looks/<n>/<stage>-<variant>.<lod>.glb` | a model |
 | `/v1/species/<id>/references.json` | the reference set with attribution |
+| `/v1/species/<id>/lifecycle/<n>.json` | one life recorded from pietri.dev's simulator, replayed by the page |
+| `/v1/species/<id>/occurrences.json` | GBIF sightings counted per half-degree cell, when fetched |
+| `/v1/species/<id>/media/card.*` | the catalog card's cut-out picture |
 
 ```
 catalog.json
@@ -596,8 +601,8 @@ marcos tries everything on his PC first and pushes only what works.
    the contact sheet alone (section 7.1).
 3. The work reaches marcos's `genes` folder as a local git branch (bundle,
    as with pietri.dev's steps). He runs one command,
-   `uv run genes serve`, and opens `http://localhost:8810/species/neltuma-alba`.
-4. **The viewer page**: the model orbiting on a turntable with a 1.75 m
+   `uv run genes serve`, and opens `http://localhost:8810/review/species/neltuma-alba`.
+4. **The viewer page** (`/review/species/<id>/` since the public catalog): the model orbiting on a turntable with a 1.75 m
    person beside it; a stage slider (seedling to fallen); a month slider
    (bare, leaf, flowers, pods); variants a/b/c; `lod0`/`lod1`; a "how it
    looks in the world" toggle with a flat sun and simple bands (a preview,

@@ -1,12 +1,16 @@
 """Building the static site genes.pietri.dev serves (spec §12).
 
-    dist/index.html, dist/static/...                     the viewer
-    dist/species/<id>/index.html                         a species page (same viewer)
+    dist/index.html, dist/species/<id>/...               the public catalog (genes.site)
+    dist/review/, dist/review/species/<id>/              the review viewer (spec §14)
+    dist/static/...                                      the viewer's and the site's files
     dist/v1/catalog.json                                 every species, versions, hashes
     dist/v1/budgets.json                                 the model budgets
     dist/v1/species/<id>/sheets/<n>.json                 copied byte for byte
     dist/v1/species/<id>/looks/<n>/look.json and models  copied byte for byte
     dist/v1/species/<id>/references.json and photos      the reference set
+    dist/v1/species/<id>/lifecycle/<n>.json              one simulated life (from pietri.dev)
+    dist/v1/species/<id>/occurrences.json                GBIF sightings per cell, if fetched
+    dist/v1/species/<id>/media/card.*                    the catalog card's cut-out picture
 
 Same species files, same dist/: byte-identical (sorted keys, no timestamps).
 """
@@ -17,7 +21,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from genes import jsonio
+from genes import jsonio, site
 from genes.paths import BUDGETS_FILE, VIEWER_DIR
 from genes.species import Species, discover
 
@@ -74,6 +78,19 @@ def _species_entry(sp: Species, out: Path) -> dict[str, Any]:
     else:
         entry["class"] = sheet.get("animal", {}).get("class", "")
 
+    life = site.lifecycle_of(sp)
+    if life is not None:
+        meta = _copy(life[0], base / "lifecycle" / life[0].name)
+        entry["lifecycle"] = {"path": f"{url}/lifecycle/{life[0].name}", **meta}
+    occ = sp.folder / "occurrences.json"
+    if occ.exists():
+        meta = _copy(occ, base / "occurrences.json")
+        entry["occurrences"] = {"path": f"{url}/occurrences.json", **meta}
+    media = site.media_of(sp)
+    if media is not None:
+        meta = _copy(media, base / "media" / media.name)
+        entry["media"] = {"path": f"{url}/media/{media.name}", **meta}
+
     if sp.refs is not None and isinstance(sp.refs.data, dict):
         refs = sp.refs.data
         for photo in refs.get("photos", []):
@@ -121,12 +138,14 @@ def build_catalog(species: list[Species], out: Path) -> dict[str, Any]:
 
 
 def build_viewer(species: list[Species], out: Path) -> None:
+    """The review viewer (spec §14) under /review/; the public pages are genes.site's."""
     shutil.copytree(VIEWER_DIR / "static", out / "static", dirs_exist_ok=True)
     page = (VIEWER_DIR / "index.html").read_bytes()
-    (out / "index.html").write_bytes(page)
+    (out / "review").mkdir(parents=True, exist_ok=True)
+    (out / "review" / "index.html").write_bytes(page)
     shutil.copyfile(VIEWER_DIR / "render.html", out / "render.html")
     for sp in species:
-        target = out / "species" / sp.id / "index.html"
+        target = out / "review" / "species" / sp.id / "index.html"
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(page)
 
@@ -139,4 +158,5 @@ def build(roots: list[Path], out: Path) -> dict[str, Any]:
     species = discover(roots)
     catalog = build_catalog(species, out)
     build_viewer(species, out)
+    site.build(species, catalog["species"], catalog["catalog"], out)
     return catalog

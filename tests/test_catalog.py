@@ -44,9 +44,11 @@ def test_catalog_content(tmp_path: Path, examples: Path) -> None:
     assert (out / "v1/species/example-tree/sheets/1.json").read_bytes() == src.read_bytes()
     # The viewer, a page per species, the budgets.
     assert (out / "index.html").exists() and (out / "static" / "viewer.js").exists()
-    assert (out / "species" / "example-tree" / "index.html").read_bytes() == (
-        out / "index.html"
+    # The review viewer is one page served under /review/ for every species.
+    assert (out / "review" / "species" / "example-tree" / "index.html").read_bytes() == (
+        out / "review" / "index.html"
     ).read_bytes()
+    assert b"/static/site/js/species.js" in (out / "species/example-tree/index.html").read_bytes()
     assert (out / "v1" / "budgets.json").exists()
 
 
