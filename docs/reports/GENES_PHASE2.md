@@ -267,7 +267,7 @@ standing trees, and for a season selector in the viewer.
   of the height), `crookedness`, `forks` (chance of a second fork), `share` of the bark's
   triangles kept for them (the highest ends first) and `stages` (default adult, old,
   dead_standing). They are thin three-sided tubes in the bark.
-- **Budgets raised** (marcos said to change the tools if they could not do it; please
+- **Budgets raised** (marcos said to change the tools if they could not do it;
   confirmed by marcos 2026-11-23): lod0 adult and old 12,000 → 20,000 triangles, dead_standing 8,000 → 14,000;
   file 500 KB → 800 KB; look 6 MB → 9 MB. With 12,000, crooked wood used the whole
   budget and only branches over 15–20 cm were drawn. Now adult and old draw branches
