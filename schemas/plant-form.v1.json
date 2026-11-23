@@ -52,6 +52,26 @@
           "default": 0.2,
           "description": "How much the trunk and the leaders wander and twist instead of running straight."
         },
+        "tortuosity": {
+          "$ref": "#/$defs/fraction_range",
+          "default": 0.15,
+          "description": "Big slow S-bends of the trunk and the leaders (and, at 60 %, of the level-1 limbs), snaking in three dimensions: 0 = straight, 0.5 = clearly crooked, 1 = a contorted old algarrobo. Not the small zig-zag of twist."
+        },
+        "bends": {
+          "$ref": "#/$defs/range",
+          "default": [0.8, 1.6],
+          "description": "How many bends along the trunk and each leader (waves along its length): 1 = one long S, 3 = a restless trunk."
+        },
+        "bend_style": {
+          "enum": ["smooth", "elbows"],
+          "default": "smooth",
+          "description": "smooth = slow S-curves that turn in space (algarrobo); elbows = straight runs broken by sharp kinks (tala, espinillo)."
+        },
+        "fluting": {
+          "$ref": "#/$defs/fraction_range",
+          "default": 0,
+          "description": "Ribs and grooves running up the trunk and the leaders in a slow spiral, as if several stems had fused (old algarrobos, quebrachos). 0 = round."
+        },
         "gnarl": {
           "$ref": "#/$defs/fraction_range",
           "default": 0.2,
@@ -161,6 +181,14 @@
             "$ref": "#/$defs/fraction_range",
             "default": 0.3,
             "description": "Random zig-zag."
+          },
+          "tortuosity": {
+            "$ref": "#/$defs/fraction_range",
+            "description": "Big bends of the branches of this level, like trunk.tortuosity. Default: 60 % of the trunk's for level 1, none for the others."
+          },
+          "bend_style": {
+            "enum": ["smooth", "elbows"],
+            "description": "Default: the trunk's bend_style. Old algarrobos: smooth limbs, elbowed branches."
           },
           "radius_ratio": {
             "$ref": "#/$defs/range",
@@ -286,7 +314,12 @@
         "density": {
           "$ref": "#/$defs/fraction",
           "default": 0.6,
-          "description": "How full each clump's texture is."
+          "description": "How full each clump's texture is: 0 = a few sprays you see through, 1 = a solid mass. Airy trees (algarrobo, espinillo) 0.2–0.3."
+        },
+        "twigs": {
+          "$ref": "#/$defs/fraction",
+          "default": 0,
+          "description": "Dark crooked twigs painted inside each clump, under the leaves: the fine branch net that shows through airy foliage. 0 = none, 1 = a dense net (old algarrobos)."
         },
         "leafy_from": {
           "$ref": "#/$defs/fraction",
@@ -461,6 +494,21 @@
             5
           ]
         },
+        "trunk_split": {
+          "$ref": "#/$defs/fraction",
+          "default": 0,
+          "description": "How far an old tree's trunk has opened: 0 = one whole trunk, 1 = it splits from near the ground into stems that rise side by side with a crack between them, then part (old algarrobos). Also dead and fallen trees."
+        },
+        "limb_sag": {
+          "$ref": "#/$defs/fraction",
+          "default": 0,
+          "description": "How far down the sagging low limbs of an old (or dead standing) tree reach: 0 = they stay up in the crown, 0.5 = they arch out and sag halfway to the ground, 1 = they reach the ground, lie along it and rise again (old algarrobos)."
+        },
+        "sagging_limbs": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.35,
+          "description": "Share of the low main limbs that sag as limb_sag says."
+        },
         "crown_thinning": {
           "$ref": "#/$defs/fraction",
           "default": 0.25,
@@ -489,7 +537,7 @@
       "additionalProperties": false
     },
     "stages": {
-      "description": "Changes for one stage, written like the form itself (only what changes), plus `levels`: how many branching levels the stage grows. Defaults: seedling 0 levels, sapling 1, young 2, no flowers or fruit before young.",
+      "description": "Changes for one stage, written like the form itself (only what changes; a `branching` list replaces the whole list), plus `levels`: how many branching levels the stage grows. Defaults: seedling 0 levels, sapling 1, young 2, no flowers or fruit before young.",
       "type": "object",
       "propertyNames": {
         "enum": [
@@ -510,6 +558,7 @@
             "minimum": 0,
             "maximum": 3
           },
+            "branching": { "$ref": "#/properties/branching" },
           "trunk": {
             "type": "object"
           },

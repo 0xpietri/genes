@@ -101,3 +101,73 @@ def test_flowers_at_the_tips_sit_further_out(look: dict[str, Any]) -> None:
         return sum(math.hypot(p[0], p[2]) for p in part.positions) / len(part.positions)
 
     assert spread("tips") > spread("axils")
+
+
+def _skeleton(look: dict[str, Any], stage: str, variant: str = "a") -> Any:
+    import random
+
+    from plant.form import seed
+    from plant.model import _stage_height
+    from plant.skeleton import grow_tree
+
+    form = resolve(look, stage, variant)
+    height, adult = _stage_height(look, stage)
+    return grow_tree(form, height, adult, random.Random(seed(form.key, stage)))
+
+
+def _crookedness(branch: Any) -> float:
+    """How far the branch strays from the straight line between its ends, per metre."""
+    a, b = branch.points[0], branch.points[-1]
+    ab = [b[i] - a[i] for i in range(3)]
+    norm = math.sqrt(sum(x * x for x in ab)) or 1.0
+    worst = 0.0
+    for p in branch.points:
+        ap = [p[i] - a[i] for i in range(3)]
+        t = sum(ap[i] * ab[i] for i in range(3)) / norm**2
+        off = [ap[i] - t * ab[i] for i in range(3)]
+        worst = max(worst, math.sqrt(sum(x * x for x in off)))
+    return worst / norm
+
+
+def test_tortuosity_bends_the_leaders(look: dict[str, Any]) -> None:
+    def mean_crook(tortuosity: float) -> float:
+        changed = copy.deepcopy(look)
+        changed["form"]["trunk"]["tortuosity"] = tortuosity
+        changed["form"]["trunk"]["twist"] = 0
+        leaders = [b for b in _skeleton(changed, "adult").branches if b.level == 0]
+        return sum(_crookedness(b) for b in leaders) / len(leaders)
+
+    assert mean_crook(0.9) > mean_crook(0.0) + 0.03
+
+
+def test_old_limbs_rest_on_the_ground(look: dict[str, Any]) -> None:
+    def resting(sag: float) -> int:
+        changed = copy.deepcopy(look)
+        changed["form"]["old"].update(limb_sag=sag, sagging_limbs=1.0)
+        tree = _skeleton(changed, "old")
+        return sum(
+            1
+            for b in tree.branches
+            if b.level == 1 and min(p[1] for p in b.points) <= b.radii[0] * 1.01
+        )
+
+    assert resting(1.0) > 0
+    assert resting(0.0) == 0
+
+
+def test_an_old_trunk_opens_at_the_base(look: dict[str, Any]) -> None:
+    changed = copy.deepcopy(look)
+    changed["form"]["old"]["trunk_split"] = 1.0
+    tree = _skeleton(changed, "old")
+    stems = [b for b in tree.branches if b.level == 0]
+    assert len(stems) >= 2
+    assert all(b.points[0][1] < 0.1 * tree.height for b in stems)
+    starts = {(round(b.points[0][0], 3), round(b.points[0][2], 3)) for b in stems}
+    assert len(starts) == len(stems)  # each stem stands on its own part of the stump
+
+
+def test_a_fallen_trunk_lies_on_the_ground(look: dict[str, Any]) -> None:
+    model = build(look, "fallen", "a", "lod0", BUDGETS)
+    lo, hi = bounds(model.parts)
+    assert hi[1] - lo[1] <= float(look["stages"]["fallen"]["ref_height_m"]) * 2
+    assert max(hi[0] - lo[0], hi[2] - lo[2]) > 3 * (hi[1] - lo[1])

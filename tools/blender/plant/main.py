@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from typing import Any
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
@@ -46,13 +47,23 @@ def main(argv: list[str] | None = None) -> int:
     budgets = json.loads((REPO / "budgets.json").read_text(encoding="utf-8"))
     adult = resolve(look, "adult" if "adult" in look["stages"] else next(iter(look["stages"])), "a")
     lo, hi = adult.range("crown.clump_size_m")
-    atlas = textures.foliage_atlas(adult.data, (lo + hi) / 2, seed(look["id"], "foliage"))
     bark = textures.bark(adult.data, seed(look["id"], "bark"))
-    # lod1 is seen from further away: half-size textures keep the look's weight down.
-    tex_by_lod = {
-        "lod0": {"foliage": atlas, "bark": bark},
-        "lod1": {"foliage": textures.half(atlas), "bark": textures.half_bark(bark)},
-    }
+    atlases: dict[str, Any] = {}
+
+    def textures_for(stage: str, lod: str) -> dict[str, Any]:
+        """A stage with its own foliage (an old tree's sparser leaves) gets its own atlas;
+        lod1 is seen from further away, so its textures are half size."""
+        foliage = resolve(look, stage, "a").data["foliage"]
+        key = json.dumps(foliage, sort_keys=True)
+        if key not in atlases:
+            atlases[key] = textures.foliage_atlas(
+                {"foliage": foliage}, (lo + hi) / 2, seed(look["id"], "foliage")
+            )
+        atlas = atlases[key]
+        if lod == "lod0":
+            return {"foliage": atlas, "bark": bark}
+        return {"foliage": textures.half(atlas), "bark": textures.half_bark(bark)}
+
     from genes.species import variant_letters
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -68,7 +79,7 @@ def main(argv: list[str] | None = None) -> int:
                     model = build(look, stage, variant, lod, budgets)
                     name = f"{stage}-{variant}.{lod}.glb"
                     raw = Path(tmp) / name
-                    blend.export(model, tex_by_lod.get(lod, tex_by_lod["lod0"]), raw)
+                    blend.export(model, textures_for(stage, lod), raw)
                     out = look_dir / name
                     if args.raw:
                         out.write_bytes(raw.read_bytes())

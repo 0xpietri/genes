@@ -131,3 +131,36 @@ uv run pytest
 Your review round on the viewer (what feels off, in your words), then a PR. After that,
 the second species (espinillo or chañar) given to Antigravity with the recipe, as a test
 of it.
+
+## Review round 1 (marcos, 2026-11-22 evening)
+
+What he saw: foliage too dense (he wants to see through it, not holes in the crown), crown
+too close to the ground, the old tree should be bigger, trunk too straight, limbs of an
+old tree far too thin next to a person, the fallen trunk too straight, bark too regular.
+He sent two photos of an old algarrobo. Changes:
+
+- **Generator, new parameters** (all in `schemas/plant-form.v1.json`, defaults keep other
+  species as they were except where noted):
+  - `trunk.tortuosity`, `trunk.bends`, `trunk.bend_style` (`smooth` or `elbows`): slow
+    3D bends of the trunk, leaders and main limbs; they grow with age. Per level:
+    `branching[].tortuosity`, `branching[].bend_style`.
+  - `trunk.fluting`: ribs spiralling up the trunk, as if stems had fused.
+  - `old.trunk_split`: an old trunk opens from near the ground into stems.
+  - `old.limb_sag` and `old.sagging_limbs`: low limbs that arch down; at 1 they lie on the
+    ground and rise again.
+  - `foliage.twigs`: dark crooked twigs painted inside each clump, leaves growing on them.
+  - `foliage.density` now reaches truly sparse clumps (its low end changed for every
+    species; nothing is merged yet).
+  - Stage overrides may replace `branching` (the old algarrobo has its own).
+  - Branches keep their thickness longer; leaders are thicker; wood never goes below the
+    ground; the fallen trunk lies flat along the ground.
+  - Bark: irregular wandering fissures that change width, plates of different tones,
+    fibres, and gentle colour patches (warm wood, lichen, weathered). The bark texture is
+    therefore no longer grey only; it stays near white so the palette still sets the tone.
+  - Each stage with its own foliage gets its own atlas (the old tree's is sparser).
+- **Algarrobo look**: tortuosity 0.55–0.8 (old 0.7–0.9), fluting, thicker trunk
+  (old 0.055–0.068 × height, so about 1.1–1.4 m across at 10 m), crown base 0.3–0.4,
+  density 0.18 with twigs 0.5 (old 0.12 and 0.85), 2 cards per clump, fewer twigs;
+  old: 10 m tall, trunk split 0.8, limb sag 1, elbowed branches; dead standing 8.5 m.
+- **Scores** fell to a mean of 0.48: the see-through crown lets sky through the model's
+  silhouette as well. The recipe now says the number matters less for airy crowns.

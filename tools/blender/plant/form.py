@@ -136,13 +136,15 @@ def resolve(look: dict[str, Any], stage: str, variant: str) -> Form:
     raw = look.get("form", {})
     data = merge(DEFAULTS, {k: v for k, v in raw.items() if k != "stages"})
     over = merge(STAGE_DEFAULTS.get(stage, {}), raw.get("stages", {}).get(stage, {}))
+    levels_wanted = over.pop("levels", None)
+    data = merge(data, over)  # a stage's `branching` replaces the whole list
     all_levels = sorted(
         (merge(LEVEL_DEFAULTS, lv) for lv in data.get("branching", [])), key=lambda lv: lv["level"]
     )
-    levels_wanted = int(over.pop("levels", len(all_levels)))
-    data = merge(data, over)
+    if levels_wanted is None:
+        levels_wanted = len(all_levels)
     crown = data["crown"]
     if "widest" not in crown:
         crown["widest"] = ENVELOPE_WIDEST[crown["envelope"]]
     key = f"{look['id']}/{look['look']}/{variant}"
-    return Form(data, key, stage, all_levels[:levels_wanted])
+    return Form(data, key, stage, all_levels[: int(levels_wanted)])

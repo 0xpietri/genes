@@ -137,6 +137,20 @@ def _lay_down(tree: Tree, form: Form, max_height: float) -> None:
     for b in tree.alive():
         b.points = [vec.rotate(p, axis, angle) for p in b.points]
         b.points = [(p[0], p[1] + base_r * 0.85, p[2]) for p in b.points]
+    # The trunk and the leaders lie along the ground, snaking sideways as they grew;
+    # their limbs move with them.
+    shift: dict[int, list[Vec]] = {}
+    for i, b in enumerate(tree.branches):
+        if b.removed:
+            continue
+        if b.level in (BOLE, LEADER):
+            flat = [(p[0], r * 0.85, p[2]) for p, r in zip(b.points, b.radii, strict=True)]
+            shift[i] = [vec.sub(f, p) for f, p in zip(flat, b.points, strict=True)]
+            b.points = flat
+        elif b.parent is not None and b.parent in shift:
+            moves = shift[b.parent]
+            d = moves[min(len(moves) - 1, round(b.at * (len(moves) - 1)))]
+            b.points = [vec.add(p, d) for p in b.points]
     for i, b in enumerate(tree.branches):
         if b.removed or b.level == BOLE:
             continue
@@ -278,6 +292,7 @@ def _bark(tree: Tree, form: Form, coarse: bool, cap: int, seed_value: float) -> 
     tile = float(form.get("trunk.bark.tile_m"))
     gnarl = form.ind("trunk.gnarl")
     flare = form.ind("trunk.flare")
+    fluting = form.ind("trunk.fluting")
     alive = tree.alive()
     thresholds = sorted({0.0} | {b.radii[0] for b in alive if b.level >= 1})
     best = Part("bark")
@@ -291,16 +306,20 @@ def _bark(tree: Tree, form: Form, coarse: bool, cap: int, seed_value: float) -> 
         for b in alive:
             if b.level >= 1 and b.radii[0] < r_min:
                 continue
+            sides = sides_for(b.radii[0], coarse)
+            if fluting > 0 and not coarse and b.level in (BOLE, LEADER):
+                sides = max(sides, 15)  # enough sides for five ribs
             tube(
                 part,
                 b,
-                sides_for(b.radii[0], coarse),
+                sides,
                 tile,
                 gnarl,
                 flare,
                 tree.height,
                 seed_value,
                 step=2 if coarse and b.level >= 1 else 1,
+                fluting=fluting,
             )
         if part.triangle_count <= cap:
             best, used = part, r_min

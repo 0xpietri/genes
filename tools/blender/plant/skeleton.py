@@ -18,6 +18,7 @@ from plant.vec import UP, Vec
 
 BOLE = -1
 LEADER = 0
+OLD_STAGES = ("old", "dead_standing", "fallen")
 
 
 @dataclass
@@ -81,6 +82,7 @@ class Tree:
     envelope: Envelope
     branches: list[Branch]
     twig_radius: float
+    adult_height: float = 0.0
 
     def alive(self) -> list[Branch]:
         return [b for b in self.branches if not b.removed]
@@ -106,6 +108,43 @@ class Growth:
     curve: float
     droop: float
     wander: float
+    bend: float = 0.0  # tortuosity: big slow S-bends, not the small zig-zag of wander
+    bend_fade: float = 0.0  # how much the bends calm down towards the tip (0–1)
+    bend_waves: tuple[float, float] = (0.8, 1.6)  # bends along the branch
+    elbows: bool = False  # angular kinks instead of smooth S-curves
+    rest: bool = False  # sags to the ground, lies along it and rises again
+    full: float = 1.0  # >1 keeps the branch thick for longer before it thins
+
+
+def _bends(g: Growth, rng: random.Random) -> tuple[float, ...] | None:
+    """The shape of a branch's slow bends, drawn once: two waves along it, and how the
+    plane they bend in turns, so the trunk snakes in three dimensions."""
+    if g.bend <= 0:
+        return None
+    return (
+        rng.uniform(*g.bend_waves),  # waves along the branch
+        rng.uniform(0, 2 * math.pi),
+        rng.uniform(0, 2 * math.pi),
+        rng.uniform(0, 2 * math.pi),  # first bending plane
+        rng.uniform(-0.6, 0.6),  # turns of that plane along the branch
+    )
+
+
+def _bend_angle(g: Growth, shape: tuple[float, ...], s: float) -> float:
+    waves, ph1, ph2 = shape[0], shape[1], shape[2]
+
+    def f(x: float) -> float:
+        return math.sin(2 * math.pi * waves * x + ph1) + 0.45 * math.sin(
+            2 * math.pi * 2.3 * waves * x + ph2
+        )
+
+    # At most about 35 degrees off the branch's course: crooked, never folded over.
+    if g.elbows:
+        # Straight runs between kinks: the course jumps at each elbow.
+        step = 1 / max(2 * waves, 1.0)
+        s = math.floor(s / step) * step + step * 0.5
+    wave = max(-1.0, min(1.0, (f(s) - f(0.0)) / 1.8))
+    return g.bend * 0.62 * wave * (1 - g.bend_fade * s)
 
 
 def grow(
@@ -127,6 +166,10 @@ def grow(
     pts: list[Vec] = [start]
     p = start
     entered = env is None or env.inside(start)
+    shape = _bends(g, rng)
+    droop = g.droop
+    ground_left = -1  # steps still to lie on the ground; -1 = not reached it yet
+    floor = r0 * 0.95  # the limb lies on the ground, not in it
     for i in range(n):
         if g.wander > 0:
             axis = vec.rotate(vec.perpendicular(d), d, rng.uniform(0, 2 * math.pi))
@@ -139,30 +182,59 @@ def grow(
                 vec.norm(vec.sub(vec.norm(out), vec.mul(UP, 0.35))) if vec.length(out) > 1e-3 else d
             )
             d = vec.rotate_towards(d, target, -g.curve * (math.pi / 3) / n)
-        if g.droop > 0:
+        if droop > 0:
             weight = 2.0 * (i + 1) / n
-            d = vec.rotate_towards(d, (0.0, -1.0, 0.0), g.droop * (math.pi / 2.2) * weight / n)
-        nxt = vec.add(p, vec.mul(d, dl))
-        if env is not None and nxt[1] < env.top * 0.06:
+            d = vec.rotate_towards(d, (0.0, -1.0, 0.0), droop * (math.pi / 2.2) * weight / n)
+        step = d
+        if shape is not None:
+            s = (i + 0.5) / n
+            ref = vec.cross(d, UP)
+            ref = vec.norm(ref) if vec.length(ref) > 1e-3 else vec.perpendicular(d)
+            axis = vec.rotate(ref, d, shape[3] + 2 * math.pi * shape[4] * s)
+            step = vec.norm(vec.rotate(d, axis, _bend_angle(g, shape, s)))
+        nxt = vec.add(p, vec.mul(step, dl))
+        if g.rest and (nxt[1] < floor or ground_left > 0):
+            # On the ground: run along it a while, then turn up again.
+            flat = vec.horizontal(d)
+            d = vec.norm(flat) if vec.length(flat) > 1e-3 else vec.perpendicular(UP)
+            if ground_left < 0:
+                ground_left = max(1, round(n * rng.uniform(0.12, 0.25)))
+            nxt = vec.add(p, vec.mul(d, dl))
+            nxt = (nxt[0], floor, nxt[2])
+            ground_left -= 1
+            if ground_left == 0:
+                d = vec.norm(vec.rotate_towards(d, UP, rng.uniform(0.5, 0.9)))
+                droop = 0.0
+                ground_left = -2  # done: rises and never comes down again
+        elif not g.rest and env is not None and nxt[1] < env.top * 0.06:
             break  # drooping limbs stop above the ground
-        if env is not None and env.inside(nxt):
+        if g.rest:
+            pass  # a resting limb leaves the crown on purpose
+        elif env is not None and env.inside(nxt):
             entered = True
         elif env is not None and entered:
             if len(pts) == 1:
-                pts.append(vec.add(p, vec.mul(d, dl * 0.5)))
+                pts.append(vec.add(p, vec.mul(step, dl * 0.5)))
             break
         pts.append(nxt)
         p = nxt
     count = len(pts)
     if count == 1:
         return pts, [r0]
-    radii = [r0 + (r1 - r0) * (i / (count - 1)) for i in range(count)]
+    radii = [r0 + (r1 - r0) * (i / (count - 1)) ** g.full for i in range(count)]
     return pts, radii
 
 
-def _segments(level: int, length: float, height: float) -> int:
+def _bend_style(form: Form) -> tuple[tuple[float, float], bool]:
+    return form.range("trunk.bends"), form.get("trunk.bend_style") == "elbows"
+
+
+def _segments(level: int, length: float, height: float, bend: float = 0.0) -> int:
     most = {BOLE: 8, LEADER: 10, 1: 7, 2: 5, 3: 3}[level]
-    return max(2, min(most, round(length / max(height * 0.035, 0.05))))
+    if bend > 0 and level <= 1:
+        most += round(6 * min(bend, 1.0))  # bends need more rings to stay round
+    step = height * (0.035 - 0.015 * min(bend, 1.0))
+    return max(2, min(most, round(length / max(step, 0.05))))
 
 
 def make_envelope(form: Form, height: float, centre: tuple[float, float]) -> Envelope:
@@ -190,7 +262,15 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
     trunk_dir = vec.from_spherical(lean_az, lean)
     count = max(1, form.ind_int("trunk.count"))
     split = form.ind("trunk.split_height")
+    # Old trees: the trunk opens from near the ground into stems that rise side by side.
+    opened = float(form.get("old.trunk_split")) if form.stage in OLD_STAGES else 0.0
+    if opened > 0:
+        count = max(count, 2)
+        split = split * (1 - opened) + 0.03 * opened
     twist = form.ind("trunk.twist")
+    # Crookedness comes with age: a sapling is nearly straight.
+    bend = form.ind("trunk.tortuosity") * min(1.0, height / adult_height) ** 0.8
+    style = _bend_style(form)
     taper = form.ind("trunk.taper")
     # Radius grows faster than height (allometry), so small stages are slender.
     rph = form.ind("trunk.radius_per_height")
@@ -205,7 +285,9 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
     centre = (math.cos(lean_az) * drift, math.sin(lean_az) * drift)
     env = make_envelope(form, height, centre)
 
-    bole_growth = Growth(curve=0.12, droop=0.0, wander=twist * 0.5)
+    bole_growth = Growth(
+        curve=0.12, droop=0.0, wander=twist * 0.5, bend=bend, bend_waves=style[0], elbows=style[1]
+    )
     if fork_h > 0.02 * height:
         length = fork_h / max(math.cos(lean), 0.3)
         pts, radii = grow(
@@ -217,7 +299,7 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
             bole_growth,
             rng,
             None,
-            _segments(BOLE, length, height),
+            _segments(BOLE, length, height, bend),
         )
         branches.append(Branch(BOLE, pts, radii))
         fork, fork_r = pts[-1], radii[-1]
@@ -225,10 +307,19 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
     else:
         fork, fork_r, top_dir = (0.0, 0.0, 0.0), trunk_r, trunk_dir
 
-    leader_growth = Growth(curve=form.ind("trunk.leader_curve"), droop=0.0, wander=twist * 0.45)
+    leader_growth = Growth(
+        curve=form.ind("trunk.leader_curve"),
+        droop=0.0,
+        wander=twist * 0.45,
+        bend=bend,
+        bend_fade=0.7,  # crooked low down, still reaching the crown's edge
+        full=1.6,
+        bend_waves=style[0],
+        elbows=style[1],
+    )
     reach = form.ind("trunk.leader_reach")
     az0 = 2 * math.pi * form.unit("leader_azimuth")
-    leader_r = fork_r * count ** (-1 / 2.3)
+    leader_r = fork_r * count ** (-1 / 2.8)  # stems as thick as fused trunks
     bole = 0 if branches else None
     for i in range(count):
         if count == 1:
@@ -237,13 +328,20 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
         else:
             az = az0 + 2 * math.pi * i / count + rng.uniform(-0.35, 0.35) * math.pi / count
             tilt = math.radians(draw(rng, form.get("trunk.fork_angle_deg")))
+            tilt *= 1 - 0.75 * opened  # split stems rise close together, then part
             d = vec.norm(vec.add(vec.from_spherical(az, tilt), vec.mul(vec.sub(top_dir, UP), 0.8)))
             to_edge = env.distance(fork, d, height * 2)
             length = max(reach * to_edge, height * 0.2)
         r0 = leader_r * rng.uniform(0.85, 1.1) if count > 1 else fork_r
         r1 = max(twig_r * 2, r0 * (1 - taper) * 0.5)
+        start = fork
+        if opened > 0 and count > 1:
+            # Each stem stands on its own part of the stump, so a crack opens between them.
+            side = vec.from_spherical(az, math.pi / 2)
+            start = vec.add(fork, vec.mul(side, fork_r * 0.4 * opened))
+            r0 = max(r0, fork_r * 0.72)
         pts, radii = grow(
-            fork,
+            start,
             d,
             length,
             r0,
@@ -251,7 +349,7 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
             leader_growth,
             rng,
             env if count > 1 else None,
-            _segments(LEADER, length, height),
+            _segments(LEADER, length, height, bend),
         )
         if len(pts) < 2:
             pts.append(vec.add(fork, vec.mul(d, height * 0.05)))
@@ -263,7 +361,7 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
         if bole is not None:
             branches[bole].children.append(len(branches) - 1)
 
-    tree = Tree(height, env, branches, twig_r)
+    tree = Tree(height, env, branches, twig_r, adult_height)
     parents = [i for i, b in enumerate(branches) if b.level == LEADER]
     for lv in form.levels:
         parents = _grow_level(tree, parents, lv, form, rng)
@@ -278,9 +376,15 @@ def _grow_level(
     mean = sum(lengths) / len(lengths) if lengths else 1.0
     s0, s1 = (float(x) for x in lv["start"])  # type: ignore[attr-defined]
     taper = form.ind("trunk.taper")
+    age = min(1.0, tree.height / max(tree.adult_height, 1e-6)) ** 0.8
+    bend = form.ind("trunk.tortuosity") * 0.6 * age  # main limbs snake too, a little less
+    style = _bend_style(form)
     env = tree.envelope
     made: list[int] = []
     roll_kind = lv["roll"]
+    aged = form.stage in ("old", "dead_standing")
+    sag = float(form.get("old.limb_sag")) if aged else 0.0
+    sagging = float(form.get("old.sagging_limbs")) if aged and sag > 0 else 0.0
     for pi in parents:
         parent = tree.branches[pi]
         plen = parent.length
@@ -291,7 +395,10 @@ def _grow_level(
         for j in range(n):
             t = s0 + (s1 - s0) * (j + rng.uniform(0.15, 0.85)) / max(n, 1)
             p, tangent, pr = parent.point_at(t)
-            if p[1] < env.base - 0.05 * tree.height and level == 1:
+            # Old trees: some low main limbs sag; at the far end of the scale they reach
+            # the ground, lie along it and rise again.
+            rest = level == 1 and sagging > 0 and t < 0.5 and rng.random() < sagging
+            if p[1] < env.base - 0.05 * tree.height and level == 1 and not rest:
                 continue
             if roll_kind == "opposite":
                 roll_j = roll + (j % 2) * math.pi + (j // 2) * math.pi / 2
@@ -303,20 +410,45 @@ def _grow_level(
             ref = vec.norm(ref) if vec.length(ref) > 1e-3 else vec.perpendicular(tangent)
             axis = vec.norm(vec.rotate(ref, tangent, roll_j))
             angle = math.radians(draw(rng, lv["angle_deg"]))
+            if rest:
+                angle = max(angle, math.radians(rng.uniform(65, 85)))
             d = vec.norm(vec.rotate(tangent, axis, angle))
             near_tip = max(0.0, (t - 0.5) / 0.5)
             length = draw(rng, lv["length"]) * plen * (1 - 0.5 * near_tip)
+            if rest:
+                length = max(length, plen * rng.uniform(0.9, 1.25))
             length = max(length, tree.height * 0.03)
             r0 = min(pr * draw(rng, lv["radius_ratio"]), pr * 0.9)
             r0 = max(r0, tree.twig_radius)
             r1 = max(tree.twig_radius, r0 * (1 - taper) * 0.5)
+            if "tortuosity" in lv:
+                lv_bend = draw(rng, lv["tortuosity"]) * age
+            else:
+                lv_bend = bend if level == 1 else 0.0
             g = Growth(
                 curve=draw(rng, lv["curve"]),
                 droop=draw(rng, lv["droop"]),
                 wander=draw(rng, lv["wander"]),
+                bend=max(lv_bend, bend / 0.6) if rest else lv_bend,
+                full=1.4 if level == 1 else 1.0,
+                bend_waves=style[0],
+                elbows=lv.get("bend_style", "elbows" if style[1] else "smooth") == "elbows",
             )
+            if rest:
+                g.droop, g.curve = 0.25 + 0.85 * sag, 0.0
+                g.rest = sag >= 0.8
+                r0 = max(r0, pr * 0.8)  # the big low limbs are nearly trunk-thick
+                r1 = max(r1, r0 * 0.6)
             pts, radii = grow(
-                p, d, length, r0, r1, g, rng, env, _segments(level, length, tree.height)
+                p,
+                d,
+                length,
+                r0,
+                r1,
+                g,
+                rng,
+                None if rest else env,
+                _segments(level, length, tree.height, g.bend) + (5 if rest else 0),
             )
             if len(pts) < 2:
                 continue

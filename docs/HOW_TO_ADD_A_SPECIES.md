@@ -137,10 +137,13 @@ Read the photos in this order, biggest shapes first:
 | Overall crown shape | `crown.envelope`: `umbrella` (flat, wide), `globose`, `conical`, `columnar`, `weeping`, `irregular` |
 | Where the crown starts | `crown.base` (fraction of height; low = skirt to the ground) |
 | Flat top, or rounded | `crown.flat_top` |
-| Sky through the crown | `crown.openness`, `foliage.density`, `foliage.leaf_type` |
+| Sky through the foliage (airy, not holed) | `foliage.density` (0 = a few sprays, 1 = a solid mass), `foliage.twigs` (dark twigs inside each clump), `foliage.cards_per_clump`, fewer `branching[2].count` |
+| Big gaps in the crown | `crown.openness` (holes between groups of clumps) |
 | One main stem or a fork | `trunk.count` (leaders above the fork), `trunk.split_height` |
 | Leaders spread or rise | `trunk.fork_angle_deg`, `trunk.leader_curve` (negative arches out) |
-| Leaning, twisted trunk | `trunk.lean_deg`, `trunk.twist`, `trunk.gnarl`, `trunk.flare` |
+| Crooked trunk | `trunk.tortuosity` (0 straight … 1 contorted), `trunk.bends` (how many bends), `trunk.bend_style` (`smooth` S-curves or `elbows`) |
+| Crooked branches | `branching[].tortuosity`, `branching[].bend_style` (old algarrobo: smooth limbs, elbowed branches) |
+| Leaning, knotty trunk | `trunk.lean_deg`, `trunk.twist` (small zig-zag), `trunk.gnarl`, `trunk.flare`, `trunk.fluting` (spiral ribs, as if stems had fused) |
 | Trunk thickness | `trunk.radius_per_height` (sheet: dbh / 2 / adult_height) |
 | Limbs droop at the tips | `branching[].droop`, `branching[].curve` |
 | Dense twigs or sparse limbs | `branching[].count`, `branching[].length` |
@@ -148,10 +151,15 @@ Read the photos in this order, biggest shapes first:
 | Leaf texture | `foliage.leaf_type`, `foliage.leaf_size_cm` (from the sheet) |
 | Flowers and fruit | `flowers.*`, `fruit.*` (sizes from the sheet); `show_scale` 1.2–1.8 only if they are a recognisable trait and vanish at real size |
 | Thorns | `thorns.kind`, `thorns.length_cm`, `thorns.where` |
-| Old and dead trees | `old.*`, `dead.*` |
+| Old trees | `old.trunk_split` (the trunk opens from the ground into stems), `old.limb_sag` (0 = low limbs stay up … 1 = they reach the ground, lie on it and rise again), `old.sagging_limbs`, `old.broken_limbs`, `old.crown_thinning` |
+| Dead trees | `dead.*` |
 
 `branching` is a list of levels below the leaders: level 1 the main limbs, 2 the
 branches, 3 the twigs. Most trees need 3 levels; shrubs 2.
+
+Crookedness grows with age by itself (a sapling is nearly straight). An old tree is often a
+different shape: give `stages.old` its own `trunk`, `foliage` and even a whole `branching`
+list (it replaces the adult's), as the algarrobo does.
 
 `stages` inside `form` changes the form for one stage only (a young tree is narrower
 and more upright; a seedling has `levels: 0`). Look at the algarrobo's.
@@ -176,7 +184,10 @@ stage while tuning.
 
 The score is the overlap (intersection over union) of the model's silhouette and the
 tree in each whole-tree photo. 1.0 is a perfect match; **aim for 0.6 or more on every
-whole-tree photo, and a mean of 0.65 or more**. Open `sheet.png` and look at it too:
+whole-tree photo, and a mean of 0.65 or more** for dense crowns. Airy crowns score lower
+because the sky shows through the model too (the algarrobo sits near 0.5 after marcos
+asked for see-through foliage); there the outline matters, not the number. Open
+`sheet.png` and look at it too:
 
 - top rows: each photo with the best model laid over it in red, inside the yellow box;
 - then the adult variants in summer, winter and in flower, painted, and lod1;
@@ -194,9 +205,9 @@ time and rebuild:
 | Crown too round on top | `crown.flat_top` up, or `crown.envelope: umbrella` |
 | Crown sits too high or too low on the trunk | `crown.base`, `trunk.split_height` |
 | Bare inner crown, clumps only at the rim | `branching[0].start` lower, `crown.openness` down |
-| A dense ball, no sky through it | `crown.openness` up, `foliage.density` down |
+| A dense ball, no sky through it | `foliage.density` down, `foliage.twigs` up, fewer twigs (`branching[2].count`) |
 | Gaps in the outline where the photo is full | `crown.irregular` down, `branching[].count` up |
-| Limbs too straight | `trunk.twist`, `branching[].wander`, `branching[].curve` |
+| Limbs too straight | `trunk.tortuosity`, `branching[].tortuosity`, `branching[].wander` |
 | Trunk too thin or too thick | `trunk.radius_per_height` |
 | Flowers or fruit invisible in the close-ups | `cover` up, then `show_scale` up to 1.8 |
 | Winter looks like summer | the sheet's `leaf_habit` and `leaf_fall` months (pietri.dev drops the clumps by their order) |

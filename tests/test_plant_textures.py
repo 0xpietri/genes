@@ -35,8 +35,10 @@ def test_the_atlas_is_grey_cut_outs(atlas: Any) -> None:
     assert atlas.shape == (side, side, 4)
     assert set(np.unique(atlas[..., 3]).tolist()) == {0.0, 1.0}
     leaf = atlas[..., 3] == 1
-    assert 0.15 < leaf.mean() < 0.8  # a clump, not a square and not empty
-    assert len(np.unique(atlas[leaf][:, 0])) <= textures.GREYS
+    assert 0.08 < leaf.mean() < 0.8  # a clump, not a square and not empty
+    values = set(np.unique(atlas[leaf][:, 0]).tolist())
+    assert textures.TWIG in {round(v, 6) for v in values} or min(values) >= 0.72
+    assert len(values) <= textures.GREYS + 1  # the leaf greys and the twigs
     assert (atlas[..., 0] == atlas[..., 1]).all() and (atlas[..., 1] == atlas[..., 2]).all()
     assert (atlas[~leaf][:, :3] == 1).all()  # clear pixels white: they compress to nothing
 
@@ -46,17 +48,35 @@ def test_the_atlas_is_deterministic(look: dict[str, Any], atlas: Any) -> None:
     assert (again == atlas).all()
 
 
+def test_twigs_are_painted_under_the_leaves(look: dict[str, Any]) -> None:
+    form = resolve(look, "adult", "a").data
+    bare = {"foliage": {**form["foliage"], "twigs": 0}}
+    twiggy = {"foliage": {**form["foliage"], "twigs": 1}}
+    dark = lambda a: ((a[..., 3] == 1) & (a[..., 0] < 0.5)).mean()  # noqa: E731
+    assert dark(textures.foliage_atlas(bare, 0.85, seed=7)) == 0
+    assert dark(textures.foliage_atlas(twiggy, 0.85, seed=7)) > 0.005
+
+
 def test_the_half_atlas_keeps_thin_leaflets(atlas: Any) -> None:
     small = textures.half(atlas)
     assert small.shape[0] == atlas.shape[0] // 2
     assert small[..., 3].mean() >= atlas[..., 3].mean()
 
 
-def test_bark_is_grey_and_opaque(look: dict[str, Any]) -> None:
+def test_bark_tiles_with_gentle_colour(look: dict[str, Any]) -> None:
     bark = textures.bark(resolve(look, "adult", "a").data, seed=3)
     assert bark.shape == (256, 256, 4)
     assert (bark[..., 3] == 1).all()
-    assert bark[..., 0].min() >= 0.35 and bark[..., 0].max() <= 1.0
+    rgb = bark[..., :3]
+    assert rgb.min() >= 0.0 and rgb.max() <= 1.0
+    assert 0.7 < rgb.mean() < 0.95  # near white: the palette's colour carries the tone
+    tint = np.abs(rgb - rgb.mean(axis=2, keepdims=True)).max()
+    assert 0.01 < tint < 0.12  # patches of colour, never a different colour
+    # It tiles: the jump across each edge is like the jump between neighbouring pixels.
+    inner_x = np.abs(np.diff(rgb, axis=1)).mean()
+    inner_y = np.abs(np.diff(rgb, axis=0)).mean()
+    assert np.abs(rgb[:, 0] - rgb[:, -1]).mean() < 3 * inner_x
+    assert np.abs(rgb[0] - rgb[-1]).mean() < 3 * inner_y
     assert textures.half_bark(bark).shape == (128, 128, 4)
 
 

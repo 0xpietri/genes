@@ -79,8 +79,10 @@ def tube(
     height: float,
     seed: float,
     step: int = 1,
+    fluting: float = 0.0,
 ) -> None:
-    """A tube along the branch with parallel-transport frames, closed at the tip."""
+    """A tube along the branch with parallel-transport frames, closed at the tip. The
+    trunk and the leaders can be fluted: ribs that spiral up them like fused stems."""
     pts = branch.points[::step]
     radii = branch.radii[::step]
     if pts[-1] != branch.points[-1]:
@@ -120,12 +122,15 @@ def tube(
                     + gnarl * 0.12 * _noise(seed, j % sides, i)
                     + gnarl * 0.08 * math.sin(3 * theta + seed)
                 )
+            if trunkish and fluting > 0:
+                spiral = 0.35 * v_run / max(radii[0], 0.05)  # a quarter turn every few widths
+                rr *= 1 + fluting * 0.22 * math.cos(5 * theta + spiral + seed)
             if branch.level == BOLE or (branch.level == LEADER and branch.parent is None):
                 low = math.exp(-p[1] / max(height * 0.06, 0.05))
                 rr *= 1 + flare * 1.6 * low + flare * 0.35 * low * math.cos(5 * theta + seed)
             pos = vec.add(p, vec.mul(radial, rr))
-            if i == 0 and branch.level in (BOLE, LEADER) and branch.parent is None:
-                pos = (pos[0], 0.0, pos[2])
+            if (i == 0 and branch.level in (BOLE, LEADER) and branch.parent is None) or pos[1] < 0:
+                pos = (pos[0], 0.0, pos[2])  # wood meets the ground, never goes into it
             part.vertex(pos, radial, (j / sides * around, v_run / tile))
     for i in range(len(rings) - 1):
         a0, b0 = rings[i], rings[i + 1]

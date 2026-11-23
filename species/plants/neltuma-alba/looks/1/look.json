@@ -17,8 +17,8 @@
           0.4
         ],
         "droop": [
-          0.1,
-          0.3
+          0.05,
+          0.2
         ],
         "length": [
           0.5,
@@ -26,8 +26,8 @@
         ],
         "level": 1,
         "radius_ratio": [
-          0.45,
-          0.65
+          0.55,
+          0.75
         ],
         "start": [
           0.25,
@@ -40,14 +40,15 @@
           30,
           55
         ],
+        "bend_style": "elbows",
         "count": [
-          6,
-          10
+          4,
+          7
         ],
         "curve": 0,
         "droop": [
-          0.4,
-          0.7
+          0.25,
+          0.45
         ],
         "length": [
           0.35,
@@ -62,6 +63,10 @@
           0.2,
           1.0
         ],
+        "tortuosity": [
+          0.2,
+          0.4
+        ],
         "wander": 0.3
       },
       {
@@ -70,13 +75,13 @@
           50
         ],
         "count": [
-          4,
-          7
+          2,
+          4
         ],
         "curve": 0,
         "droop": [
-          0.5,
-          0.8
+          0.3,
+          0.55
         ],
         "length": [
           0.3,
@@ -96,14 +101,14 @@
     ],
     "crown": {
       "base": [
-        0.12,
-        0.22
+        0.3,
+        0.4
       ],
       "clump_size_m": [
         0.7,
         1.0
       ],
-      "clump_spacing": 1.1,
+      "clump_spacing": 1.8,
       "envelope": "umbrella",
       "flat_top": [
         0.5,
@@ -142,14 +147,15 @@
       "where": "axils"
     },
     "foliage": {
-      "cards_per_clump": 3,
-      "density": 0.5,
+      "cards_per_clump": 2,
+      "density": 0.18,
       "leaf_size_cm": [
         6,
         14
       ],
       "leaf_type": "bipinnate",
-      "leafy_from": 0.3
+      "leafy_from": 0.3,
+      "twigs": 0.5
     },
     "fruit": {
       "cover": 0.35,
@@ -171,16 +177,295 @@
     },
     "old": {
       "broken_limbs": [
-        1,
-        2
+        0,
+        1
       ],
-      "crown_thinning": 0.3,
+      "crown_thinning": 0.15,
       "extra_lean_deg": [
         0,
         8
-      ]
+      ],
+      "limb_sag": 1.0,
+      "sagging_limbs": 0.4,
+      "trunk_split": 0.8
     },
     "stages": {
+      "dead_standing": {
+        "branching": [
+          {
+            "angle_deg": [
+              40,
+              70
+            ],
+            "count": [
+              4,
+              7
+            ],
+            "curve": [
+              0.1,
+              0.4
+            ],
+            "droop": [
+              0.05,
+              0.2
+            ],
+            "length": [
+              0.5,
+              0.75
+            ],
+            "level": 1,
+            "radius_ratio": [
+              0.55,
+              0.75
+            ],
+            "start": [
+              0.25,
+              0.95
+            ],
+            "tortuosity": [
+              0.6,
+              0.9
+            ],
+            "wander": 0.35
+          },
+          {
+            "angle_deg": [
+              30,
+              55
+            ],
+            "bend_style": "elbows",
+            "count": [
+              4,
+              7
+            ],
+            "curve": 0,
+            "droop": [
+              0.25,
+              0.45
+            ],
+            "length": [
+              0.35,
+              0.55
+            ],
+            "level": 2,
+            "radius_ratio": [
+              0.4,
+              0.6
+            ],
+            "start": [
+              0.2,
+              1.0
+            ],
+            "tortuosity": [
+              0.5,
+              0.8
+            ],
+            "wander": 0.3
+          },
+          {
+            "angle_deg": [
+              25,
+              50
+            ],
+            "bend_style": "elbows",
+            "count": [
+              2,
+              4
+            ],
+            "curve": 0,
+            "droop": [
+              0.3,
+              0.55
+            ],
+            "length": [
+              0.3,
+              0.5
+            ],
+            "level": 3,
+            "radius_ratio": [
+              0.4,
+              0.6
+            ],
+            "start": [
+              0.3,
+              1.0
+            ],
+            "tortuosity": [
+              0.4,
+              0.7
+            ],
+            "wander": 0.25
+          }
+        ],
+        "trunk": {
+          "flare": 0.12,
+          "fluting": [
+            0.5,
+            0.8
+          ],
+          "radius_per_height": [
+            0.055,
+            0.068
+          ],
+          "taper": 0.35,
+          "tortuosity": [
+            0.7,
+            0.9
+          ]
+        }
+      },
+      "fallen": {
+        "trunk": {
+          "flare": 0.12,
+          "fluting": [
+            0.5,
+            0.8
+          ],
+          "radius_per_height": [
+            0.055,
+            0.068
+          ],
+          "taper": 0.35,
+          "tortuosity": [
+            0.7,
+            0.9
+          ]
+        }
+      },
+      "old": {
+        "branching": [
+          {
+            "angle_deg": [
+              40,
+              70
+            ],
+            "count": [
+              4,
+              7
+            ],
+            "curve": [
+              0.1,
+              0.4
+            ],
+            "droop": [
+              0.05,
+              0.2
+            ],
+            "length": [
+              0.5,
+              0.75
+            ],
+            "level": 1,
+            "radius_ratio": [
+              0.55,
+              0.75
+            ],
+            "start": [
+              0.25,
+              0.95
+            ],
+            "tortuosity": [
+              0.6,
+              0.9
+            ],
+            "wander": 0.35
+          },
+          {
+            "angle_deg": [
+              30,
+              55
+            ],
+            "bend_style": "elbows",
+            "count": [
+              4,
+              7
+            ],
+            "curve": 0,
+            "droop": [
+              0.25,
+              0.45
+            ],
+            "length": [
+              0.35,
+              0.55
+            ],
+            "level": 2,
+            "radius_ratio": [
+              0.4,
+              0.6
+            ],
+            "start": [
+              0.2,
+              1.0
+            ],
+            "tortuosity": [
+              0.5,
+              0.8
+            ],
+            "wander": 0.3
+          },
+          {
+            "angle_deg": [
+              25,
+              50
+            ],
+            "bend_style": "elbows",
+            "count": [
+              2,
+              4
+            ],
+            "curve": 0,
+            "droop": [
+              0.3,
+              0.55
+            ],
+            "length": [
+              0.3,
+              0.5
+            ],
+            "level": 3,
+            "radius_ratio": [
+              0.4,
+              0.6
+            ],
+            "start": [
+              0.3,
+              1.0
+            ],
+            "tortuosity": [
+              0.4,
+              0.7
+            ],
+            "wander": 0.25
+          }
+        ],
+        "crown": {
+          "width_to_height": [
+            1.4,
+            1.8
+          ]
+        },
+        "foliage": {
+          "density": 0.12,
+          "twigs": 0.85
+        },
+        "trunk": {
+          "flare": 0.12,
+          "fluting": [
+            0.5,
+            0.8
+          ],
+          "radius_per_height": [
+            0.055,
+            0.068
+          ],
+          "taper": 0.35,
+          "tortuosity": [
+            0.7,
+            0.9
+          ]
+        }
+      },
       "sapling": {
         "crown": {
           "base": [
@@ -253,13 +538,17 @@
         3
       ],
       "flare": 0.3,
+      "fluting": [
+        0.1,
+        0.25
+      ],
       "fork_angle_deg": [
-        45,
-        65
+        50,
+        70
       ],
       "gnarl": [
-        0.4,
-        0.6
+        0.5,
+        0.7
       ],
       "leader_curve": [
         -0.45,
@@ -274,14 +563,18 @@
         14
       ],
       "radius_per_height": [
-        0.035,
-        0.045
+        0.04,
+        0.05
       ],
       "split_height": [
-        0.12,
-        0.26
+        0.18,
+        0.32
       ],
-      "taper": 0.65,
+      "taper": 0.5,
+      "tortuosity": [
+        0.55,
+        0.8
+      ],
       "twist": [
         0.35,
         0.6
@@ -388,7 +681,7 @@
       "variants": 3
     },
     "dead_standing": {
-      "ref_height_m": 7,
+      "ref_height_m": 8.5,
       "variants": 2
     },
     "fallen": {
@@ -396,7 +689,7 @@
       "variants": 2
     },
     "old": {
-      "ref_height_m": 8.5,
+      "ref_height_m": 10,
       "variants": 3
     },
     "sapling": {
