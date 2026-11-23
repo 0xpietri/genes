@@ -289,7 +289,7 @@ def _bend_style(form: Form) -> tuple[tuple[float, float], bool]:
 def _segments(level: int, length: float, height: float, bend: float = 0.0) -> int:
     most = {BOLE: 8, LEADER: 10, 1: 7, 2: 5, 3: 3}[level]
     if bend > 0 and level <= 1:
-        most += round(6 * min(bend, 1.0))  # bends need more rings to stay round
+        most += round(4 * min(bend, 1.0))  # bends need more rings to stay round
     step = height * (0.035 - 0.015 * min(bend, 1.0))
     return max(2, min(most, round(length / max(step, 0.05))))
 
@@ -577,7 +577,11 @@ def fill_crown(
             y = _top_at(env, x, z)
             if y is None or y < upper:
                 continue
-            targets.append((x, min(y, roof) - size * rng.uniform(0.25, 0.6), z))
+            top = min(y, roof)
+            targets.append((x, top - size * rng.uniform(0.25, 0.6), z))
+            # A second layer under it: the crown is a thick dome, not a skin.
+            if top - size * 2 > upper:
+                targets.append((x, top - size * rng.uniform(1.4, 2.0), z))
     rng.shuffle(targets)
     sources = [
         (i, b)
@@ -602,7 +606,7 @@ def fill_crown(
                 d = vec.length(vec.sub(tgt, p))
                 if best is None or d < best[0]:
                     best = (d, i, k)
-        if best is None or best[0] > tree.height * 0.5:
+        if best is None or best[0] > tree.height * 0.9:
             continue
         dist, pi, k = best
         parent = tree.branches[pi]

@@ -400,6 +400,8 @@ def _bark(tree: Tree, form: Form, coarse: bool, cap: int, seed_value: float) -> 
             if b.level >= 1 and b.radii[0] < r_min:
                 continue
             sides = sides_for(b.radii[0], coarse)
+            if b.level >= 1:
+                sides = min(sides, 7)  # limbs read as round with seven sides
             if fluting > 0 and not coarse and b.level in (BOLE, LEADER):
                 sides = max(sides, 15)  # enough sides for five ribs
             tube(
@@ -609,7 +611,7 @@ def build(
         fl, fr = _flowers_and_fruit(
             shown, form, random.Random(seed(form.key, stage, lod)), coarse, (flower_cap, fruit_cap)
         )
-        need = min(len(shown) * cards * 2, int(budget * 0.5))
+        need = min(len(shown) * cards * 2, int(budget * 0.6))
         need += fl.triangle_count + fr.triangle_count
         bark_cap = max(int(budget * 0.4), budget - thorn_cap - need)
     bark, r_min = _bark(tree, form, coarse, bark_cap, form.unit("bark_seed") * 10)

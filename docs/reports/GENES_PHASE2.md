@@ -216,3 +216,17 @@ give shade, and the trunk too short below it. Changes:
 - Limit: an old tree 15–18 m wide within 12,000 triangles still draws only branches
   thicker than 6 to 21 cm; the twigs are painted inside the foliage. A fuller old tree
   would need a bigger budget for `old` (budgets.json, marcos's call).
+
+## Review round 4 (marcos, 2026-11-23, noon)
+
+What he saw: a young tree with an empty top, an old tree with far too little foliage, and a
+photo of an adult with a full dome. The green should not stop short of the trunk: up high,
+small forking twigs should carry much more foliage. Changes:
+
+- The crown is filled as a thick dome: the gap filler also aims at a second layer under the
+  top surface, and may grow from any limb below (up to 0.9 of the height away).
+- More foliage within the budget: limbs use at most seven sides and bends add fewer rings,
+  and the foliage may take up to 60 % of the triangles (was 50 %).
+- Algarrobo look: branches and twigs start near their parent's base (level 2 from 0.1,
+  level 3 from 0.15) and foliage from 0.15 of each twig, so the green reaches the trunk.
+- Scores: mean 0.56 (0.49, 0.54, 0.61, 0.61, 0.56). Look 5.39 MB of 6 MB.
