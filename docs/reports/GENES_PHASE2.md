@@ -241,3 +241,13 @@ small forking twigs should carry much more foliage. Changes:
   reach out evenly in four quarters round the trunk, and stay within 25 % of each other's
   width. Recipe updated.
 - Scores after the rule: mean 0.56 (0.52, 0.53, 0.61, 0.61, 0.55).
+
+## Review round 5 (marcos, 2026-11-23, 12:35)
+
+He drew the crown he wants over a screenshot: far taller and wider than the wood, airy,
+held up by thin curved branches, with many small twigs on top. Look only (no generator
+change): thinner trunks (adult 0.034–0.04 × height, old 0.045–0.052) that taper more (0.7,
+old 0.65), stems that rise (leader curve −0.15–0.05, fork 35–50°) and reach the crown's
+top, thinner main limbs (radius ratio 0.45–0.6), branches that curve up (curve 0.2–0.4,
+droop 0.1–0.25), crown from 0.28–0.34 of the height and 1.3–1.5 times as wide (old
+1.4–1.6), airier (openness 0.3–0.4, density 0.16). Scores: mean 0.49. Look 5.5 MB.
