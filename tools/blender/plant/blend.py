@@ -1,6 +1,6 @@
 """Blender side of the generator: meshes, materials and the glTF export.
 
-The only module that imports `bpy` (CLAUDE.md). Coordinates: the generator works
+The only module that imports `bpy` (AGENTS.md). Coordinates: the generator works
 in glTF's frame (Y up); Blender is Z up, and its exporter turns it back.
 """
 
