@@ -31,7 +31,8 @@ To add a species, follow [`docs/HOW_TO_ADD_A_SPECIES.md`](docs/HOW_TO_ADD_A_SPEC
 
 - Specification: [`docs/spec/GENES_SPEC_v0.1.md`](docs/spec/GENES_SPEC_v0.1.md)
 - Phase reports: [`docs/reports/`](docs/reports/)
-- Rules for AI agents working here: [`CLAUDE.md`](CLAUDE.md)
+- Rules for AI agents working here: [`AGENTS.md`](AGENTS.md) (`CLAUDE.md` and `GEMINI.md` point to it)
+- Adding a species: [`docs/HOW_TO_ADD_A_SPECIES.md`](docs/HOW_TO_ADD_A_SPECIES.md); every form parameter: [`docs/PLANT_FORM_PARAMETERS.md`](docs/PLANT_FORM_PARAMETERS.md)
 
 ## Licence
 
