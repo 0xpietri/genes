@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://genes.pietri.dev/schemas/sheet.v1.json",
+  "title": "genes: a species sheet (identity and sourced facts)",
+  "description": "Spec §5. A shared core and one block per kind. Facts left out when no source gives them.",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "format": { "const": "genes.sheet.v1" },
+    "id": { "$ref": "common.v1.json#/$defs/species_id" },
+    "version": { "$ref": "common.v1.json#/$defs/version" },
+    "kind": { "enum": ["plant", "animal"] },
+    "scientific_name": { "type": "string", "minLength": 1 },
+    "authority": { "type": "string" },
+    "synonyms": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "family": { "type": "string" },
+    "external": {
+      "type": "object",
+      "properties": {
+        "gbif": { "type": "integer" },
+        "inaturalist": { "type": "integer" },
+        "powo": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "names": {
+      "type": "object",
+      "properties": {
+        "es": { "$ref": "common.v1.json#/$defs/names" },
+        "en": { "$ref": "common.v1.json#/$defs/names" },
+        "note": { "type": "string" }
+      },
+      "required": ["es", "en"],
+      "additionalProperties": false
+    },
+    "status_in_sierras_chicas": { "enum": ["native", "exotic", "invasive", "domestic", "example"] },
+    "conservation": { "type": "string" },
+    "range_note": { "type": "string" },
+    "summary": { "$ref": "common.v1.json#/$defs/localised" },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+          "kind": {
+            "description": "example is valid only for example- species (spec §5.1 and phase 1 report).",
+            "enum": ["flora", "paper", "encyclopedia", "observations", "database", "field_guide", "own_photos", "example"]
+          },
+          "title": { "type": "string", "minLength": 1 },
+          "url": { "type": "string" },
+          "accessed": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+        },
+        "required": ["id", "kind", "title"],
+        "additionalProperties": false
+      }
+    },
+    "relations": {
+      "description": "Links to other species, written once on one side (spec §5.5).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": { "enum": ["eats", "pollinates", "disperses_seeds_of", "nests_in", "host_of"] },
+          "species": { "$ref": "common.v1.json#/$defs/species_id" },
+          "part": { "enum": ["fruit", "seed", "flower", "nectar", "leaf", "bark", "wood", "root", "whole"] },
+          "months": { "type": "array", "items": { "$ref": "common.v1.json#/$defs/month" }, "uniqueItems": true },
+          "planned": { "type": "boolean", "description": "The other species is not in genes yet." },
+          "source": { "$ref": "common.v1.json#/$defs/source_ids" }
+        },
+        "required": ["type", "species", "source"],
+        "additionalProperties": false
+      }
+    },
+    "plant": { "$ref": "#/$defs/plant" },
+    "animal": { "$ref": "#/$defs/animal" }
+  },
+  "required": ["format", "id", "version", "kind", "scientific_name", "names", "status_in_sierras_chicas", "summary", "sources"],
+  "additionalProperties": false,
+  "allOf": [
+    { "if": { "properties": { "kind": { "const": "plant" } } }, "then": { "required": ["plant"], "not": { "required": ["animal"] } } },
+    { "if": { "properties": { "kind": { "const": "animal" } } }, "then": { "required": ["animal"], "not": { "required": ["plant"] } } }
+  ],
+  "$defs": {
+    "range": { "$ref": "common.v1.json#/$defs/range" },
+    "level": { "$ref": "common.v1.json#/$defs/level" },
+    "phase": { "$ref": "common.v1.json#/$defs/phase" },
+    "plant": {
+      "description": "Spec §5.3.",
+      "type": "object",
+      "properties": {
+        "growth_form": { "enum": ["tree", "shrub", "grass", "herb", "cactus", "climber"] },
+        "size": {
+          "type": "object",
+          "properties": {
+            "adult_height_m": { "$ref": "#/$defs/range" },
+            "crown_width_m": { "$ref": "#/$defs/range" },
+            "trunk_dbh_m": { "$ref": "#/$defs/range" },
+            "trunks": { "$ref": "#/$defs/range" },
+            "height_at_age": {
+              "description": "The growth curve's evidence: height at known ages.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "age_years": { "type": "number", "exclusiveMinimum": 0 },
+                  "height_m": { "$ref": "#/$defs/range" }
+                },
+                "required": ["age_years", "height_m"],
+                "additionalProperties": false
+              }
+            },
+            "cover_fraction": { "$ref": "#/$defs/range", "description": "Grasses and herbs: share of the ground a full stand covers, 0–1." }
+          },
+          "additionalProperties": false
+        },
+        "life": {
+          "type": "object",
+          "properties": {
+            "first_flowering_years": { "$ref": "#/$defs/range" },
+            "lifespan_years": { "$ref": "#/$defs/range" },
+            "life_cycle": { "enum": ["annual", "biennial", "perennial"] }
+          },
+          "additionalProperties": false
+        },
+        "phenology": {
+          "type": "object",
+          "properties": {
+            "leaf_habit": { "enum": ["evergreen", "semi_deciduous", "deciduous"] },
+            "leaf_type": { "enum": ["simple", "compound", "pinnate", "bipinnate", "needle", "scale", "blade", "none"] },
+            "leaf_out": { "$ref": "#/$defs/phase" },
+            "flowering": { "$ref": "#/$defs/phase" },
+            "fruiting": { "$ref": "#/$defs/phase" },
+            "leaf_fall": { "$ref": "#/$defs/phase" },
+            "dormancy": { "$ref": "#/$defs/phase" }
+          },
+          "additionalProperties": false
+        },
+        "water": {
+          "type": "object",
+          "properties": {
+            "rainfall_mm_year": { "$ref": "#/$defs/range" },
+            "drought_tolerance": { "$ref": "#/$defs/level" },
+            "waterlogging_tolerance": { "$ref": "#/$defs/level" },
+            "root_depth_m": { "$ref": "#/$defs/range" }
+          },
+          "additionalProperties": false
+        },
+        "light": {
+          "type": "object",
+          "properties": {
+            "shade_tolerance_seedling": { "$ref": "#/$defs/level" },
+            "shade_tolerance_adult": { "$ref": "#/$defs/level" }
+          },
+          "additionalProperties": false
+        },
+        "climate": {
+          "type": "object",
+          "properties": {
+            "frost_kill_c_seedling": { "$ref": "#/$defs/range" },
+            "frost_kill_c_adult": { "$ref": "#/$defs/range" },
+            "heat_limit_c": { "$ref": "#/$defs/range" }
+          },
+          "additionalProperties": false
+        },
+        "reproduction": {
+          "type": "object",
+          "properties": {
+            "fruit": { "enum": ["pod", "berry", "drupe", "capsule", "samara", "achene", "caryopsis", "nut", "other"] },
+            "seeds_per_year": { "$ref": "#/$defs/range" },
+            "dispersal": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "by": { "enum": ["gravity", "wind", "animals", "water"] },
+                  "guilds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+                  "distance_m": { "$ref": "#/$defs/range" },
+                  "source": { "$ref": "common.v1.json#/$defs/source_ids" }
+                },
+                "required": ["by", "source"],
+                "additionalProperties": false
+              }
+            },
+            "root_suckers": { "$ref": "#/$defs/level" },
+            "resprouts": { "$ref": "#/$defs/level" },
+            "min_spacing_m": { "$ref": "#/$defs/range" }
+          },
+          "additionalProperties": false
+        },
+        "wood": {
+          "type": "object",
+          "properties": {
+            "density_kg_m3": { "$ref": "#/$defs/range" },
+            "standing_dead_years": { "$ref": "#/$defs/range" },
+            "fallen_decay_years": { "$ref": "#/$defs/range" }
+          },
+          "additionalProperties": false
+        },
+        "gives": {
+          "description": "What it gives others, per month (spec §5.3).",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "what": { "enum": ["fruit", "seed", "nectar", "pollen", "browse", "nest_sites", "shade", "nitrogen_fixing", "firewood"] },
+              "months": { "type": "array", "items": { "$ref": "common.v1.json#/$defs/month" }, "uniqueItems": true },
+              "to": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+              "source": { "$ref": "common.v1.json#/$defs/source_ids" }
+            },
+            "required": ["what", "source"],
+            "additionalProperties": false
+          }
+        },
+        "people": {
+          "type": "object",
+          "properties": {
+            "uses": { "type": "array", "items": { "type": "string" } },
+            "protected": { "type": "boolean" },
+            "source": { "$ref": "common.v1.json#/$defs/source_ids" }
+          },
+          "required": ["source"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["growth_form"],
+      "additionalProperties": false
+    },
+    "animal": {
+      "description": "Reserved (spec §5.4). Its fields are fixed in the animals phase; until then only the class is checked.",
+      "type": "object",
+      "properties": {
+        "class": { "enum": ["bird", "mammal", "reptile", "amphibian", "fish", "insect", "arachnid", "other"] },
+        "domestic": { "type": "boolean" }
+      },
+      "required": ["class"]
+    }
+  }
+}

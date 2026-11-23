@@ -1,0 +1,17 @@
+{
+  "$schema": "../../../../../schemas/refs.v1.json",
+  "format": "genes.refs.v1",
+  "id": "example-tree",
+  "photos": [
+    {
+      "id": "r1",
+      "url": "https://commons.wikimedia.org/wiki/Category:Trees",
+      "author": "Wikimedia Commons contributors",
+      "licence": "cc-by-sa",
+      "source": "wikimedia",
+      "shows": ["whole"],
+      "angle": "side",
+      "used_for": ["a link-only reference, to try the viewer's strip"]
+    }
+  ]
+}

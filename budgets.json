@@ -1,0 +1,37 @@
+{
+  "about": "Model budgets (spec §8.1), proposed in phase 0 and tuned in phase 2. Triangles per model; bytes after compression.",
+  "triangles": {
+    "lod0": {
+      "seedling": 1500,
+      "sapling": 1500,
+      "young": 8000,
+      "adult": 12000,
+      "old": 12000,
+      "dead_standing": 8000,
+      "fallen": 4000,
+      "tuft": 300
+    },
+    "lod1": {
+      "seedling": 200,
+      "sapling": 300,
+      "young": 1000,
+      "adult": 1500,
+      "old": 1500,
+      "dead_standing": 1000,
+      "fallen": 500,
+      "tuft": 60
+    },
+    "impostor": {
+      "seedling": 16,
+      "sapling": 16,
+      "young": 16,
+      "adult": 16,
+      "old": 16,
+      "dead_standing": 16,
+      "fallen": 16,
+      "tuft": 8
+    }
+  },
+  "file_bytes_lod0": 500000,
+  "look_bytes": 6000000
+}

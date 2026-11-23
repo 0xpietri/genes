@@ -1,0 +1,35 @@
+{
+  "$schema": "../../../../../../schemas/look.v1.json",
+  "format": "genes.look.v1",
+  "id": "example-tree",
+  "look": 1,
+  "for_sheet": 1,
+  "generator": "example@1",
+  "recognisable": [
+    { "trait": "a straight trunk under a round crown of soft clumps", "params": ["trunk_fraction", "clumps", "clump_size"] }
+  ],
+  "form": {
+    "trunk_fraction": 0.4,
+    "trunk_radius_per_height": 0.025,
+    "lean_deg": 6,
+    "clumps": 28,
+    "clump_size": 0.32,
+    "clump_squash": 0.8
+  },
+  "palette": {
+    "bark": { "lit": "#7a6a58", "shade": "#45405a" },
+    "foliage": {
+      "mature": { "lit": "#8fa155", "shade": "#4c5f6a" },
+      "autumn": { "lit": "#c9a24e", "shade": "#7a5f66" }
+    },
+    "flowers": { "lit": "#f0e6a0", "shade": "#a39c86" },
+    "fruit": { "lit": "#c8553d", "shade": "#7a3f4e" }
+  },
+  "stages": {
+    "young": { "ref_height_m": 3, "ref_crown_m": 1.8, "variants": 2 },
+    "adult": { "ref_height_m": 7, "ref_crown_m": 6, "variants": 3 },
+    "dead_standing": { "ref_height_m": 6, "ref_crown_m": 4, "variants": 1 }
+  },
+  "lods": ["lod0", "lod1"],
+  "references": ["r1"]
+}

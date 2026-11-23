@@ -1,0 +1,34 @@
+{
+  "$schema": "../../../../../schemas/sheet.v1.json",
+  "format": "genes.sheet.v1",
+  "id": "example-tree",
+  "version": 1,
+  "kind": "plant",
+  "scientific_name": "Arbor exemplaris",
+  "names": { "es": ["Árbol de prueba"], "en": ["Example tree"] },
+  "status_in_sierras_chicas": "example",
+  "summary": {
+    "es": "Un árbol inventado para probar el visor y los controles. No existe: sus datos son de ejemplo.",
+    "en": "A made-up tree to try the viewer and the checks. It does not exist: its facts are examples."
+  },
+  "sources": [
+    { "id": "ex", "kind": "example", "title": "Example values for genes phase 1, not a real species" }
+  ],
+  "plant": {
+    "growth_form": "tree",
+    "size": {
+      "adult_height_m": { "min": 5, "typical": 7, "max": 9, "source": ["ex"] },
+      "crown_width_m": { "min": 4, "typical": 6, "max": 8, "source": ["ex"] }
+    },
+    "life": { "lifespan_years": { "min": 60, "typical": 90, "max": 120, "source": ["ex"] } },
+    "phenology": {
+      "leaf_habit": "deciduous",
+      "leaf_type": "simple",
+      "leaf_out": { "months": [9, 10], "trigger": "first_spring_rains", "source": ["ex"] },
+      "flowering": { "months": [10, 11], "source": ["ex"] },
+      "fruiting": { "months": [12, 1, 2], "source": ["ex"] },
+      "leaf_fall": { "months": [5, 6], "trigger": "first_frost", "source": ["ex"] }
+    },
+    "water": { "drought_tolerance": { "value": "medium", "source": ["ex"] } }
+  }
+}

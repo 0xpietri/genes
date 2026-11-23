@@ -1,0 +1,4 @@
+*.glb binary
+*.jpg binary
+*.webp binary
+viewer/static/vendor/** linguist-vendored
