@@ -616,23 +616,25 @@ def fill_crown(
             math.hypot(tgt[0] - c[0], tgt[2] - c[2]) < near and c[1] > tgt[1] - size for c in have
         ):
             continue
-        best: tuple[float, int, int] | None = None
+        best: tuple[float, int, int, float] | None = None
         for i, b in sources:
             for k, p in enumerate(b.points[:-1]):
                 if p[1] > tgt[1] - size * 0.4 or b.radii[k] < tree.twig_radius * 2:
                     continue
                 d = vec.length(vec.sub(tgt, p))
-                if best is None or d < best[0]:
-                    best = (d, i, k)
+                # A long riser comes from wood stout enough to hold it, not from a twig.
+                score = d * max(1.0, 0.02 * d / b.radii[k])
+                if best is None or score < best[3]:
+                    best = (d, i, k, score)
         if best is None or best[0] > tree.height * 0.9:
             continue
-        dist, pi, k = best
+        dist, pi, k, _ = best
         parent = tree.branches[pi]
         start = parent.points[k]
         level = min(parent.level + 1, deepest)
         level = max(level, 1)
         g = _twig_growth(form, level, age)
-        r0 = max(tree.twig_radius * 1.5, min(parent.radii[k] * 0.5, 0.035 * best[0]))
+        r0 = max(tree.twig_radius * 1.5, min(parent.radii[k] * 0.6, 0.02 * dist))
         pts, radii = grow(
             start,
             vec.norm(vec.sub(tgt, start)),

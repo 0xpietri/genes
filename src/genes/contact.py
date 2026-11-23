@@ -109,6 +109,7 @@ def render(
         query["frame"] = round(shot.frame, 2)
     if sheet is not None:
         query["sheet"] = f"/v1/species/{sp.id}/sheets/{sheet.number}.json"
+    query["look"] = f"/v1/species/{sp.id}/looks/{look}/look.json"
     page.goto(f"{base}/render.html?{urlencode(query)}")
     page.wait_for_selector("body[data-ready], body[data-error]", state="attached")
     error = page.evaluate("document.body.dataset.error || ''")

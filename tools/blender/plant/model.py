@@ -277,31 +277,6 @@ def _bare_ends(
     return out
 
 
-def _near_wood(tree: Tree, clumps: list[Clump], r_min: float) -> None:
-    """Every clump sits close to wood that is drawn: one whose twig was left out of the bark
-    (too thin for the triangle budget) moves towards the nearest drawn branch it grows from."""
-    if r_min <= 0:
-        return
-
-    def drawn(b: Branch) -> bool:
-        return b.level < 1 or b.radii[0] >= r_min
-
-    for c in clumps:
-        if c.branch < 0:
-            continue
-        i: int | None = c.branch
-        while i is not None and not drawn(tree.branches[i]):
-            i = tree.branches[i].parent
-        if i is None or i == c.branch:
-            continue
-        pts = tree.branches[i].points
-        near = min(pts, key=lambda p: vec.length(vec.sub(p, c.centre)))
-        d = vec.length(vec.sub(c.centre, near))
-        limit = c.size * 0.7
-        if d > limit:
-            c.centre = vec.add(near, vec.mul(vec.sub(c.centre, near), limit / d))
-
-
 def crown_clumps(tree: Tree, form: Form, size: float, rng: random.Random) -> list[Clump]:
     """All the foliage of a living tree: on its twigs, over the whole top of the crown, and
     at the end of every limb."""
@@ -314,7 +289,44 @@ def crown_clumps(tree: Tree, form: Form, size: float, rng: random.Random) -> lis
         t0 = _t0(tree, i, deepest, leafy_from)
         if t0 is not None:
             clumps += _branch_clumps(tree, i, t0, spacing, size, rng)
-    return clumps + _bare_ends(tree, form, clumps, size, rng)
+    clumps += _bare_ends(tree, form, clumps, size, rng)
+    return clumps + _bare_runs(tree, clumps, spacing, size, rng)
+
+
+def _bare_runs(
+    tree: Tree, clumps: list[Clump], spacing: float, size: float, rng: random.Random
+) -> list[Clump]:
+    """No long bare stick in the crown: a branch whose outer part runs far from any leaves
+    gets clumps along it (a long twig with a puff only at its tip reads as a broom)."""
+    cell = size * 1.5
+    grid: set[tuple[int, int, int]] = set()
+    for c in clumps:
+        grid.add((int(c.centre[0] // cell), int(c.centre[1] // cell), int(c.centre[2] // cell)))
+
+    def covered(p: Vec) -> bool:
+        k = (int(p[0] // cell), int(p[1] // cell), int(p[2] // cell))
+        return any(
+            (k[0] + dx, k[1] + dy, k[2] + dz) in grid
+            for dx in (-1, 0, 1)
+            for dy in (-1, 0, 1)
+            for dz in (-1, 0, 1)
+        )
+
+    base = tree.envelope.base
+    out: list[Clump] = []
+    for i, b in enumerate(tree.branches):
+        if b.removed or b.level < 1 or b.broken or b.length < size * 2:
+            continue
+        samples = [b.point_at(0.4 + 0.6 * k / 6)[0] for k in range(7)]
+        samples = [p for p in samples if p[1] > base * 0.8]
+        bare = [p for p in samples if not covered(p)]
+        if len(samples) >= 3 and len(bare) > len(samples) // 2:
+            out += [
+                c
+                for c in _branch_clumps(tree, i, 0.4, spacing, size, rng)
+                if c.centre[1] - size / 2 >= 0.02
+            ]
+    return out
 
 
 def _fit(clumps: list[Clump], cap: int) -> tuple[list[Clump], float]:
@@ -437,8 +449,141 @@ def _twiglets(
     return made
 
 
-def _bark(tree: Tree, form: Form, coarse: bool, cap: int, seed_value: float) -> tuple[Part, float]:
-    """The bark mesh within `cap` triangles: the thinnest branches are left to the clumps."""
+def _simple(b: Branch, segments: int | None, upto: int | None = None) -> Branch:
+    """The branch cut after point `upto`, with at most `segments` segments."""
+    n = len(b.points) if upto is None else max(2, min(upto + 1, len(b.points)))
+    pts, radii = b.points[:n], b.radii[:n]
+    if segments is not None and n - 1 > segments:
+        idx = sorted({round(i * (n - 1) / segments) for i in range(segments + 1)})
+        pts, radii = [pts[i] for i in idx], [radii[i] for i in idx]
+    return Branch(b.level, pts, radii, parent=b.parent, at=b.at, broken=b.broken and upto is None)
+
+
+def _segments_for(b: Branch, coarse: bool) -> int | None:
+    """Fewer rings on thin wood: its crook still shows, and more of it fits the budget."""
+    if coarse:
+        return 6 if b.level < 1 else 3
+    if b.level < 1 or b.radii[0] >= 0.05:
+        return None
+    return 3 if b.radii[0] < 0.008 else 5 if b.radii[0] < 0.02 else 8
+
+
+# The rule (spec §7.2): no foliage without wood. Every clump has drawn wood within this
+# share of its size from its centre, inside its leaves.
+REACH = 0.45
+# Share of the bark budget kept for the fine twigs that carry the foliage (lod0).
+CARRY_SHARE = 0.3
+
+
+def _carrier_sides(b: Branch) -> int:
+    return 3 if b.radii[0] < 0.015 else 4
+
+
+# Thinner wood than this would not show at all: carriers are drawn at least this thick.
+CARRIER_MIN_R = 0.006
+
+
+def _carrier_segments(b: Branch, upto: int) -> int:
+    """Two segments, up to four on long twigs, so they stay crooked."""
+    run = sum(
+        vec.length(vec.sub(b.points[j + 1], b.points[j]))
+        for j in range(min(upto, len(b.points) - 1))
+    )
+    return max(1, min(upto, max(2, min(4, round(run / 0.6)))))
+
+
+def _carrier_tris(b: Branch, upto: int) -> int:
+    return _carrier_segments(b, upto) * 2 * _carrier_sides(b)
+
+
+def _chains(tree: Tree, clumps: list[Clump]) -> list[list[tuple[int, int]]]:
+    """For each clump, highest first: the branches from its own down to the leaders, each
+    with the point it must be drawn to so the wood reaches the clump."""
+    out: list[list[tuple[int, int]]] = []
+    for c in sorted(clumps, key=lambda c: -c.centre[1]):
+        chain: list[tuple[int, int]] = []
+        i = c.branch if c.branch >= 0 else None
+        target = c.centre
+        while i is not None and tree.branches[i].level >= 1:
+            b = tree.branches[i]
+            k = min(range(len(b.points)), key=lambda j: vec.length(vec.sub(b.points[j], target)))
+            chain.append((i, max(1, k)))
+            target = b.points[0]
+            i = b.parent
+        out.append(chain)
+    return out
+
+
+def _carry_plan(
+    tree: Tree, chains: list[list[tuple[int, int]]], r_min: float, cap: int | None
+) -> tuple[dict[int, int], int]:
+    """The fine twigs, thinner than r_min, that carry the clumps out from the drawn wood:
+    how far each is drawn, and their triangles. With a cap, the highest clumps first."""
+    need: dict[int, int] = {}
+    cost = 0
+    for chain in chains:
+        wanted = {
+            i: k for i, k in chain if tree.branches[i].radii[0] < r_min and need.get(i, 0) < k
+        }
+        extra = sum(
+            _carrier_tris(tree.branches[i], k)
+            - (_carrier_tris(tree.branches[i], need[i]) if i in need else 0)
+            for i, k in wanted.items()
+        )
+        if cap is not None and cost + extra > cap:
+            continue
+        cost += extra
+        need.update(wanted)
+    return need, cost
+
+
+def _anchor(clumps: list[Clump], wood: list[Vec]) -> int:
+    """The rule, last: a clump with no drawn wood within REACH of its size moves onto the
+    nearest wood. Returns how many moved."""
+    if not clumps or not wood:
+        return 0
+    cell = max(0.05, min(c.size for c in clumps))
+    grid: dict[tuple[int, int, int], list[Vec]] = {}
+    for p in wood:
+        grid.setdefault((int(p[0] // cell), int(p[1] // cell), int(p[2] // cell)), []).append(p)
+    span = max(max(p[i] for p in wood) - min(p[i] for p in wood) for i in range(3))
+    rings = int(span / cell) + 2
+    moved = 0
+    for c in clumps:
+        k = (int(c.centre[0] // cell), int(c.centre[1] // cell), int(c.centre[2] // cell))
+        best: Vec | None = None
+        best_d = math.inf
+        for r in range(rings):
+            for dx in range(-r, r + 1):
+                for dy in range(-r, r + 1):
+                    for dz in range(-r, r + 1):
+                        if max(abs(dx), abs(dy), abs(dz)) != r:
+                            continue
+                        for p in grid.get((k[0] + dx, k[1] + dy, k[2] + dz), ()):
+                            d = vec.length(vec.sub(p, c.centre))
+                            if d < best_d:
+                                best, best_d = p, d
+            if best is not None and best_d <= r * cell:
+                break
+        limit = c.size * REACH
+        if best is not None and best_d > limit:
+            c.centre = vec.add(best, vec.mul(vec.sub(c.centre, best), limit / best_d))
+            moved += 1
+    return moved
+
+
+def _bark(
+    tree: Tree,
+    form: Form,
+    coarse: bool,
+    cap: int,
+    seed_value: float,
+    clumps: list[Clump] | None = None,
+    carry_cap: int = 0,
+) -> tuple[Part, float, int]:
+    """The bark mesh within `cap` triangles: the thinnest branches are drawn only as fine
+    twigs out to the clumps they carry (lod0), or left out (lod1). Returns the bark, the
+    radius under which branches became carriers, and how many carriers were drawn."""
     tile = float(form.get("trunk.bark.tile_m"))
     gnarl = form.ind("trunk.gnarl")
     flare = form.ind("trunk.flare")
@@ -447,6 +592,8 @@ def _bark(tree: Tree, form: Form, coarse: bool, cap: int, seed_value: float) -> 
     thresholds = sorted({0.0} | {b.radii[0] for b in alive if b.level >= 1})
     best = Part("bark")
     used = 0.0
+    plan: dict[int, int] = {}
+    chains = _chains(tree, clumps) if clumps else []
     lo, hi = 0, len(thresholds) - 1
     # Binary search the smallest radius threshold that fits the cap.
     while lo <= hi:
@@ -463,14 +610,13 @@ def _bark(tree: Tree, form: Form, coarse: bool, cap: int, seed_value: float) -> 
                 sides = max(sides, 15)  # enough sides for five ribs
             tube(
                 part,
-                b,
+                _simple(b, _segments_for(b, coarse)),
                 sides,
                 tile,
                 gnarl,
                 flare,
                 tree.height,
                 seed_value,
-                step=2 if coarse and b.level >= 1 else 1,
                 fluting=fluting,
             )
         if part.triangle_count <= cap:
@@ -478,13 +624,24 @@ def _bark(tree: Tree, form: Form, coarse: bool, cap: int, seed_value: float) -> 
             hi = mid - 1
         else:
             lo = mid + 1
+    if chains and best.positions and used > 0:
+        # The fine twigs out to the clumps, the highest first, as far as they fit.
+        plan, _ = _carry_plan(tree, chains, used, cap + carry_cap - best.triangle_count)
     if not best.positions:
         part = Part("bark")
         for b in alive:
             if b.level <= LEADER:
                 tube(part, b, 4, tile, gnarl, flare, tree.height, seed_value, step=2)
         best = part
-    return best, used
+    for i in sorted(plan):
+        b = tree.branches[i]
+        twig = _simple(b, _carrier_segments(b, plan[i]), plan[i])
+        twig.radii = [
+            max(r, CARRIER_MIN_R * (1 - 0.5 * k / len(twig.radii)))
+            for k, r in enumerate(twig.radii)
+        ]
+        tube(best, twig, _carrier_sides(b), tile, 0, 0, 0, 0, closed=False)
+    return best, used, len(plan)
 
 
 # Where on a clump flowers sit, as a share of its size out from its centre.
@@ -658,7 +815,8 @@ def build(
     if coarse:
         cards = max(1, min(2, cards))
     thorn_cap = 0 if coarse else int(budget * 0.04)
-    flower_cap, fruit_cap = int(budget * (0.05 if coarse else 0.1)), int(budget * 0.14)
+    flower_cap, fruit_cap = int(budget * (0.05 if coarse else 0.07)), int(budget * 0.1)
+    fl = fr = Part("none")
     if leafless:
         bark_cap = int(budget * 0.95)
     else:
@@ -676,13 +834,43 @@ def build(
         and stage in form.get("tips.stages")
         and as_range(form.get("tips.twiglets"))[1] > 0
     )
-    tip_cap = int(bark_cap * float(form.get("tips.share"))) if tipped else 0
-    bark, r_min = _bark(tree, form, coarse, bark_cap - tip_cap, form.unit("bark_seed") * 10)
+    # Twiglets get their full share where nothing hides them; in leaf, a smaller one: the
+    # twigs that carry the leaves come first.
+    tip_share = float(form.get("tips.share")) * (1.0 if leafless else 0.4) if tipped else 0.0
+    parts: dict[str, Part] = {}
+    fitted: list[Clump] = []
+    thorns = Part("thorns")
+    if not leafless:
+        thorns = _thorns(tree, form, mesh_rng, thorn_cap)
+        if not coarse:
+            # The foliage this model affords, fitted first: the bark then carries it.
+            left = budget - bark_cap - thorns.triangle_count - fl.triangle_count
+            cap = max(1, (left - fr.triangle_count) // (2 * cards))
+            fitted, grow = _fit(clumps, cap)
+            if grow > 1.05:
+                notes.append(
+                    f"{stage}-{variant}.{lod}: "
+                    f"{len(clumps)} clumps over budget, kept {cap} at ×{grow:.2f} size"
+                )
+    bark, r_min, carried = _bark(
+        tree,
+        form,
+        coarse,
+        int(bark_cap * (1 - tip_share - (CARRY_SHARE if fitted else 0.0))),
+        form.unit("bark_seed") * 10,
+        fitted or None,
+        int(bark_cap * CARRY_SHARE) if fitted else 0,
+    )
     if r_min > 0:
         notes.append(
-            f"{stage}-{variant}.{lod}: "
-            f"branches thinner than {r_min * 100:.1f} cm left to the clumps"
+            f"{stage}-{variant}.{lod}: branches thinner than {r_min * 100:.1f} cm "
+            + (f"drawn as {carried} fine twigs out to the leaves" if carried else "left out")
         )
+    parts["bark"] = bark
+    if not leafless and coarse:
+        left = budget - bark.triangle_count - thorns.triangle_count
+        left -= fl.triangle_count + fr.triangle_count
+        fitted = _cluster(clumps, max(1, left // (2 * cards)), size)
     if tipped:
         made = _twiglets(
             tree,
@@ -693,30 +881,29 @@ def build(
             random.Random(seed(form.key, stage, "tips")),
         )
         notes.append(f"{stage}-{variant}.{lod}: {made} twiglets")
-    parts: dict[str, Part] = {"bark": bark}
     if not leafless:
-        _near_wood(tree, clumps, r_min)
-        flowers, fruit = _flowers_and_fruit(
-            clumps if not coarse else _cluster(clumps, max(1, len(clumps) // 6), size),
-            form,
-            mesh_rng,
-            coarse,
-            (flower_cap, fruit_cap),
-        )
-        thorns = _thorns(tree, form, mesh_rng, thorn_cap)
-        left = budget - bark.triangle_count - flowers.triangle_count - fruit.triangle_count
-        left -= thorns.triangle_count
-        cap = max(1, left // (2 * cards))
-        if coarse:
-            fitted = _cluster(clumps, cap, size)
-            grow = 1.0
-        else:
-            fitted, grow = _fit(clumps, cap)
-        if grow > 1.05:
-            notes.append(
-                f"{stage}-{variant}.{lod}: "
-                f"{len(clumps)} clumps over budget, kept {cap} at ×{grow:.2f} size"
+        moved = _anchor(fitted, bark.positions)
+        if moved:
+            notes.append(f"{stage}-{variant}.{lod}: {moved} clumps moved onto their wood")
+        while True:
+            flowers, fruit = _flowers_and_fruit(
+                fitted,
+                form,
+                random.Random(seed(form.key, stage, lod, "bloom")),
+                coarse,
+                (flower_cap, fruit_cap),
             )
+            left = budget - bark.triangle_count - flowers.triangle_count - fruit.triangle_count
+            left -= thorns.triangle_count
+            cap = max(1, left // (2 * cards))
+            if len(fitted) <= cap:
+                break
+            # Over by a little: the lowest clumps go, and the flowers are placed again.
+            top = max(c.centre[1] for c in fitted) or 1.0
+            keep = set(
+                map(id, sorted(fitted, key=lambda c: c.order - 0.6 * c.centre[1] / top)[:cap])
+            )
+            fitted = [c for c in fitted if id(c) in keep]
         foliage = Part("foliage", order=[])
         foliage_cards(foliage, fitted, cards, mesh_rng, _proxy(fitted, tree))
         parts.update({"foliage": foliage, "flowers": flowers, "fruit": fruit, "thorns": thorns})

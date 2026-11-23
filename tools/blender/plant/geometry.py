@@ -80,8 +80,10 @@ def tube(
     seed: float,
     step: int = 1,
     fluting: float = 0.0,
+    closed: bool = True,
 ) -> None:
-    """A tube along the branch with parallel-transport frames, closed at the tip. The
+    """A tube along the branch with parallel-transport frames, closed at the tip unless
+    the tip hides inside the leaves. The
     trunk and the leaders can be fluted: ribs that spiral up them like fused stems."""
     pts = branch.points[::step]
     radii = branch.radii[::step]
@@ -138,6 +140,8 @@ def tube(
             i0, i1 = a0 + j, a0 + j + 1
             i2, i3 = b0 + j, b0 + j + 1
             part.triangles += [(i0, i1, i2), (i1, i3, i2)]
+    if not closed:
+        return
     # Close the tip (or the broken end) with a fan.
     last = rings[-1]
     tip = part.vertex(

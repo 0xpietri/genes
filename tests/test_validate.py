@@ -258,3 +258,32 @@ def test_tree_box_order_and_file(examples: Path) -> None:
     msgs = _messages(examples)
     assert _has(msgs, "tree_box needs left < right")
     assert _has(msgs, "a tree_box needs a stored file")
+
+
+def test_leaf_tones_cover_the_year_two_at_most(examples: Path) -> None:
+    """Spec §6.4: the leaf tones together cover every month a leaf is on; at most two share."""
+
+    def tones(s: Any) -> None:
+        s["plant"]["phenology"]["leaf_habit"] = "evergreen"
+        s["plant"]["phenology"]["leaf_tones"] = [
+            {"tone": "new", "months": [9, 10], "source": [s["sources"][0]["id"]]},
+            {"tone": "mature", "months": [10, 11, 12, 1, 2, 3], "source": [s["sources"][0]["id"]]},
+            {"tone": "dry", "months": [10], "source": [s["sources"][0]["id"]]},
+        ]
+
+    _edit(_sheet(examples), tones)
+    messages = _messages(examples)
+    assert _has(messages, "more than two tones in months [10]")
+    assert _has(messages, "no tone in months [4, 5, 6, 7, 8]")
+
+
+def test_leaf_tones_need_their_colour_in_the_palette(examples: Path) -> None:
+    def tones(s: Any) -> None:
+        s["plant"]["phenology"]["leaf_habit"] = "deciduous"
+        s["plant"]["phenology"]["leaf_tones"] = [
+            {"tone": "autumn", "months": [4], "source": [s["sources"][0]["id"]]}
+        ]
+
+    _edit(_sheet(examples), tones)
+    _edit(_look(examples), lambda look: look["palette"]["foliage"].pop("autumn", None))
+    assert _has(_messages(examples), "palette.foliage has no 'autumn' tone")

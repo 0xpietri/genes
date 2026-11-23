@@ -28,7 +28,8 @@
     { "id": "avesarg", "kind": "field_guide", "title": "Aves Argentinas: ficha de planta, algarrobo blanco", "url": "https://avesargentinas.org.ar/ficha-planta/algarrobo-blanco", "accessed": "2026-11-23" },
     { "id": "inat", "kind": "observations", "title": "iNaturalist research-grade observations of Neltuma alba (taxon 1493104): phenology annotations by month and the photos in references/", "url": "https://api.inaturalist.org/v1/observations/histogram?taxon_id=1493104&quality_grade=research&date_field=observed&interval=month_of_year&term_id=12", "accessed": "2026-11-23" },
     { "id": "felker_cold", "kind": "paper", "title": "Felker P. et al. Screening Prosopis (mesquite) for cold tolerance. Forest Science (OSTI 5900747)", "url": "https://www.osti.gov/biblio/5900747", "accessed": "2026-11-23" },
-    { "id": "winrock", "kind": "database", "title": "NFTA 91-02. Prosopis alba and Prosopis chilensis: subtropical semi-arid fuel and fodder trees. Winrock International", "url": "https://winrock.org/prosopis-alba-and-prosopis-chilensis-subtropical-semiarid-fuel-and-fodder-trees/", "accessed": "2026-11-23" }
+    { "id": "winrock", "kind": "database", "title": "NFTA 91-02. Prosopis alba and Prosopis chilensis: subtropical semi-arid fuel and fodder trees. Winrock International", "url": "https://winrock.org/prosopis-alba-and-prosopis-chilensis-subtropical-semiarid-fuel-and-fodder-trees/", "accessed": "2026-11-23" },
+    { "id": "fao_prosopis", "kind": "database", "title": "FAO 2000. Las especies del género Prosopis (algarrobos) de América Latina con especial énfasis en aquellas de interés económico, ch. 1: Prosopis alba", "url": "https://www.fao.org/4/ad314s/ad314s01.htm", "accessed": "2026-11-23" }
   ],
   "plant": {
     "growth_form": "tree",
@@ -44,7 +45,13 @@
       "leaf_out": { "months": [8, 9, 10], "source": ["cba", "inat"], "note": "New bright green leaves come with the first flowers." },
       "flowering": { "months": [9, 10, 11], "source": ["inat", "cba"], "note": "iNaturalist flowering annotations: 2 in September, 12 in October, 6 in November; cba says August to September." },
       "fruiting": { "months": [12, 1, 2, 3, 4], "source": ["inat"], "note": "iNaturalist fruit annotations: December 6, January 10, February 6, March 7, April 4. Ripe pods fall over the summer; some dry pods stay into autumn." },
-      "leaf_fall": { "months": [6, 7], "source": ["cba", "avesarg"], "note": "Late and partial: it loses leaves in winter but is never fully bare (cba); 'caedizo tardío' (avesarg)." }
+      "leaf_fall": { "months": [6, 7], "trigger": "first_frost", "source": ["cba", "avesarg", "fao_prosopis"], "note": "Leaves fall in winter when the frosts come, or failing that when the new leaves come out (fao_prosopis). Late and partial: never fully bare (cba); 'caedizo tardío' (avesarg)." },
+      "leaf_tones": [
+        { "tone": "new", "months": [8, 9, 10], "source": ["cba", "inat"], "note": "Bright light-green new leaves come with the first flowers (cba); the October photos r05 and r06 show whole crowns in that bright green." },
+        { "tone": "mature", "months": [10, 11, 12, 1, 2, 3, 4, 5, 6, 7], "source": ["inat"], "note": "Dull grey-green the rest of the year: photos r01 (March), r08 (April), r03 and r04 (late June, still full and green)." },
+        { "tone": "dry", "months": [7, 8], "trigger": "first_frost", "source": ["fao_prosopis", "cba"], "note": "No source describes autumn colours, and the late-June photos are still green: the leaves fall with the frosts (fao_prosopis). This tone stands for the frost-dried leaflets that hang on until they drop or the new leaves push them off." }
+      ],
+      "spread_days": { "min": 10, "max": 15, "source": ["fao_prosopis"], "note": "Phenology varies 10–15 days on one tree, between trees and between stands." }
     },
     "water": {
       "rainfall_mm_year": { "min": 100, "max": 500, "source": ["icraf"], "note": "ICRAF's biophysical limits. In Argentina it also grows where rain is higher but the soil is salty or the groundwater near (INTA, ICRAF)." },

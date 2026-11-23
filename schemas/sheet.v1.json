@@ -133,7 +133,27 @@
             "flowering": { "$ref": "#/$defs/phase" },
             "fruiting": { "$ref": "#/$defs/phase" },
             "leaf_fall": { "$ref": "#/$defs/phase" },
-            "dormancy": { "$ref": "#/$defs/phase" }
+            "dormancy": { "$ref": "#/$defs/phase" },
+            "leaf_tones": {
+              "description": "Which leaf colour shows in which months (spec §6.4): the tones together cover every month a leaf is on, at most two share a month.",
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "tone": { "enum": ["new", "mature", "autumn", "dry"] },
+                  "months": { "type": "array", "items": { "$ref": "common.v1.json#/$defs/month" }, "minItems": 1, "uniqueItems": true },
+                  "trigger": { "enum": ["first_spring_rains", "first_frost", "day_length", "heat_sum", "rain", "drought"] },
+                  "weeks_per_leaf": { "$ref": "#/$defs/range" },
+                  "source": { "$ref": "common.v1.json#/$defs/source_ids" },
+                  "note": { "type": "string" }
+                },
+                "required": ["tone", "months", "source"],
+                "additionalProperties": false
+              }
+            },
+            "winter_leaf_share": { "description": "Share of the leaves still on at the barest point of the year, 0–1.", "$ref": "#/$defs/range" },
+            "spread_days": { "description": "Days one tree runs ahead of or behind another in the same place.", "$ref": "#/$defs/range" }
           },
           "additionalProperties": false
         },

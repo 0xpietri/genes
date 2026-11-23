@@ -159,7 +159,7 @@
       "where": "axils"
     },
     "foliage": {
-      "cards_per_clump": 2,
+      "cards_per_clump": 3,
       "density": 0.16,
       "leaf_size_cm": [
         6,

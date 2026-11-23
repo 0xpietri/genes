@@ -79,6 +79,16 @@ instead.
 - Measurements read from your own reference photos are allowed for crown width and trunk
   diameter when no text gives them; say so in the note and add the `inat` source.
 - Spanish and English names, and a two-sentence summary in both.
+- **Leaf colours through the year** (spec §6.4), in `plant.phenology`:
+  - `leaf_fall`: the approximate months and the `trigger` (for example `first_frost`).
+  - `leaf_tones`: one entry per palette tone (`new`, `mature`, `autumn`, `dry`) with the
+    months it shows, in order. Together they cover every month a leaf is on; at most two
+    share a month, and a shared month is the gradient between them. Dated photos of
+    whole crowns are a valid source (name them in the note). Add `weeks_per_leaf` only
+    if a text says how long one leaf keeps that colour.
+  - `winter_leaf_share` (0–1, how much of the crown stays at the barest point) and
+    `spread_days` (how many days trees differ), only with a source.
+  - No source for autumn colours means no `autumn` tone: do not invent one.
 
 `uv run genes validate` checks the shape, the sources and the ranges.
 
@@ -118,7 +128,8 @@ wide flat airy crown; limbs arching out and drooping; long pale pods hanging in 
 
 Per part, a `lit` and a `shade` hex colour (and an optional `accent`), flat, as a painter
 would mix them, picked from your photos in sun and in shade. Foliage has one pair per
-phase: `new`, `mature`, `dry` (or `autumn`, `winter`, `summer`). Parts: `bark`, `foliage`,
+tone: `new`, `mature`, `dry` and `autumn` if it colours; every tone the sheet's
+`leaf_tones` names must be here (the validator checks). Parts: `bark`, `foliage`,
 `flowers`, `fruit`, `thorns`. Shadows lean cool (blue-violet), as in the algarrobo's.
 The model carries only the flat lit colour; pietri.dev paints and lights it (spec §6.4).
 
@@ -221,6 +232,8 @@ time and rebuild:
 | Trunk too thin or too thick | `trunk.radius_per_height` |
 | Flowers or fruit invisible in the close-ups | `cover` up, then `show_scale` up to 1.8 |
 | Winter looks like summer | the sheet's `leaf_habit` and `leaf_fall` months (pietri.dev drops the clumps by their order) |
+| Wrong leaf colour in a season | the sheet's `leaf_tones` months, then the palette's tone colours |
+| Leaves seem to float | nothing to tune: the generator forbids it (fine twigs carry every clump; a test fails otherwise). If many clumps "moved onto their wood" in the notes, the crown is denser than its wood: fewer clumps (`crown.clump_spacing` up) |
 
 Stop when the scores pass, every trait in `recognisable` shows on the sheet, and the
 stages look like the same tree growing old. Do this alone before asking anyone.

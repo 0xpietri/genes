@@ -118,3 +118,40 @@ def test_month_preview_matches_the_sheet(site: str) -> None:
     finally:
         browser.close()
         pw.stop()
+
+
+def test_leaf_tones_blend_through_the_year(site: str) -> None:
+    """phenology.js (spec §6.4): one tone, or the arriving one on a growing share of clumps."""
+    pw, browser = _browser()
+    try:
+        page = browser.new_page()
+        page.goto(site + "/")
+        src = ["s"]
+        sheet = {
+            "plant": {
+                "phenology": {
+                    "leaf_tones": [
+                        {"tone": "new", "months": [9, 10], "source": src},
+                        {"tone": "mature", "months": [10, 11, 12, 1, 2, 3, 4, 5, 6], "source": src},
+                        {"tone": "dry", "months": [5, 6, 7, 8, 9], "source": src},
+                    ]
+                }
+            }
+        }
+        got = page.evaluate(
+            """async (sheet) => {
+                const m = await import('/static/phenology.js');
+                return [1, 5, 6, 7, 9, 10].map((month) => m.foliageTones(sheet, month));
+            }""",
+            sheet,
+        )
+        assert got[0] == {"from": "mature", "to": "mature", "share": 0, "lowest": False}
+        assert got[1]["to"] == "dry" and got[1]["share"] == pytest.approx(1 / 3)
+        assert got[2]["to"] == "dry" and got[2]["share"] == pytest.approx(2 / 3)
+        assert got[3]["from"] == "dry" and got[3]["share"] == 0
+        assert (got[4]["from"], got[4]["to"], got[4]["share"]) == ("dry", "new", 0.5)
+        # New leaves age to mature: the first out (lowest order) age first.
+        assert got[5] == {"from": "new", "to": "mature", "share": 0.5, "lowest": True}
+    finally:
+        browser.close()
+        pw.stop()

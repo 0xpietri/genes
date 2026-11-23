@@ -1,6 +1,7 @@
 // One model, one camera, one picture: what `genes contact-sheet` captures (spec §7.1).
 //   /render.html?model=<glb url>&view=side|front|back|left|below|above&mode=painted|silhouette
-//                &month=1..12&sheet=<sheet url>&w=640&h=640&parts=bark,fruit (only those)
+//                &month=1..12&sheet=<sheet url>&look=<look url> (its leaf tones)
+//                &w=640&h=640&parts=bark,fruit (only those)
 //                &person=1 (a 1.75 m person beside it) &frame=<metres> (a fixed square
 //                frame standing on the ground, so several models share one scale)
 // The camera stands at eye height (1.6 m) like a person taking a photo, far enough to
@@ -10,6 +11,7 @@ import * as THREE from './vendor/three/three.module.js';
 import { GLTFLoader } from './vendor/three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from './vendor/three/addons/libs/meshopt_decoder.module.js';
 import { partAmounts } from './phenology.js';
+import { withOrderReveal, toneUniforms } from './paint.js';
 
 const q = new URLSearchParams(location.search);
 const W = Number(q.get('w') ?? 640);
@@ -27,19 +29,6 @@ function toonGradient() {
   return tex;
 }
 
-function withOrderReveal(material, amount) {
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.uAmount = { value: amount };
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float _order;\nvarying float vOrder;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvOrder = _order;');
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uAmount;\nvarying float vOrder;')
-      .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (vOrder > uAmount) discard;');
-  };
-  material.customProgramCacheKey = () => `genes-order-${amount}`;
-}
-
 async function main() {
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(1);
@@ -53,10 +42,12 @@ async function main() {
   scene.add(sun);
 
   let amounts = { foliage: 1, flowers: 0, fruit: 0 };
+  let sheet = null;
   if (q.get('sheet')) {
-    const sheet = await (await fetch(q.get('sheet'))).json();
+    sheet = await (await fetch(q.get('sheet'))).json();
     amounts = partAmounts(sheet, month);
   }
+  const look = q.get('look') ? await (await fetch(q.get('look'))).json() : null;
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const gltf = await loader.loadAsync(q.get('model'));
   const root = gltf.scene;
@@ -74,7 +65,10 @@ async function main() {
     mat.side = THREE.DoubleSide;
     if (part in amounts) {
       obj.visible = amounts[part] > 0;
-      if (obj.geometry.getAttribute('_order')) withOrderReveal(mat, amounts[part]);
+      const tone = mode === 'painted' && part === 'foliage' && look
+        ? toneUniforms(look.palette, sheet, month, amounts.foliage) : null;
+      if (tone) mat.color.set(0xffffff);
+      if (obj.geometry.getAttribute('_order')) withOrderReveal(mat, { value: amounts[part] }, tone);
     }
     obj.material = mat;
     if (q.get('parts') && !q.get('parts').split(',').includes(part)) obj.visible = false;

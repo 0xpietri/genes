@@ -275,3 +275,41 @@ standing trees, and for a season selector in the viewer.
 - Viewer: Season buttons (summer, autumn, winter, spring, southern hemisphere) jump the
   month slider to the middle of each season.
 - Scores: mean 0.52. Look 7.3 MB of 9 MB.
+
+## Review round 7 (marcos, 2026-11-23, 13:00)
+
+He saw foliage floating in the air with no branch near, and asked that it be impossible:
+a leaf must hang from wood or not exist. He also asked for leaf colours by season, with
+how long each colour lasts and when the leaves fall, written down so other models use
+the same data; and for more small twigs and more foliage high up, airy but shading.
+
+- **The rule, in the generator (every stage, both LODs):** after the bark is drawn, every
+  foliage clump must have drawn wood within 0.45 of its size from its centre.
+  1. The branches the triangle budget leaves out are no longer dropped: they are drawn
+     as fine twigs (3–4 sides, 2–4 segments, at least 6 mm thick) from the nearest drawn
+     wood out to the clumps they carry, the highest clumps first, within 30 % of the
+     bark's triangles.
+  2. Whatever is still far after that moves onto the nearest wood (lod1 has no fine
+     twigs, so its merged clumps always move).
+  3. A test checks every foliage card of every stage, variant and LOD against the bark.
+- Thin wood is drawn with fewer rings (3–8 segments under 5 cm), so more of it fits.
+- Gap-filling branches at the top now grow from wood stout enough to hold them (a long
+  branch never comes off a twig), so no long bare sticks reach the rim.
+- Foliage: three cards per clump (the third faces the sky), so the crown holds about
+  40 % more leaves and casts more shade from above without new twigs. On adult trees the
+  foliage hits its 60 % budget cap.
+- Twiglets: in leaf, the fine twigs that carry the leaves come first; twiglets keep 40 %
+  of their share (about 40 per tree). Dead trees keep the full share.
+- **Leaf colours by season (spec §6.4 amended, schema and validator):** the sheet now
+  holds `leaf_tones` (which palette tone shows in which months, optional
+  `weeks_per_leaf`), `winter_leaf_share` and `spread_days`; `leaf_fall` keeps the
+  approximate fall date and its trigger. In a month two tones share, the arriving tone
+  takes a growing share of the clumps by `_ORDER`, with a soft edge: a gradient across
+  the crown. The viewer and the contact sheet paint it (shared in `paint.js`).
+- Algarrobo: new bright green August–October (cba, iNaturalist photos of October),
+  grey-green mature October–July (photos of March, April and late June), frost-dried
+  July–August (FAO: leaves fall with the frosts, or when the new ones push out). No
+  source describes autumn colours, so it has none. Trees differ by 10–15 days (FAO).
+  No source gives how long one leaf stays bright, nor how much of the crown stays in
+  winter, so those are left out (the viewer uses the semi-deciduous default, 35 %).
+- Scores: mean 0.50. Look 7.4 MB of 9 MB; budgets unchanged since round 6 (still to confirm).

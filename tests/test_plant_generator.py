@@ -251,3 +251,33 @@ def test_every_variant_is_even_on_all_sides(look: dict[str, Any], stage: str) ->
         lo, hi = bounds(model.parts)
         widths.append(max(hi[0] - lo[0], hi[2] - lo[2]))
     assert min(widths) >= 0.75 * max(widths), [round(w, 1) for w in widths]
+
+
+@pytest.mark.parametrize("lod", ["lod0", "lod1"])
+@pytest.mark.parametrize("stage", ["sapling", "young", "adult", "old"])
+def test_no_leaf_without_wood(look: dict[str, Any], stage: str, lod: str) -> None:
+    """The rule (spec §7.2): every foliage card has drawn bark within about half its width
+    of its centre, in every variant and both LODs. Leaves never float in the air."""
+    for v in "abc"[: look["stages"][stage]["variants"]]:
+        model = build(look, stage, v, lod, BUDGETS)
+        foliage = model.parts["foliage"].positions
+        wood = model.parts["bark"].positions
+        cell = 0.25
+        grid: dict[tuple[int, int, int], list[Any]] = {}
+        for p in wood:
+            grid.setdefault((int(p[0] // cell), int(p[1] // cell), int(p[2] // cell)), []).append(p)
+        for i in range(0, len(foliage), 4):
+            corners = foliage[i : i + 4]
+            centre = tuple(sum(p[j] for p in corners) / 4 for j in range(3))
+            edge = math.dist(corners[0], corners[1])
+            reach = edge * 0.56
+            k = [int(centre[j] // cell) for j in range(3)]
+            r = int(reach // cell) + 1
+            near = any(
+                math.dist(p, centre) <= reach
+                for dx in range(-r, r + 1)
+                for dy in range(-r, r + 1)
+                for dz in range(-r, r + 1)
+                for p in grid.get((k[0] + dx, k[1] + dy, k[2] + dz), ())
+            )
+            assert near, f"{stage}-{v}.{lod}: a foliage card at {centre} has no wood near"
