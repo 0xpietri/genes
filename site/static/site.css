@@ -100,10 +100,22 @@ small { color: var(--muted); }
 .langs a[aria-current] { color: var(--ink); background: var(--sand); }
 
 .foot {
-  margin-top: 72px; padding: 32px clamp(16px, 4vw, 40px) 48px;
+  margin-top: 72px; padding: 40px clamp(16px, 4vw, 40px) 48px;
   border-top: 1px solid var(--line); color: var(--muted); font-size: 14px;
+  background: rgba(16, 32, 29, 0.35);
 }
-.foot p { max-width: 900px; margin: 0 0 8px; }
+.foot-cols { max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); gap: 28px 40px; }
+.foot-about p { margin: 12px 0 0; max-width: 420px; }
+.foot-col { display: flex; flex-direction: column; gap: 8px; }
+.foot-col h2 { font-family: var(--font); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text); margin: 4px 0 4px; }
+.foot-col p { margin: 0; }
+.foot a { color: var(--muted); }
+.foot a:hover { color: var(--text); }
+.foot .brand { color: var(--text); }
+@media (max-width: 760px) {
+  .foot-cols { grid-template-columns: 1fr 1fr; }
+  .foot-about { grid-column: 1 / -1; }
+}
 
 main { padding: 0 clamp(16px, 4vw, 40px); max-width: 1440px; margin: 0 auto; }
 .kicker { text-transform: uppercase; letter-spacing: 0.14em; font-size: 12px; color: var(--green); margin: 0 0 10px; font-weight: 800; }
@@ -200,7 +212,7 @@ main { padding: 0 clamp(16px, 4vw, 40px); max-width: 1440px; margin: 0 auto; }
 
 .hero { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(320px, 1fr); gap: 24px; align-items: stretch; }
 .stage {
-  position: relative; min-height: min(78vh, 780px); border-radius: var(--radius); overflow: hidden;
+  position: relative; min-height: min(64vh, 640px); border-radius: var(--radius); overflow: hidden;
   background: linear-gradient(#6fb8e6, #bfe6f5 60%, #d7e6b0);
   border: 1px solid var(--glass-line); box-shadow: var(--shadow), 0 0 0 6px rgba(220, 255, 230, 0.04);
   isolation: isolate;
@@ -226,12 +238,30 @@ main { padding: 0 clamp(16px, 4vw, 40px); max-width: 1440px; margin: 0 auto; }
 .daynight[aria-pressed="true"] .i-sun { display: inline; }
 .daynight[aria-pressed="true"] .i-moon { display: none; }
 
-.sim {
-  position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 2;
-  padding: 12px 14px; border-radius: 22px;
-  background: linear-gradient(160deg, rgba(16, 32, 29, 0.55), rgba(16, 32, 29, 0.38));
-  display: grid; gap: 10px;
+/* The simulator: a module right under the 3D tree, with its life on top. */
+.hero-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.sim { display: grid; gap: 12px; padding: 16px; }
+.sim .life-stages { margin: 2px 0 0; }
+.sim .legend { margin: 0; }
+.sim-kpis { display: flex; gap: 8px; align-items: stretch; }
+.sim-kpis .kpi { flex: 1 1 0; min-width: 0; padding: 8px 12px; border-radius: 16px; background: var(--glass-2); border: 1px solid var(--line); }
+.sim-kpis .kpi-ico { width: 32px; height: 32px; }
+.sim-kpis .kpi strong { font-size: 20px; white-space: nowrap; }
+.sim-kpis .kpi span { font-size: 12px; line-height: 1.2; }
+.info {
+  position: relative; flex: none; align-self: center; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--glass-2); border: 1px solid var(--line-2); cursor: help;
+  font-family: var(--display); font-weight: 600; font-size: 17px; color: var(--text);
 }
+.info:hover, .info:focus-visible { background: var(--glass-hi); outline: none; box-shadow: 0 0 0 3px var(--green); }
+.info::after {
+  content: attr(data-tip); position: absolute; right: 0; top: calc(100% + 10px); z-index: 6;
+  width: min(360px, 80vw); padding: 12px 14px; border-radius: 14px;
+  background: rgba(16, 32, 29, 0.95); border: 1px solid var(--line-2); box-shadow: var(--shadow);
+  font-family: var(--font); font-size: 13px; font-weight: 600; line-height: 1.45; text-align: left; color: var(--text);
+  opacity: 0; pointer-events: none; transform: translateY(4px); transition: opacity .15s ease, transform .15s ease;
+}
+.info:hover::after, .info:focus::after { opacity: 1; transform: translateY(0); }
 .sim-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .play {
   width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--ink); cursor: pointer; flex: none;
@@ -451,24 +481,32 @@ svg text { fill: var(--muted); font: 700 12px var(--font); }
 .photo figcaption { font-size: 13px; margin-top: 6px; color: var(--text); text-transform: capitalize; font-weight: 700; }
 .photo figcaption small { text-transform: none; font-size: 11px; font-weight: 600; }
 
-.facts { width: 100%; border-collapse: collapse; font-size: 14px; }
-.facts th, .facts td { text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.facts { width: 100%; border-collapse: collapse; font-size: 13px; }
+.facts th, .facts td { text-align: left; padding: 7px 12px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.facts .note { font-size: 12px; color: var(--muted); margin: 3px 0 0; line-height: 1.4; }
+.src a { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; }
+.src a:hover { color: var(--green); }
 .facts thead th { color: var(--muted); font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
 .facts tbody th { font-weight: 700; color: var(--muted); width: 28%; }
 .facts td.src { width: 18%; }
 .ids { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 10px 24px; margin: 22px 0 0; }
 .ids dt { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800; }
 .ids dd { margin: 2px 0 0; }
-.sources { padding-left: 0; list-style: none; font-size: 14px; }
-.sources li { margin: 6px 0; }
-.src-id { display: inline-block; min-width: 92px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--green); }
 
 @media (max-width: 1000px) {
   .hero { grid-template-columns: 1fr; }
   .stage { min-height: 70vh; }
+  .hero-main { display: contents; }
   .grid, .grid-wide { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
+  .sim { padding: 12px; }
+  .readout { flex: 1 1 100%; min-width: 0; }
+  .sim-kpis { gap: 6px; }
+  .sim-kpis .kpi { display: block; padding: 6px 8px; }
+  .sim-kpis .kpi-ico { display: none; }
+  .sim-kpis .kpi strong { display: block; font-size: 17px; }
+  .sim-kpis .kpi span { display: block; font-size: 11px; }
   .nav { gap: 2px; font-size: 14px; }
   .nav a, .nav .soon { padding: 6px 10px; }
   .top { gap: 10px; }

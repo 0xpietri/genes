@@ -60,7 +60,6 @@ function setupLife(stage, life, look) {
   const age = $('[data-age]');
   const play = $('[data-play]');
   const readout = $('[data-readout]');
-  const chips = [...document.querySelectorAll('[data-stage-chip]')];
   const jumps = [...document.querySelectorAll('[data-jump]')];
   const seasons = [...document.querySelectorAll('[data-season]')];
   const speeds = [...document.querySelectorAll('[data-speed]')];
@@ -96,7 +95,6 @@ function setupLife(stage, life, look) {
       if (b !== '') { const el = document.createElement('b'); el.textContent = b; readout.append(el); }
     }
     readout.append(` · ${t(STAGE_LABEL[st] ?? st)}${statusText}`);
-    for (const c of chips) c.setAttribute('aria-current', c.dataset.stageChip === st ? 'step' : 'false');
     for (const b of jumps) b.setAttribute('aria-current', b.dataset.stagePic === st ? 'step' : 'false');
     const season = SEASON_OF(s.month);
     for (const b of seasons) b.setAttribute('aria-pressed', String(Number(b.dataset.season) === season));

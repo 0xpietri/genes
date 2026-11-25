@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import shutil
 from html import escape
 from pathlib import Path
@@ -200,8 +201,6 @@ def header(active: str = "", path: str = "/") -> str:
   <a class="brand" href="{here}/"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22V11M12 11c0-4 3-7 8-7 0 5-3 8-8 7Zm0 3c0-3-2.5-5.5-7-5.5 0 4 2.5 6 7 5.5Z"/></svg><span>genes</span></a>
   <nav class="nav" aria-label="{T("Sections")}">
     <a href="{here}/#plants"{plants}>{T("Plants")}</a>
-    <span class="soon" title="{T("Coming later")}">{T("Animals")}</span>
-    <a href="{here}/#about">{T("About")}</a>
   </nav>
   <nav class="langs" aria-label="{T("Language")}">{langs}</nav>
   <div class="account" data-account-slot></div>
@@ -209,9 +208,32 @@ def header(active: str = "", path: str = "/") -> str:
 
 
 def footer() -> str:
+    here = prefix()
     return f"""<footer class="foot">
-  <p><strong>genes</strong> {T("is the catalog of living things of")} <a href="https://pietri.dev">pietri.dev</a>{T("'s world. Facts carry their sources; models are made by a procedural generator to resemble the real species.")}</p>
-  <p>{T("Sheets and looks: CC BY 4.0 · code: MIT · photos keep their own licence.")} <a href="/v1/catalog.json">{T("Data (JSON)")}</a> · <a href="/llms.txt">llms.txt</a> · <a href="/sitemap.xml">{T("Sitemap")}</a> · <a href="https://github.com/0xpietri/genes">{T("Source")}</a></p>
+  <div class="foot-cols">
+    <div class="foot-about">
+      <a class="brand" href="{here}/"><svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22V11M12 11c0-4 3-7 8-7 0 5-3 8-8 7Zm0 3c0-3-2.5-5.5-7-5.5 0 4 2.5 6 7 5.5Z"/></svg><span>genes</span></a>
+      <p>{T("Species of the Sierras Chicas of Córdoba, simulated in")} <a href="https://pietri.dev">pietri.dev</a>{T("'s world. Facts carry their sources; models are made by a procedural generator to resemble the real species.")}</p>
+    </div>
+    <nav class="foot-col" aria-label="{T("Catalog")}">
+      <h2>{T("Catalog")}</h2>
+      <a href="{here}/#plants">{T("Plants")}</a>
+      <a href="https://pietri.dev">pietri.dev</a>
+      <a href="https://github.com/0xpietri/genes">{T("Source code")}</a>
+    </nav>
+    <nav class="foot-col" aria-label="{T("Data")}">
+      <h2>{T("Data")}</h2>
+      <a href="/v1/catalog.json">{T("Data (JSON)")}</a>
+      <a href="/llms.txt">llms.txt</a>
+      <a href="/sitemap.xml">{T("Sitemap")}</a>
+    </nav>
+    <div class="foot-col">
+      <h2>{T("Licences")}</h2>
+      <p>{T("Sheets and looks: CC BY 4.0")}</p>
+      <p>{T("Code: MIT")}</p>
+      <p>{T("Photos keep their own licence.")}</p>
+    </div>
+  </div>
 </footer>"""
 
 
@@ -507,6 +529,25 @@ def stage_strip(life: dict[str, Any] | None, art: dict[str, tuple[str, int, int]
     )
 
 
+def src_links(sheet: dict[str, Any], ids: list[str]) -> str:
+    """Source ids, each linked straight to its source (its title on hover)."""
+    by_id = {s["id"]: s for s in sheet.get("sources", [])}
+    out = []
+    for i in ids:
+        s = by_id.get(i, {})
+        title = e(f"{s.get('title', i)} ({T('accessed')} {s.get('accessed', '')})")
+        out.append(
+            f'<a href="{e(s["url"])}" title="{title}" rel="noopener" target="_blank">{e(i)}</a>'
+            if s.get("url")
+            else f'<span title="{title}">{e(i)}</span>'
+        )
+    return ", ".join(out)
+
+
+def src_refs(sheet: dict[str, Any], ids: list[str]) -> str:
+    return f'<small class="src">[{src_links(sheet, ids)}]</small>' if ids else ""
+
+
 def gives_tiles(sheet: dict[str, Any]) -> str:
     tiles = []
     for g in dig(sheet, "plant", "gives") or []:
@@ -529,7 +570,7 @@ def gives_tiles(sheet: dict[str, Any]) -> str:
             f"<div><strong>{e(T(GIVES_LABEL.get(what, what.replace('_', ' ').capitalize())))}</strong>"
             f"{f'<span> {T("to")} {e(to)}</span>' if to else ''}"
             f"{f'<small>{e(when)}</small>' if when else ''}{cells}"
-            f'<small class="src">[{e(", ".join(g.get("source", [])))}]</small></div></li>'
+            f"{src_refs(sheet, g.get('source', []))}</div></li>"
         )
     return '<ul class="gives">' + "".join(tiles) + "</ul>" if tiles else ""
 
@@ -607,17 +648,9 @@ def stat_tiles(sheet: dict[str, Any], life: dict[str, Any] | None) -> str:
         out.append(
             f'<div class="tile">{art.icon(ico, "ico tile-ico")}<span class="tile-k">{e(T(label))}</span>'
             f'<span class="tile-v">{e(fmt_range(r))}<em>{e(T(unit))}</em></span>{typ}'
-            f'<small class="src">[{e(", ".join(r.get("source", [])))}]</small></div>'
+            f"{src_refs(sheet, r.get('source', []))}</div>"
         )
-    if life:
-        dead = next((c for c in life["changes"] if c["to"] == "standing_dead"), None)
-        if dead:
-            years = int(dead["date"][:4]) - int(life["born"][:4])
-            out.append(
-                f'<div class="tile tile-sim">{art.icon("life", "ico tile-ico")}<span class="tile-k">{T("Simulated life")}</span>'
-                f'<span class="tile-v">{years}<em>{T("years")}</em></span>'
-                f"<small>{T("one tree in pietri.dev's simulator")}</small></div>"
-            )
+    # The simulated life is in the simulator module, under the 3D tree.
     return '<div class="tiles">' + "".join(out) + "</div>"
 
 
@@ -687,7 +720,7 @@ def facts_table(sheet: dict[str, Any]) -> str:
     body = "".join(
         f'<tr><th scope="row">{e(k)}</th><td>{e(v)}'
         f"{f'<p class=note>{e(note)}</p>' if note else ''}</td>"
-        f'<td class="src">{e(", ".join(src))}</td></tr>'
+        f'<td class="src">{src_links(sheet, src)}</td></tr>'
         for k, v, src, note in rows
     )
     return (
@@ -751,7 +784,7 @@ def species_page(
         f"<li>{e(T(r['trait']))}</li>" for r in (look or {}).get("recognisable", [])
     )
     uses = dig(sheet, "plant", "people", "uses") or []
-    uses_src = ", ".join(dig(sheet, "plant", "people", "source") or [])
+    uses_src: list[str] = dig(sheet, "plant", "people", "source") or []
     photos = "".join(
         f'<figure class="photo"><a href="{e(p["url"])}" rel="noopener" target="_blank">'
         f'<img src="/v1/species/{e(sp.id)}/references/{e(p["file"])}" loading="lazy" decoding="async" '
@@ -759,16 +792,6 @@ def species_page(
         f"<figcaption>{e(', '.join(T(x) for x in p['shows']))} · {e(p['place'])}<br><small>{e(p['author'])}</small></figcaption></figure>"
         for p in (refs or {}).get("photos", [])
         if p.get("file")
-    )
-    sources = "".join(
-        f'<li id="src-{e(s["id"])}"><span class="src-id">{e(s["id"])}</span> '
-        + (
-            f'<a href="{e(s["url"])}" rel="noopener" target="_blank">{e(s["title"])}</a>'
-            if s.get("url")
-            else e(s["title"])
-        )
-        + f" <small>{T('accessed')} {e(s.get('accessed', ''))}</small></li>"
-        for s in sheet.get("sources", [])
     )
     occ_note = (
         f"{T('Each little tree marks a half-degree area with GBIF sightings')}: "
@@ -823,44 +846,53 @@ def species_page(
                 0,
                 (
                     f"{int(dead['date'][:4]) - int(life['born'][:4])} {T('years')}",
-                    T("lived"),
+                    T("simulated life"),
                     "life",
                 ),
             )
-            cause = {"age": "Old age"}.get(dead["cause"], str(dead["cause"]).capitalize())
-            kpis.append((e(T(cause)), T("is what it dies of"), "leaf"))
-        kpis.append((life["end"]["date"][:4], T("gone into the soil"), "trunk"))
+        kpis.append((life["end"]["date"][:4], T("the year it is gone into the soil"), "trunk"))
+        about_life = life_text.removeprefix("<p>").removesuffix("</p>")
+        about_life = re.sub(r"<[^>]+>", "", about_life)
         life_kpis = (
-            '<div class="kpis">'
+            '<div class="sim-kpis">'
             + "".join(
                 f'<div class="kpi">{art.icon(ico, "ico kpi-ico")}<strong>{v}</strong><span>{k}</span></div>'
                 for v, k, ico in kpis
             )
-            + "</div>"
+            + f'<button type="button" class="info" data-tip="{e(about_life)}" '
+            f'aria-label="{T("About this tree")}: {e(about_life)}">i</button>' + "</div>"
         )
 
     sim = ""
     if look and life:
-        stage_opts = "".join(
-            f'<li data-stage-chip="{e(s)}">{e(T(STAGE_LABEL.get(s, s)))}</li>' for s in stages
-        )
         seasons = "".join(
             f'<button type="button" data-season="{m}">{T(name)}</button>'
             for m, name in ((1, "Summer"), (4, "Autumn"), (7, "Winter"), (10, "Spring"))
         )
         sim = f"""
-      <div class="sim" data-sim>
+      <section class="sim panel" id="life" data-sim aria-label="{T("The tree's simulated life")}">
+        {life_kpis}
         <div class="sim-row">
-          <button type="button" class="play" data-play aria-label="{T("Play the tree's life")}"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5v14l11-7z"/><path class="i-pause" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
-          <label class="age"><span class="sr">{T("Age")}</span><input type="range" min="0" max="{len(life["samples"]["date"]) - 1}" value="0" step="1" data-age></label>
-          <div class="speed" role="group" aria-label="{T("Speed")}"><button type="button" data-speed="1">1×</button><button type="button" data-speed="4" aria-pressed="true">4×</button><button type="button" data-speed="16">16×</button></div>
+          <button type="button" class="play" data-play aria-label="{
+            T("Play the tree's life")
+        }"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5v14l11-7z"/><path class="i-pause" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+          <label class="age"><span class="sr">{T("Age")}</span><input type="range" min="0" max="{
+            len(life["samples"]["date"]) - 1
+        }" value="0" step="1" data-age></label>
+          <div class="speed" role="group" aria-label="{
+            T("Speed")
+        }"><button type="button" data-speed="1">1×</button><button type="button" data-speed="4" aria-pressed="true">4×</button><button type="button" data-speed="16">16×</button></div>
         </div>
         <div class="sim-row">
           <output class="readout" data-readout>{T("Year 0")}</output>
           <div class="seasons" role="group" aria-label="{T("Season")}">{seasons}</div>
         </div>
-        <ol class="stages" aria-label="{T("Stages")}">{stage_opts}</ol>
-      </div>"""
+        {stage_strip(life, stage_art)}
+        {life_chart(life)}
+        <ul class="legend"><li><i class="sw alive"></i>{T("Alive")}</li><li><i class="sw dead"></i>{
+            T("Dead, standing")
+        }</li><li><i class="sw fallen"></i>{T("Fallen, rotting")}</li></ul>
+      </section>"""
 
     def head_of(icon_name: str, h2: str, sub: str) -> str:
         return (
@@ -888,6 +920,7 @@ def species_page(
         T("Catalog")
     }</a> <span>/</span> <span>{e(es[0].capitalize())}</span></nav>
   <section class="hero">
+    <div class="hero-main">
     <div class="stage" data-stage>
       <div class="stage-sky" aria-hidden="true"></div>
       <canvas class="stage-canvas" data-canvas aria-label="{T("3D model of the")} {e(es[0])}: {
@@ -905,7 +938,8 @@ def species_page(
         T("Back to the whole tree")
     }"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
       </div>
-      {sim}
+    </div>
+    {sim}
     </div>
     <div class="intro">
       <p class="kicker">{e(sheet.get("family", ""))} · {e(T(form))}</p>
@@ -920,20 +954,6 @@ def species_page(
     </div>
   </section>
 
-  <section class="panel span-2" id="life">
-    {
-        head_of(
-            "life", "Its life", T("Age, height and death of one tree, simulated once and replayed.")
-        )
-    }
-    {life_kpis}
-    {life_text}
-    {stage_strip(life, stage_art)}
-    {life_chart(life)}
-    <ul class="legend"><li><i class="sw alive"></i>{T("Alive")}</li><li><i class="sw dead"></i>{
-        T("Dead, standing")
-    }</li><li><i class="sw fallen"></i>{T("Fallen, rotting")}</li></ul>
-  </section>
 
   <div class="grid grid-wide">
     <section class="panel" id="size">
@@ -1038,7 +1058,7 @@ def species_page(
         head_of(
             "people",
             "People and the algarrobo",
-            f'{T("Uses the sources record")} <small class="src">[{e(uses_src)}]</small>.',
+            f"{T('Uses the sources record')} {src_refs(sheet, uses_src)}.",
         )
     }
       <ul class="uses">{"".join(f"<li>{e(T(u))}</li>" for u in uses)}</ul>
@@ -1095,8 +1115,6 @@ def species_page(
         e(sp.id)
     }/">{T("model review")}</a></dd></div>
     </dl>
-    <h3>{T("Sources")}</h3>
-    <ol class="sources">{sources}</ol>
   </section>
 </main>
 {footer()}
@@ -1245,7 +1263,7 @@ def index_page(species: list[Species], entries: list[dict[str, Any]], catalog_no
 </li>""")
     cards.append(f"""<li class="card card-soon" aria-label="{T("More species coming")}">
   <div class="card-art"><div class="card-img placeholder soon-mark" aria-hidden="true"></div><span class="pedestal" aria-hidden="true"></span></div>
-  <div class="card-text"><span class="card-kicker">{T("Coming")}</span><h2>{T("More species")}</h2><p class="card-sci">{T("Trees, grasses and later animals, one by one.")}</p></div>
+  <div class="card-text"><span class="card-kicker">{T("Coming")}</span><h2>{T("More species")}</h2><p class="card-sci">{T("More trees of the Sierras Chicas, one by one.")}</p></div>
 </li>""")
     n = len([s for s in species if not s.id.startswith("example-")])
     ld: list[dict[str, Any]] = [
@@ -1279,14 +1297,14 @@ def index_page(species: list[Species], entries: list[dict[str, Any]], catalog_no
         "rotatable 3D trees, their simulated life and where they grow."
     )
     lead = T(
-        "Trees, grasses and, later, animals of the pietri.dev world. Each one with its facts "
-        "and sources, a 3D model to turn and zoom, its year and one whole simulated life."
+        "A catalog of the species that live in the Sierras Chicas of Córdoba, Argentina. Each one "
+        "is built from real data with its sources (how tall it grows, when it flowers, how much "
+        "frost it stands) and modelled in 3D, at every stage of its life, by a procedural "
+        "generator in Blender."
     )
-    about = T(
-        "genes is where the species of pietri.dev's little world are defined: what each one is "
-        "in reality, with sources (how tall it grows, when it flowers, how much frost it takes), "
-        "and how it looks, as 3D models for every stage of its life. The world's simulator reads "
-        "these facts; this site shows them to anyone. Nothing here needs an account."
+    lead_sim = T(
+        "In the world of pietri.dev they come alive: a simulator grows them day by day with the "
+        "real weather, and they age and die according to their genetics and the climate."
     )
     return f"""{head(T("genes · species of the pietri.dev world"), desc, "/", ld=ld, scripts=["/static/site/js/catalog.js"])}
 <body class="page-index">
@@ -1296,15 +1314,11 @@ def index_page(species: list[Species], entries: list[dict[str, Any]], catalog_no
     <p class="kicker">{T("Catalog")} · {T("1 species") if n == 1 else f"{n} {T('species')}"} · {T("release")} {catalog_no}</p>
     <h1>{T("Living things of the pietri.dev world")}</h1>
     <p>{lead}</p>
+    <p>{lead_sim.replace("pietri.dev", '<a href="https://pietri.dev">pietri.dev</a>', 1)}</p>
   </section>
-  <div class="filters" role="group" aria-label="{T("Show")}"><button type="button" aria-pressed="true">{T("All")}</button><button type="button" disabled>{T("Trees")}</button><button type="button" disabled>{T("Grasses")}</button><button type="button" disabled>{T("Animals")}</button></div>
   <ul class="cards" id="plants">
 {"".join(cards)}
   </ul>
-  <section class="about" id="about">
-    <h2>{T("About genes")}</h2>
-    <p>{about.replace("pietri.dev", '<a href="https://pietri.dev">pietri.dev</a>', 1)}</p>
-  </section>
 </main>
 {footer()}
 </body>
