@@ -1265,7 +1265,6 @@ def index_page(species: list[Species], entries: list[dict[str, Any]], catalog_no
   <div class="card-art"><div class="card-img placeholder soon-mark" aria-hidden="true"></div><span class="pedestal" aria-hidden="true"></span></div>
   <div class="card-text"><span class="card-kicker">{T("Coming")}</span><h2>{T("More species")}</h2><p class="card-sci">{T("More trees of the Sierras Chicas, one by one.")}</p></div>
 </li>""")
-    n = len([s for s in species if not s.id.startswith("example-")])
     ld: list[dict[str, Any]] = [
         {
             "@context": "https://schema.org",
@@ -1311,8 +1310,7 @@ def index_page(species: list[Species], entries: list[dict[str, Any]], catalog_no
 {header("plants", "/")}
 <main>
   <section class="lead">
-    <p class="kicker">{T("Catalog")} · {T("1 species") if n == 1 else f"{n} {T('species')}"} · {T("release")} {catalog_no}</p>
-    <h1>{T("Living things of the pietri.dev world")}</h1>
+    <h1>{T("Living things of pietri.dev")}</h1>
     <p>{lead}</p>
     <p>{lead_sim.replace("pietri.dev", '<a href="https://pietri.dev">pietri.dev</a>', 1)}</p>
   </section>
