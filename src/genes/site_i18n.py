@@ -275,6 +275,10 @@ UI_ES: dict[str, str] = {
     "How to recognise it": "Cómo reconocerlo",
     # photos, details
     "Reference photos": "Fotos de referencia",
+    "Close": "Cerrar",
+    "Previous photo": "Foto anterior",
+    "Next photo": "Foto siguiente",
+    "source": "fuente",
     "Real trees the model was checked against, with where each was taken. Each keeps its author and licence.": "Árboles reales contra los que se comparó el modelo, con el lugar de cada foto. Cada una mantiene su autor y licencia.",
     "whole": "entero",
     "summer": "verano",

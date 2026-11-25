@@ -238,7 +238,7 @@ def test_painted_map_pieces_and_skies_exist() -> None:
 
 def test_the_simulator_holds_the_life(dist: Path) -> None:
     html = (dist / "species" / "neltuma-alba" / "index.html").read_text(encoding="utf-8")
-    module = re.search(r'<div class="hero-main panel">.*?<div class="intro">', html, re.S)
+    module = re.search(r'<div class="hero-main panel">.*?</section>', html, re.S)
     assert module
     for part in (
         'class="life-stages"',
@@ -392,3 +392,137 @@ def test_static_files_live_in_a_folder_named_by_their_content(dist: Path) -> Non
     assert not re.search(r'"/static/site/(?![0-9a-f]{10}/)', html)
     for js in (SITE_STATIC / "js").glob("*.js"):
         assert "/static/site/" not in js.read_text(encoding="utf-8"), js.name
+
+
+# ---------------------------------------------------------------- loading, SEO, photo viewer
+
+
+def test_reference_photos_show_small_thumbs_and_link_the_original(dist: Path) -> None:
+    refs = jsonio.load(SPECIES_DIR / "plants" / "neltuma-alba" / "references" / "refs.json")
+    html = (dist / "species" / "neltuma-alba" / "index.html").read_text(encoding="utf-8")
+    base = dist / "v1" / "species" / "neltuma-alba" / "references"
+    for p in refs["photos"]:
+        thumb = base / "thumbs" / f"{p['id']}.webp"
+        # Every stored photo has its thumb, much lighter than the photo itself.
+        assert thumb.exists(), p["id"]
+        assert thumb.stat().st_size < (base / p["file"]).stat().st_size / 2, p["id"]
+        assert f'src="/v1/species/neltuma-alba/references/thumbs/{p["id"]}.webp"' in html
+        # Without JavaScript the thumb opens the stored photo; the original's page is linked.
+        assert f'<a href="/v1/species/neltuma-alba/references/{p["file"]}" data-photo>' in html
+        assert f'href="{p["url"]}" rel="noopener" data-source>iNaturalist</a>' in html
+    assert html.count("<dialog") == 1
+    gallery = next(b for b in _ld(html) if "@graph" in b)["@graph"]
+    assert len(gallery) == len(refs["photos"])
+    assert all(g["@type"] == "ImageObject" and g["creditText"] for g in gallery)
+
+
+def test_refs_thumb_is_the_tiles_middle_crop() -> None:
+    from io import BytesIO
+
+    from PIL import Image
+
+    from genes import refs
+
+    src = BytesIO()
+    Image.new("RGB", (768, 1024), "green").save(src, "JPEG")
+    out = Image.open(BytesIO(refs.thumb(src.getvalue())))
+    assert out.format == "WEBP" and out.size == refs.THUMB_SIZE
+
+
+def test_species_page_preloads_what_the_3d_needs(dist: Path) -> None:
+    html = (dist / "species" / "neltuma-alba" / "index.html").read_text(encoding="utf-8")
+    fetches = re.findall(r'<link rel="preload" href="([^"]+)" as="fetch" crossorigin>', html)
+    assert fetches == [
+        "/v1/species/neltuma-alba/sheets/1.json",
+        "/v1/species/neltuma-alba/looks/1/look.json",
+        "/v1/species/neltuma-alba/lifecycle/1.json",
+        "/v1/species/neltuma-alba/looks/1/adult-a.lod1.glb",
+    ]
+    for url in fetches:
+        assert (dist / url.lstrip("/")).exists(), url
+    modules = re.findall(r'<link rel="modulepreload" href="([^"]+)">', html)
+    assert site_static.url("js/stage.js") in modules
+    assert "/static/vendor/three/addons/loaders/GLTFLoader.js" in modules
+    for url in modules:
+        assert (dist / url.lstrip("/")).exists(), url
+    # The catalog page loads no 3D at all.
+    assert "modulepreload" not in (dist / "index.html").read_text(encoding="utf-8")
+
+
+def test_species_page_reads_well_for_search_engines_and_models(dist: Path) -> None:
+    for lg, path in (("en", "species/neltuma-alba"), ("es", "es/species/neltuma-alba")):
+        html = (dist / path / "index.html").read_text(encoding="utf-8")
+        # The name and summary come before the 3D controls in the HTML.
+        assert html.index("<h1>") < html.index("data-stage")
+        assert 'type="text/markdown" hreflang="en" href="/species/neltuma-alba/index.md"' in html
+        assert '<meta property="og:image:width" content="640">' in html
+        assert '<meta property="og:image:alt" content="Algarrobo blanco (Neltuma alba)">' in html
+        other = "es_AR" if lg == "en" else "en_GB"
+        assert f'<meta property="og:locale:alternate" content="{other}">' in html
+    sitemap = (dist / "sitemap.xml").read_text(encoding="utf-8")
+    assert sitemap.count("<url>") == 4
+    assert (
+        '<xhtml:link rel="alternate" hreflang="es" '
+        'href="https://genes.pietri.dev/es/species/neltuma-alba/"/>' in sitemap
+    )
+    assert "https://genes.pietri.dev/es/species/neltuma-alba/" in (dist / "llms.txt").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_webp_size_reads_the_header(tmp_path: Path) -> None:
+    from PIL import Image
+
+    for size, kw in (((640, 698), {"lossless": False}), ((33, 17), {"lossless": True})):
+        p = tmp_path / f"{size[0]}.webp"
+        Image.new("RGBA" if kw["lossless"] else "RGB", size, "red").save(p, "WEBP", **kw)
+        assert genes_site.webp_size(p) == size
+
+
+def test_photos_open_in_the_lightbox(served: str) -> None:
+    pw, browser = _browser()
+    try:
+        page = browser.new_page(viewport={"width": 1280, "height": 900})
+        errors: list[str] = []
+        page.on("pageerror", lambda e: errors.append(str(e)))
+        page.goto(f"{served}/es/species/neltuma-alba/")
+        page.wait_for_selector("body[data-ready], body[data-error]", timeout=60000)
+        page.locator("[data-photo]").nth(1).click()
+        box = page.locator("dialog[data-lightbox]")
+        box.wait_for(state="visible")
+        assert page.url.endswith("/es/species/neltuma-alba/")  # still on the page
+        page.wait_for_selector("dialog[data-lightbox]:not(.loading)")
+        src = page.evaluate("document.querySelector('[data-lb-img]').src")
+        assert src.endswith("/references/r02.jpg")
+        assert page.locator("[data-lb-count]").inner_text() == "2 / 19"
+        assert page.locator("[data-lb-source]").get_attribute("href") == (
+            "https://www.inaturalist.org/photos/145111445"
+        )
+        page.keyboard.press("ArrowRight")
+        assert page.locator("[data-lb-count]").inner_text() == "3 / 19"
+        page.locator("[data-lb-prev]").click()
+        page.locator("[data-lb-prev]").click()
+        assert page.locator("[data-lb-count]").inner_text() == "1 / 19"
+        page.keyboard.press("Escape")
+        box.wait_for(state="hidden")
+        assert errors == []
+    finally:
+        browser.close()
+        pw.stop()
+
+
+def test_the_tree_shows_the_light_model_then_the_full_one(served: str) -> None:
+    pw, browser = _browser()
+    try:
+        page = browser.new_page()
+        asked: list[str] = []
+        page.on("request", lambda r: asked.append(r.url) if r.url.endswith(".glb") else None)
+        page.goto(f"{served}/species/neltuma-alba/")
+        page.wait_for_selector("canvas[data-lod='0']", state="attached", timeout=60000)
+        assert any(u.endswith("adult-a.lod1.glb") for u in asked)
+        assert any(u.endswith("adult-a.lod0.glb") for u in asked)
+        # Each model is asked for once: the preload is reused, not fetched twice.
+        assert len(asked) == len(set(asked))
+    finally:
+        browser.close()
+        pw.stop()

@@ -7,7 +7,11 @@
 
     genes refs add <id> <number> --shows whole,summer --angle side [--box l,t,r,b]
         Stores candidate <number> at most 1280 px in references/, with its author,
-        licence and link, and appends it to references/refs.json.
+        licence and link, and appends it to references/refs.json, plus a small WebP copy
+        in references/thumbs/ for the species page's photo grid.
+
+    genes refs thumbs <id>
+        Writes the missing thumbs for photos stored before thumbs existed.
 
 Network only here, never in tests: the parsing is tested on recorded answers.
 """
@@ -23,7 +27,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 from genes import jsonio
 from genes.paths import REPO_ROOT
@@ -32,6 +36,10 @@ API = "https://api.inaturalist.org/v1"
 SHAREABLE = ("cc0", "cc-by", "cc-by-sa")
 WORK = REPO_ROOT / ".work"
 MAX_SIDE = 1280
+# The page shows photos as 4:3 tiles at most 260 px wide, cropped from the middle (object-fit:
+# cover): a thumb is that crop at 520 x 390, sharp on 2x screens. The full photo only loads in
+# the lightbox.
+THUMB_SIZE = (520, 390)
 USER_AGENT = "genes-species-tool/0.1"
 PHENOLOGY = {"flowers": 13, "fruit": 14, "flower_buds": 15}
 
@@ -184,6 +192,36 @@ def resized(data: bytes) -> bytes:
     return out.getvalue()
 
 
+def thumb(data: bytes) -> bytes:
+    """A small WebP of a stored photo: the middle 4:3 crop the page's tile shows."""
+    img = Image.open(BytesIO(data)).convert("RGB")
+    img = ImageOps.fit(img, THUMB_SIZE, Image.Resampling.LANCZOS)
+    out = BytesIO()
+    img.save(out, "WEBP", quality=72, method=6)
+    return out.getvalue()
+
+
+def thumb_path(refs_dir: Path, photo: dict[str, Any]) -> Path:
+    return refs_dir / "thumbs" / f"{Path(photo['file']).stem}.webp"
+
+
+def write_thumbs(species_dir: Path) -> list[Path]:
+    """Writes the thumbs that are missing; returns the new files."""
+    refs_dir = species_dir / "references"
+    refs: dict[str, Any] = jsonio.load(refs_dir / "refs.json")
+    made = []
+    for photo in refs["photos"]:
+        if "file" not in photo:
+            continue
+        out = thumb_path(refs_dir, photo)
+        if out.exists():
+            continue
+        out.parent.mkdir(exist_ok=True)
+        out.write_bytes(thumb((refs_dir / photo["file"]).read_bytes()))
+        made.append(out)
+    return made
+
+
 def add(
     species_dir: Path,
     number: int,
@@ -213,7 +251,10 @@ def add(
     if any(p.get("url") == c.page and p.get("file") for p in refs["photos"]):
         raise SystemExit(f"candidate {number} is already in refs.json")  # same photo
     ref_id = f"r{len(refs['photos']) + 1:02d}"
-    (refs_path.parent / f"{ref_id}.jpg").write_bytes(resized(get(c.large)))
+    stored = resized(get(c.large))
+    (refs_path.parent / f"{ref_id}.jpg").write_bytes(stored)
+    (refs_path.parent / "thumbs").mkdir(exist_ok=True)
+    (refs_path.parent / "thumbs" / f"{ref_id}.webp").write_bytes(thumb(stored))
     entry: dict[str, Any] = {
         "id": ref_id,
         "url": c.page,

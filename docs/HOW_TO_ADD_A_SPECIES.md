@@ -160,6 +160,10 @@ uv run genes refs add <id> <number> --shows whole,summer --angle side --box 0.12
 uv run genes refs add <id> <number> --shows bark --angle detail
 ```
 
+Each photo also gets a small WebP in `references/thumbs/` (the middle 4:3 crop the page's
+photo strip shows); commit it with the photo. `uv run genes refs thumbs <id>` writes any
+that are missing.
+
 - `--shows`: a comma list from `whole, trunk, bark, branch, leaves, flowers, fruit,
   seedling, young, old, dead, winter, summer, habitat` (thorns are a `branch` photo).
 - `--angle`: `side`, `below`, `above` or `detail`.

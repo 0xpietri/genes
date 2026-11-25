@@ -102,6 +102,9 @@ def _species_entry(sp: Species, out: Path) -> dict[str, Any]:
         for photo in refs.get("photos", []):
             if "file" in photo:
                 _copy(sp.refs.path.parent / photo["file"], base / "references" / photo["file"])
+                thumb = sp.refs.path.parent / "thumbs" / f"{Path(photo['file']).stem}.webp"
+                if thumb.exists():
+                    _copy(thumb, base / "references" / "thumbs" / thumb.name)
         text = jsonio.dumps(refs)
         (base / "references.json").write_text(text, encoding="utf-8")
         entry["references"] = {

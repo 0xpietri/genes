@@ -132,7 +132,9 @@ export class Stage {
       uFrom: { value: new THREE.Color() }, uTo: { value: new THREE.Color() },
       uEdge: { value: 2 }, uLowest: { value: 0 },
     };
-    this.current = null; // { stage, root, size }
+    this.current = null; // { stage, lod, root, size }
+    this.ready = new Set(); // `${stage}@${lod}` keys whose model has arrived
+    this.shown = new Promise((resolve) => { this.firstShown = resolve; });
     this.want = null;
     this.state = null;
     this.clock = new THREE.Timer();
@@ -154,14 +156,22 @@ export class Stage {
 
   setNight(night, instant) { this.sky.setNight(night, instant); }
 
-  modelUrl(stage) { return `${this.modelsBase}${stage}-a.lod0.glb`; }
+  modelUrl(stage, lod = 0) { return `${this.modelsBase}${stage}-a.lod${lod}.glb`; }
 
-  async loadStage(stage) {
-    if (!this.cache.has(stage)) {
-      this.cache.set(stage, this.loader.loadAsync(this.modelUrl(stage)).then((gltf) => this.prepare(gltf.scene)));
+  /** One stage's model at one level of detail, fetched and painted once. */
+  load(stage, lod) {
+    const key = `${stage}@${lod}`;
+    if (!this.cache.has(key)) {
+      this.cache.set(key, this.loader.loadAsync(this.modelUrl(stage, lod)).then((gltf) => {
+        this.ready.add(key);
+        return { lod, ...this.prepare(gltf.scene) };
+      }));
     }
-    return this.cache.get(stage);
+    return this.cache.get(key);
   }
+
+  /** The full model of a stage (lod0): what the page shows once it has arrived. */
+  loadStage(stage) { return this.load(stage, 0); }
 
   /** Paints a fresh model once: toon bands from the look's palette, clumps revealed by _order. */
   prepare(root) {
@@ -188,19 +198,40 @@ export class Stage {
     return { root, size, box };
   }
 
-  /** Shows sample `s` (from life.js's sampleAt) as stage `stage`. */
+  /**
+   * Shows sample `s` (from life.js's sampleAt) as stage `stage`. Until the full model (lod0,
+   * about 700 KB for a grown tree) has arrived, the light one (lod1, about 80 KB) stands in, so
+   * the tree appears at once and sharpens a moment later.
+   */
   async show(stage, s) {
     this.state = { stage, s };
     this.want = stage;
-    const model = await this.loadStage(stage);
+    let model;
+    if (this.ready.has(`${stage}@0`)) {
+      model = await this.load(stage, 0);
+    } else {
+      const full = this.load(stage, 0);
+      full.then((m) => {
+        if (this.want === stage && this.current?.stage === stage && this.current.lod !== 0) this.put(stage, m);
+      }, () => {});
+      // The light model, unless it fails or the full one wins the race.
+      model = await Promise.race([full, this.load(stage, 1).catch(() => full)]);
+    }
     if (this.want !== stage) return;
-    if (this.current?.stage !== stage) {
+    this.put(stage, model);
+  }
+
+  put(stage, model) {
+    if (this.current?.root !== model.root) {
+      const sameStage = this.current?.stage === stage;
       if (this.current) this.holder.remove(this.current.root);
       this.current = { stage, ...model };
       this.holder.add(model.root);
-      this.snap = true; // a new model: frame it at once
+      if (!sameStage) this.snap = true; // a new stage: frame it at once
     }
     this.place();
+    this.firstShown();
+    if (model.lod === 0) this.canvas.dataset.lod = '0';
   }
 
   place() {
@@ -303,14 +334,15 @@ export class Stage {
     this.renderer.render(this.scene, this.camera);
   }
 
-  /** Loads the other stages when the browser is idle, so playing never waits. */
+  /** Loads the other stages when the browser is idle, light models first, so playing never waits. */
   preload(stages) {
-    const next = stages.filter((s) => !this.cache.has(s));
+    const next = [...stages.map((s) => [s, 1]), ...stages.map((s) => [s, 0])]
+      .filter(([s, lod]) => !this.cache.has(`${s}@${lod}`));
     const idle = window.requestIdleCallback ?? ((f) => setTimeout(f, 300));
     const one = () => {
-      const s = next.shift();
-      if (!s) return;
-      this.loadStage(s).finally(() => idle(one));
+      const item = next.shift();
+      if (!item) return;
+      this.load(...item).catch(() => {}).finally(() => idle(one));
     };
     idle(one);
   }

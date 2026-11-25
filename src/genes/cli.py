@@ -6,6 +6,7 @@ genes serve [--examples] [--port 8810]      build into a temporary folder and se
 genes make-example                          rebuild the example species's code-made models
 genes refs candidates <id> --taxon N         shareable iNaturalist photos to choose from
 genes refs add <id> <n> --shows .. --angle ..  store a chosen photo (spec §9)
+genes refs thumbs <id>                        write missing photo thumbs for the page
 genes build-models <id> [--stage S] ...      build a look's models (needs `uv sync --group blender`)
 genes contact-sheet <id>                     models beside the reference photos (spec §7.1)
 genes occurrences <id> [--taxon N]           GBIF sightings counted per cell, for the map
@@ -108,6 +109,8 @@ def main(argv: list[str] | None = None) -> int:
     p_add.add_argument("--angle", required=True, choices=["side", "below", "above", "detail"])
     p_add.add_argument("--box", help="tree box l,t,r,b as fractions, for whole-tree photos")
     p_add.add_argument("--used-for", action="append")
+    p_thumbs = refs_sub.add_parser("thumbs", help="write missing thumbs for stored photos")
+    p_thumbs.add_argument("species")
 
     p_models = sub.add_parser("build-models", help="build a look's models (needs Blender's bpy)")
     p_models.add_argument("species")
@@ -186,6 +189,10 @@ def main(argv: list[str] | None = None) -> int:
             refs.candidates(args.species, args.taxon)
             return 0
         folder = _species_dir(args.species)
+        if args.refs_command == "thumbs":
+            for path in refs.write_thumbs(folder):
+                print(path.relative_to(folder))
+            return 0
         box = [float(x) for x in args.box.split(",")] if args.box else None
         entry = refs.add(folder, args.number, args.shows.split(","), args.angle, box, args.used_for)
         print(f"{entry['id']}: {entry['url']} ({entry['licence']}, {entry['author']})")
