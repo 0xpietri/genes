@@ -39,7 +39,7 @@ function groundFade() {
   const g = c.getContext('2d');
   const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
   r.addColorStop(0, '#fff');
-  r.addColorStop(0.55, '#f2f2f2');
+  r.addColorStop(0.8, '#fff');
   r.addColorStop(1, '#000');
   g.fillStyle = r;
   g.fillRect(0, 0, 256, 256);
@@ -64,8 +64,20 @@ function groundTexture() {
   return t;
 }
 
-// One tile of the painted soil covers this many metres; the disc is 120 m across.
-const GROUND_TILE_M = 5;
+// One tile of the painted soil covers this many metres.
+const GROUND_TILE_M = 12;
+// marcos's painted landscape stands round the tree as a ring this far away (beyond the
+// camera's farthest zoom), the painting mirrored RING_COPIES times round it at its own
+// proportions (2736 x 864). Its far valley floor, RING_EYE of the way down, sits at the
+// horizon; the ground disc hides the painting's foreground below it.
+const RING_R = 150;
+const RING_COPIES = 4;
+const RING_H = ((2 * Math.PI * RING_R) / RING_COPIES) * (864 / 2736);
+const RING_EYE = 0.5;
+const ART = new URL('../art/scene', import.meta.url).href;
+const SEASONS = ['summer', 'summer', 'autumn', 'autumn', 'autumn', 'winter', 'winter', 'winter', 'spring', 'spring', 'spring', 'summer'];
+/** The (southern) season of month `m` (1-12), as the painted art names it. */
+export const seasonOf = (m) => SEASONS[(m - 1) % 12];
 
 export class Stage {
   constructor(canvas, { look, sheet, modelsBase }) {
@@ -95,21 +107,21 @@ export class Stage {
     this.sky = new Sky(this.scene, this.renderer);
 
     this.ground = new THREE.Mesh(
-      new THREE.CircleGeometry(60, 96),
+      new THREE.CircleGeometry(RING_R + 6, 128),
       new THREE.MeshLambertMaterial({ map: groundTexture(), alphaMap: groundFade(), transparent: true, depthWrite: false, color: '#a3a56f' }),
     );
     this.groundPainted = false;
-    new THREE.TextureLoader().load(new URL('../art/scene/ground.webp', import.meta.url).href, (tex) => {
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.wrapS = tex.wrapT = THREE.MirroredRepeatWrapping;
-      tex.repeat.set(120 / GROUND_TILE_M, 120 / GROUND_TILE_M);
-      tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
-      const old = this.ground.material.map;
-      this.ground.material.map = tex;
-      this.ground.material.needsUpdate = true;
-      old.dispose();
-      this.groundPainted = true;
-    });
+    // The painted landscape: an open ring, painted on its inside, standing on the ground's edge.
+    this.ring = new THREE.Mesh(
+      new THREE.CylinderGeometry(RING_R, RING_R, RING_H, 160, 1, true),
+      new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.BackSide, visible: false }),
+    );
+    this.ring.position.y = RING_H / 2 - (1 - RING_EYE) * RING_H;
+    this.ring.renderOrder = -3;
+    this.scene.add(this.ring);
+    this.art = new Map(); // url -> Promise<Texture>
+    this.season = null;
+    this.seasonHeld = false;
     this.ground.rotation.x = -Math.PI / 2;
     this.ground.renderOrder = -1;
     this.scene.add(this.ground);
@@ -132,7 +144,9 @@ export class Stage {
       uFrom: { value: new THREE.Color() }, uTo: { value: new THREE.Color() },
       uEdge: { value: 2 }, uLowest: { value: 0 },
     };
-    this.current = null; // { stage, root, size }
+    this.current = null; // { stage, lod, root, size }
+    this.ready = new Set(); // `${stage}@${lod}` keys whose model has arrived
+    this.shown = new Promise((resolve) => { this.firstShown = resolve; });
     this.want = null;
     this.state = null;
     this.clock = new THREE.Timer();
@@ -154,14 +168,22 @@ export class Stage {
 
   setNight(night, instant) { this.sky.setNight(night, instant); }
 
-  modelUrl(stage) { return `${this.modelsBase}${stage}-a.lod0.glb`; }
+  modelUrl(stage, lod = 0) { return `${this.modelsBase}${stage}-a.lod${lod}.glb`; }
 
-  async loadStage(stage) {
-    if (!this.cache.has(stage)) {
-      this.cache.set(stage, this.loader.loadAsync(this.modelUrl(stage)).then((gltf) => this.prepare(gltf.scene)));
+  /** One stage's model at one level of detail, fetched and painted once. */
+  load(stage, lod) {
+    const key = `${stage}@${lod}`;
+    if (!this.cache.has(key)) {
+      this.cache.set(key, this.loader.loadAsync(this.modelUrl(stage, lod)).then((gltf) => {
+        this.ready.add(key);
+        return { lod, ...this.prepare(gltf.scene) };
+      }));
     }
-    return this.cache.get(stage);
+    return this.cache.get(key);
   }
+
+  /** The full model of a stage (lod0): what the page shows once it has arrived. */
+  loadStage(stage) { return this.load(stage, 0); }
 
   /** Paints a fresh model once: toon bands from the look's palette, clumps revealed by _order. */
   prepare(root) {
@@ -188,19 +210,40 @@ export class Stage {
     return { root, size, box };
   }
 
-  /** Shows sample `s` (from life.js's sampleAt) as stage `stage`. */
+  /**
+   * Shows sample `s` (from life.js's sampleAt) as stage `stage`. Until the full model (lod0,
+   * about 700 KB for a grown tree) has arrived, the light one (lod1, about 80 KB) stands in, so
+   * the tree appears at once and sharpens a moment later.
+   */
   async show(stage, s) {
     this.state = { stage, s };
     this.want = stage;
-    const model = await this.loadStage(stage);
+    let model;
+    if (this.ready.has(`${stage}@0`)) {
+      model = await this.load(stage, 0);
+    } else {
+      const full = this.load(stage, 0);
+      full.then((m) => {
+        if (this.want === stage && this.current?.stage === stage && this.current.lod !== 0) this.put(stage, m);
+      }, () => {});
+      // The light model, unless it fails or the full one wins the race.
+      model = await Promise.race([full, this.load(stage, 1).catch(() => full)]);
+    }
     if (this.want !== stage) return;
-    if (this.current?.stage !== stage) {
+    this.put(stage, model);
+  }
+
+  put(stage, model) {
+    if (this.current?.root !== model.root) {
+      const sameStage = this.current?.stage === stage;
       if (this.current) this.holder.remove(this.current.root);
       this.current = { stage, ...model };
       this.holder.add(model.root);
-      this.snap = true; // a new model: frame it at once
+      if (!sameStage) this.snap = true; // a new stage: frame it at once
     }
     this.place();
+    this.firstShown();
+    if (model.lod === 0) this.canvas.dataset.lod = '0';
   }
 
   place() {
@@ -227,9 +270,69 @@ export class Stage {
     this.applySeason();
   }
 
+  texture(name, setup) {
+    const url = `${ART}/${name}.webp`;
+    if (!this.art.has(url)) {
+      this.art.set(url, new THREE.TextureLoader().loadAsync(url).then((tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+        setup(tex);
+        return tex;
+      }));
+    }
+    return this.art.get(url);
+  }
+
+  groundArt(season) {
+    return this.texture(`ground-${season}`, (tex) => {
+      tex.wrapS = tex.wrapT = THREE.MirroredRepeatWrapping;
+      const n = (2 * (RING_R + 6)) / GROUND_TILE_M;
+      tex.repeat.set(n, n);
+    });
+  }
+
+  ringArt(season) {
+    return this.texture(`backdrop-${season}`, (tex) => {
+      tex.wrapS = THREE.MirroredRepeatWrapping; // mirrored, so every seam matches
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.repeat.set(RING_COPIES, 1);
+    });
+  }
+
+  /** Ground and landscape of `season`; the ones shown stay until the new ones have arrived. */
+  setSeason(season) {
+    if (season === this.season) return;
+    this.season = season;
+    this.groundArt(season).then((tex) => {
+      if (this.season !== season) return;
+      const m = this.ground.material;
+      if (!this.groundPainted) m.map.dispose();
+      m.map = tex;
+      m.needsUpdate = true;
+      this.groundPainted = true;
+    }).catch(() => {});
+    this.ringArt(season).then((tex) => {
+      if (this.season !== season) return;
+      const m = this.ring.material;
+      m.map = tex;
+      m.visible = true;
+      m.needsUpdate = true;
+    }).catch(() => {});
+  }
+
+  /**
+   * While the life plays, the seasons pass several times a second: the landscape keeps the
+   * season it had, so it does not flicker, and follows the month again when play stops.
+   */
+  holdSeason(on) {
+    this.seasonHeld = on;
+    if (!on && this.state) this.setSeason(seasonOf(this.state.s.month));
+  }
+
   applySeason() {
     if (!this.state) return;
     const { s } = this.state;
+    if (!this.seasonHeld) this.setSeason(seasonOf(s.month));
     const a = partAmounts(this.sheet, s.month);
     const vigour = s.status === 'dying' ? 0.5 : s.status === 'stressed' ? 0.8 : 1;
     this.reveal.foliage.value = s.alive ? a.foliage * vigour : 0;
@@ -294,6 +397,8 @@ export class Stage {
     const t = this.clock.getElapsed();
     this.sky.update(dt, t);
     this.sky.groundColour(this.ground.material.color, this.groundPainted);
+    // Unlit, so it darkens a little more than the lit ground at night.
+    this.sky.groundColour(this.ring.material.color, true).multiplyScalar(1 - 0.3 * this.sky.blend);
     // A light wind: the crown leans a little, more when it is in leaf.
     const leafy = this.state?.s.alive ? 1 : 0.2;
     this.holder.rotation.z = Math.sin(t * 0.9) * 0.006 * leafy;
@@ -303,14 +408,15 @@ export class Stage {
     this.renderer.render(this.scene, this.camera);
   }
 
-  /** Loads the other stages when the browser is idle, so playing never waits. */
+  /** Loads the other stages when the browser is idle, light models first, so playing never waits. */
   preload(stages) {
-    const next = stages.filter((s) => !this.cache.has(s));
+    const next = [...stages.map((s) => [s, 1]), ...stages.map((s) => [s, 0])]
+      .filter(([s, lod]) => !this.cache.has(`${s}@${lod}`));
     const idle = window.requestIdleCallback ?? ((f) => setTimeout(f, 300));
     const one = () => {
-      const s = next.shift();
-      if (!s) return;
-      this.loadStage(s).finally(() => idle(one));
+      const item = next.shift();
+      if (!item) return;
+      this.load(...item).catch(() => {}).finally(() => idle(one));
     };
     idle(one);
   }

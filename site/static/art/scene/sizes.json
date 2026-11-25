@@ -1,5 +1,37 @@
 {
  "sizes": {
+  "backdrop-autumn": [
+   2736,
+   864
+  ],
+  "backdrop-spring": [
+   2736,
+   864
+  ],
+  "backdrop-summer": [
+   2736,
+   864
+  ],
+  "backdrop-winter": [
+   2736,
+   864
+  ],
+  "ground-autumn": [
+   1024,
+   1024
+  ],
+  "ground-spring": [
+   1024,
+   1024
+  ],
+  "ground-summer": [
+   1024,
+   1024
+  ],
+  "ground-winter": [
+   1024,
+   1024
+  ],
   "sky-day": [
    1183,
    660
@@ -7,10 +39,6 @@
   "sky-night": [
    1183,
    659
-  ],
-  "ground": [
-   689,
-   689
   ]
  }
 }

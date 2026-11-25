@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- Faster species page and a photo viewer (`docs/reports/SPECIES_PAGE_SPEED_SEO.md`): reference
+  photos show as small WebP thumbs (`references/thumbs/`, `genes refs thumbs`) and open in a
+  lightbox on the page; the page preloads its data, modules and the grown tree's light model
+  (lod1), shown at once and swapped for lod0 when it arrives; name and summary come first in
+  the HTML; sitemap with hreflang, a Markdown alternate link, og:image size and alt, photos as
+  JSON-LD ImageObjects.
 - The public catalog for genes.pietri.dev (`docs/reports/CATALOG_SITE.md`): pages written at
   build time with every fact in the HTML, JSON-LD, `sitemap.xml`, `robots.txt`, `llms.txt`
   and a Markdown copy per species; species cards; the species page with the 3D tree, one

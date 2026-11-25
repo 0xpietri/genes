@@ -140,9 +140,15 @@ def head(
     *,
     image: str | None = None,
     ld: list[dict[str, Any]] | None = None,
+    image_alt: str = "",
+    image_size: tuple[int, int] | None = None,
     preload: list[str] | None = None,
+    fetches: list[str] | None = None,
+    markdown: str | None = None,
     scripts: list[str] | None = None,
 ) -> str:
+    """The page head. `preload` are modules the page will import, `fetches` the data and models
+    it will fetch first: both start downloading with the HTML instead of one after another."""
     url = BASE_URL + prefix() + path
     parts = [
         "<!doctype html>",
@@ -158,11 +164,21 @@ def head(
         '<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">',
         '<link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt">',
         *(
+            [f'<link rel="alternate" type="text/markdown" hreflang="en" href="{e(markdown)}">']
+            if markdown
+            else []
+        ),
+        *(
             f'<link rel="alternate" hreflang="{lg}" href="{e(BASE_URL + prefix(lg) + path)}">'
             for lg in LANGS
         ),
         f'<link rel="alternate" hreflang="x-default" href="{e(BASE_URL + path)}">',
         f'<meta property="og:locale" content="{LOCALE[cur_lang()]}">',
+        *(
+            f'<meta property="og:locale:alternate" content="{LOCALE[lg]}">'
+            for lg in LANGS
+            if lg != cur_lang()
+        ),
         f'<meta property="og:title" content="{e(title)}">',
         f'<meta property="og:description" content="{e(description)}">',
         f'<meta property="og:url" content="{e(url)}">',
@@ -172,6 +188,14 @@ def head(
     ]
     if image:
         parts.append(f'<meta property="og:image" content="{e(BASE_URL + image)}">')
+        if image.endswith(".webp"):
+            parts.append('<meta property="og:image:type" content="image/webp">')
+        if image_size:
+            parts.append(f'<meta property="og:image:width" content="{image_size[0]}">')
+            parts.append(f'<meta property="og:image:height" content="{image_size[1]}">')
+        if image_alt:
+            parts.append(f'<meta property="og:image:alt" content="{e(image_alt)}">')
+            parts.append(f'<meta name="twitter:image:alt" content="{e(image_alt)}">')
     for font in ("fredoka", "nunito"):
         parts.append(
             f'<link rel="preload" href="{static.url(f"fonts/{font}.woff2")}" as="font" '
@@ -180,6 +204,9 @@ def head(
     parts.append(f'<link rel="stylesheet" href="{static.url("site.css")}">')
     for href in preload or []:
         parts.append(f'<link rel="modulepreload" href="{e(href)}">')
+    for href in fetches or []:
+        # crossorigin: fetch() and three's loader ask in CORS mode, so the preload is reused.
+        parts.append(f'<link rel="preload" href="{e(href)}" as="fetch" crossorigin>')
     for src in scripts or []:
         parts.append(f'<script type="module" src="{e(src)}"></script>')
     for block in ld or []:
@@ -546,6 +573,44 @@ def src_links(sheet: dict[str, Any], ids: list[str]) -> str:
     return ", ".join(out)
 
 
+SOURCE_NAME = {"inaturalist": "iNaturalist"}
+
+
+def photo_figure(species_id: str, common: str, p: dict[str, Any]) -> str:
+    """One reference photo: a small thumb that opens the stored photo (in the lightbox with
+    JavaScript, as a plain link without), its place, author and a link to the original."""
+    base = f"/v1/species/{e(species_id)}/references"
+    stem = p["file"].rsplit(".", 1)[0]
+    shows = ", ".join(T(x) for x in p["shows"])
+    place = p.get("place", "")
+    caption = f"{shows} · {place}" if place else shows
+    source = SOURCE_NAME.get(p.get("source", ""), T("source"))
+    return (
+        f'<figure class="photo"><a href="{base}/{e(p["file"])}" data-photo>'
+        f'<img src="{base}/thumbs/{e(stem)}.webp" loading="lazy" decoding="async" '
+        f'alt="{e(common)}: {e(caption)}" width="520" height="390"></a>'
+        f"<figcaption><span data-caption>{e(caption)}</span><br><small>{e(p['author'])} · "
+        f'<a href="{e(p["url"])}" rel="noopener" data-source>{e(source)}</a></small></figcaption></figure>'
+    )
+
+
+def lightbox_html() -> str:
+    """The photo viewer's frame, filled by lightbox.js; closed (and unused) without JavaScript."""
+    return (
+        f'<dialog class="lightbox" data-lightbox aria-label="{e(T("Reference photos"))}">'
+        f'<button type="button" class="lb-close" data-lb-close aria-label="{e(T("Close"))}">'
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'
+        f'<button type="button" class="lb-nav lb-prev" data-lb-prev aria-label="{e(T("Previous photo"))}">'
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>'
+        f'<button type="button" class="lb-nav lb-next" data-lb-next aria-label="{e(T("Next photo"))}">'
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>'
+        '<figure class="lb-figure"><img data-lb-img alt="">'
+        '<figcaption><b data-lb-caption></b> <span class="lb-count" data-lb-count></span><br>'
+        '<small><span data-lb-author></span> · <a data-lb-source rel="noopener" target="_blank"></a></small>'
+        "</figcaption></figure></dialog>"
+    )
+
+
 def src_refs(sheet: dict[str, Any], ids: list[str]) -> str:
     return f'<small class="src">[{src_links(sheet, ids)}]</small>' if ids else ""
 
@@ -578,6 +643,74 @@ def gives_tiles(sheet: dict[str, Any]) -> str:
 
 
 # ---------------------------------------------------------------- pages
+
+
+def webp_size(path: Path) -> tuple[int, int] | None:
+    """Width and height from a WebP file's header (the build has no image library)."""
+    data = path.read_bytes()[:30]
+    if len(data) < 30 or data[:4] != b"RIFF" or data[8:12] != b"WEBP":
+        return None
+    kind = data[12:16]
+    if kind == b"VP8X":
+        return 1 + int.from_bytes(data[24:27], "little"), 1 + int.from_bytes(data[27:30], "little")
+    if kind == b"VP8 ":
+        return (
+            int.from_bytes(data[26:28], "little") & 0x3FFF,
+            int.from_bytes(data[28:30], "little") & 0x3FFF,
+        )
+    if kind == b"VP8L":
+        bits = int.from_bytes(data[21:25], "little")
+        return 1 + (bits & 0x3FFF), 1 + ((bits >> 14) & 0x3FFF)
+    return None
+
+
+# The modules a species page imports, in the order it needs them: preloaded with the HTML so
+# the 3D does not wait for one file to arrive before asking for the next.
+THREE = "/static/vendor/three"
+SPECIES_MODULES = [
+    f"{THREE}/three.module.js",
+    f"{THREE}/three.core.js",
+    f"{THREE}/addons/loaders/GLTFLoader.js",
+    f"{THREE}/addons/libs/meshopt_decoder.module.js",
+    f"{THREE}/addons/controls/OrbitControls.js",
+    f"{THREE}/addons/utils/BufferGeometryUtils.js",
+    f"{THREE}/addons/utils/SkeletonUtils.js",
+    "/static/phenology.js",
+    "/static/paint.js",
+]
+SITE_MODULES = ["js/stage.js", "js/sky.js", "js/life.js", "js/i18n.js", "js/lightbox.js"]
+LICENCE_NAME = {"cc0": "CC0", "cc-by": "CC BY", "cc-by-sa": "CC BY-SA"}
+
+
+def photos_ld(species_id: str, refs: dict[str, Any] | None) -> dict[str, Any] | None:
+    """The reference photos as ImageObjects, with their author and the page of the original."""
+    photos = [p for p in (refs or {}).get("photos", []) if p.get("file")]
+    if not photos:
+        return None
+    base = f"{BASE_URL}/v1/species/{species_id}/references"
+    return {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "ImageObject",
+                "contentUrl": f"{base}/{p['file']}",
+                "thumbnailUrl": f"{base}/thumbs/{p['file'].rsplit('.', 1)[0]}.webp",
+                "caption": ", ".join(T(x) for x in p["shows"])
+                + (f" · {p['place']}" if p.get("place") else ""),
+                "creditText": p["author"],
+                "copyrightNotice": p["author"],
+                "acquireLicensePage": p["url"],
+                "isBasedOn": p["url"],
+                **(
+                    {"contentLocation": {"@type": "Place", "name": p["place"]}}
+                    if p.get("place")
+                    else {}
+                ),
+                **({"dateCreated": p["observed_on"]} if p.get("observed_on") else {}),
+            }
+            for p in photos
+        ],
+    }
 
 
 def species_ld(sheet: dict[str, Any], path: str, image: str | None) -> list[dict[str, Any]]:
@@ -749,6 +882,21 @@ def species_page(
     title = f"{es[0].capitalize()} ({sheet['scientific_name']}) · genes"
     desc = dig(sheet, "summary", lg) or dig(sheet, "summary", "en") or ""
     image = entry.get("media", {}).get("path")
+    media = media_of(sp)
+    image_size = webp_size(media) if media is not None and media.suffix == ".webp" else None
+    # What the page fetches before it can show the tree: the sheet, the look, the life and the
+    # light model of the grown tree it opens on (species.js and stage.js ask for the same URLs).
+    first_fetches = [
+        u
+        for u in (
+            entry["sheets"][-1]["path"],
+            entry["looks"][-1]["path"] if entry["looks"] else "",
+            entry.get("lifecycle", {}).get("path", ""),
+        )
+        if u
+    ]
+    if look and "adult" in look.get("stages", {}):
+        first_fetches.append(f"/v1/species/{sp.id}/looks/{sp.latest_look.number}/adult-a.lod1.glb")  # type: ignore[union-attr]
     places = place_points(refs, basemap)
     points = {"places": places, "cells": occ["cells"] if occ else []}
     ph = dig(sheet, "plant", "phenology") or {}
@@ -788,12 +936,7 @@ def species_page(
     uses = dig(sheet, "plant", "people", "uses") or []
     uses_src: list[str] = dig(sheet, "plant", "people", "source") or []
     photos = "".join(
-        f'<figure class="photo"><a href="{e(p["url"])}" rel="noopener" target="_blank">'
-        f'<img src="/v1/species/{e(sp.id)}/references/{e(p["file"])}" loading="lazy" decoding="async" '
-        f'alt="{e(es[0])}: {e(", ".join(T(x) for x in p["shows"]))}, {e(p["place"])}" width="320" height="240"></a>'
-        f"<figcaption>{e(', '.join(T(x) for x in p['shows']))} · {e(p['place'])}<br><small>{e(p['author'])}</small></figcaption></figure>"
-        for p in (refs or {}).get("photos", [])
-        if p.get("file")
+        photo_figure(sp.id, es[0], p) for p in (refs or {}).get("photos", []) if p.get("file")
     )
     occ_note = (
         f"{T('Each little tree marks a half-degree area with GBIF sightings')}: "
@@ -895,8 +1038,15 @@ def species_page(
             desc,
             path,
             image=image,
-            ld=species_ld(sheet, path, image),
-            preload=["/static/vendor/three/three.module.js", "/static/vendor/three/three.core.js"],
+            image_alt=f"{es[0].capitalize()} ({sheet['scientific_name']})",
+            image_size=image_size,
+            ld=[
+                *species_ld(sheet, path, image),
+                *([pld] if (pld := photos_ld(sp.id, refs)) else []),
+            ],
+            preload=[*SPECIES_MODULES, *(static.url(m) for m in SITE_MODULES)] if look else [],
+            fetches=first_fetches,
+            markdown=f"/species/{sp.id}/index.md",
             scripts=[static.url("js/species.js")],
         )
     }
@@ -907,6 +1057,17 @@ def species_page(
         T("Catalog")
     }</a> <span>/</span> <span>{e(es[0].capitalize())}</span></nav>
   <section class="hero">
+    <div class="intro">
+      <p class="kicker">{e(sheet.get("family", ""))} · {e(T(form))}</p>
+      <h1>{e(es[0].capitalize())}</h1>
+      <p class="sci"><i>{e(sheet["scientific_name"])}</i>{
+        (" · " + e(", ".join(sheet.get("synonyms", [])))) if sheet.get("synonyms") else ""
+    }</p>
+      <p class="aka">{e(", ".join(other_names))}</p>
+      <ul class="tags">{tags_html}</ul>
+      <p class="summary">{e(desc)}</p>
+      {stat_tiles(sheet, life)}
+    </div>
     <div class="hero-main panel">
     <div class="stage" data-stage>
       <div class="stage-sky" aria-hidden="true"></div>
@@ -929,17 +1090,6 @@ def species_page(
       {stage_overlay}
     </div>
     {sim}
-    </div>
-    <div class="intro">
-      <p class="kicker">{e(sheet.get("family", ""))} · {e(T(form))}</p>
-      <h1>{e(es[0].capitalize())}</h1>
-      <p class="sci"><i>{e(sheet["scientific_name"])}</i>{
-        (" · " + e(", ".join(sheet.get("synonyms", [])))) if sheet.get("synonyms") else ""
-    }</p>
-      <p class="aka">{e(", ".join(other_names))}</p>
-      <ul class="tags">{tags_html}</ul>
-      <p class="summary">{e(desc)}</p>
-      {stat_tiles(sheet, life)}
     </div>
   </section>
 
@@ -1068,7 +1218,8 @@ def species_page(
             ),
         )
     }
-    <div class="photos">{photos}</div>
+    <div class="photos" data-photos>{photos}</div>
+    {lightbox_html() if photos else ""}
   </section>
 
   <section class="panel span-2" id="details">
@@ -1313,11 +1464,22 @@ def index_page(species: list[Species], entries: list[dict[str, Any]], catalog_no
 """
 
 
-def sitemap(urls: list[str]) -> str:
-    items = "".join(f"<url><loc>{e(BASE_URL + u)}</loc></url>" for u in urls)
+def sitemap(paths: list[str]) -> str:
+    """Every page in every language, each listing its translations (hreflang)."""
+    items = []
+    for u in paths:
+        alts = (
+            "".join(
+                f'<xhtml:link rel="alternate" hreflang="{lg}" href="{e(BASE_URL + prefix(lg) + u)}"/>'
+                for lg in LANGS
+            )
+            + f'<xhtml:link rel="alternate" hreflang="x-default" href="{e(BASE_URL + u)}"/>'
+        )
+        items += [f"<url><loc>{e(BASE_URL + prefix(lg) + u)}</loc>{alts}</url>" for lg in LANGS]
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{items}</urlset>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+        'xmlns:xhtml="http://www.w3.org/1999/xhtml">' + "".join(items) + "</urlset>\n"
     )
 
 
@@ -1348,7 +1510,9 @@ def llms_txt(species: list[Species]) -> str:
         sh = sp.latest_sheet.data
         lines.append(
             f"- [{sh['names']['es'][0].capitalize()} ({sh['scientific_name']})]"
-            f"({BASE_URL}/species/{sp.id}/index.md): {dig(sh, 'summary', 'en')}"
+            f"({BASE_URL}/species/{sp.id}/index.md): {dig(sh, 'summary', 'en')} "
+            f"Web page: [English]({BASE_URL}/species/{sp.id}/), "
+            f"[Spanish]({BASE_URL}/es/species/{sp.id}/)."
         )
     lines += [
         "",
@@ -1393,8 +1557,7 @@ def build(
         target = out / prefix(lg).lstrip("/")
         target.mkdir(parents=True, exist_ok=True)
         (target / "index.html").write_text(page, encoding="utf-8")
-    urls = [prefix(lg) + u for u in paths for lg in LANGS]
-    (out / "sitemap.xml").write_text(sitemap(urls), encoding="utf-8")
+    (out / "sitemap.xml").write_text(sitemap(paths), encoding="utf-8")
     (out / "robots.txt").write_text(ROBOTS.format(base=BASE_URL), encoding="utf-8")
     (out / "llms.txt").write_text(llms_txt(species), encoding="utf-8")
     (out / "llms-full.txt").write_text("\n\n---\n\n".join(full) + "\n", encoding="utf-8")

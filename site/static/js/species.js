@@ -4,6 +4,7 @@
 import { mountAccount } from './account.js';
 import { STAGE_LABEL, MONTHS, sampleAt, stageAt, indexForMonth } from './life.js';
 import { t, num } from './i18n.js';
+import { setupLightbox } from './lightbox.js';
 
 const body = document.body;
 const $ = (sel) => document.querySelector(sel);
@@ -154,6 +155,7 @@ function setupLife(stage, life, look) {
 
   function setPlaying(on) {
     playing = on;
+    stage.holdSeason(on);
     play.setAttribute('aria-pressed', String(on));
     play.setAttribute('aria-label', t(on ? 'Pause' : "Play the tree's life"));
     if (on) {
@@ -222,6 +224,7 @@ function whenNear(el, start) {
 
 async function main() {
   mountAccount();
+  setupLightbox();
   setWheel(new Date().getMonth() + 1);
   const canvas = $('[data-canvas]');
   const loading = $('[data-loading]');
@@ -246,7 +249,7 @@ async function main() {
       const m = new Date().getMonth() + 1;
       await stage.show('adult', { month: m, heightM: look.stages.adult.ref_height_m, crownM: look.stages.adult.ref_crown_m ?? 8, alive: true, mature: true, status: 'healthy', decay: 0 });
     }
-    await stage.loadStage(stage.want);
+    await stage.shown;
     loading.hidden = true;
     body.dataset.ready = '1';
   } catch (err) {
