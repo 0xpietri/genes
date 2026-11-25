@@ -78,7 +78,8 @@ export class Stage {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(35, 1, 0.05, 1200);
-    this.camera.position.set(9, 4, 16);
+    // Low, near the base of the trunk, looking up a little so the crown shows whole.
+    this.camera.position.set(9, 1.2, 16);
     this.controls = new OrbitControls(this.camera, canvas);
     Object.assign(this.controls, {
       enableDamping: true, dampingFactor: 0.08, minDistance: 0.8, maxDistance: 90,
@@ -271,8 +272,8 @@ export class Stage {
     if (!this.current || this.interacting) return;
     const box = new THREE.Box3().setFromObject(this.current.root);
     const centre = box.getCenter(new THREE.Vector3());
-    // Aim below the middle: the simulator's bar covers the bottom of the stage.
-    const targetY = Math.max(0.15, Math.min(centre.y, (box.max.y - box.min.y) * 0.36));
+    // Aim at the middle of the tree: from a low camera the crown fills the top of the view.
+    const targetY = Math.max(0.15, centre.y * 0.92);
     const k = this.snap ? 1 : 1 - Math.exp(-dt * 3);
     this.snap = false;
     const tgt = this.controls.target;

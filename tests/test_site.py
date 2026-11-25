@@ -212,7 +212,7 @@ def test_the_site_is_not_about_one_town(dist: Path) -> None:
         if "review" in page.parts:
             continue
         text = page.read_text(encoding="utf-8")
-        assert "Unquillo" not in text and "Sierras Chicas" not in text, page
+        assert "Unquillo" not in text, page
 
 
 def test_species_tags_are_icons_with_their_words(dist: Path) -> None:
@@ -234,6 +234,37 @@ def test_painted_map_pieces_and_skies_exist() -> None:
     assert {"sky-day", "sky-night", "ground"} <= set(
         jsonio.load(SITE_STATIC / "art" / "scene" / "sizes.json")["sizes"]
     )
+
+
+def test_the_simulator_holds_the_life(dist: Path) -> None:
+    html = (dist / "species" / "neltuma-alba" / "index.html").read_text(encoding="utf-8")
+    module = re.search(r'<div class="hero-main panel">.*?<div class="intro">', html, re.S)
+    assert module
+    for part in (
+        'class="life-stages"',
+        "data-life-cursor",
+        "data-play",
+        "data-info-toggle",
+        'class="seasons stage-seasons"',
+        'class="info" data-tip="One algarrobo grown alone',
+    ):
+        assert part in module.group(0), part
+    assert "sim-kpis" not in html and "is what it dies of" not in html
+    assert "data-stage-chip" not in html
+
+
+def test_sources_link_straight_to_their_pages(dist: Path) -> None:
+    html = (dist / "species" / "neltuma-alba" / "index.html").read_text(encoding="utf-8")
+    assert '<ol class="sources">' not in html
+    assert re.search(r'<td class="src"><a href="https?://[^"]+" title="Orwa C\. et al', html)
+
+
+def test_home_and_footer(dist: Path) -> None:
+    index = (dist / "index.html").read_text(encoding="utf-8")
+    assert "Sierras Chicas of Córdoba" in index
+    assert 'class="filters"' not in index and 'id="about"' not in index
+    assert ">Animals<" not in index and ">About<" not in index
+    assert index.count('class="foot-col"') == 3
 
 
 def test_recorded_lifecycle_is_valid() -> None:

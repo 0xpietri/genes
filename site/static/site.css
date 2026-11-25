@@ -64,7 +64,7 @@ small { color: var(--muted); }
 :focus-visible { outline: 3px solid var(--green); outline-offset: 2px; border-radius: 10px; }
 
 /* Glass: every module, tile and control shares it. */
-.glass, .panel, .tile, .card-link, .card-soon, .sim, .daynight, .tool, .pill, .kpi, .give, .level, .mini-tile {
+.glass, .panel, .tile, .card-link, .card-soon, .daynight, .tool, .pill, .kpi, .give, .level, .mini-tile {
   background: linear-gradient(160deg, var(--glass-2), var(--glass) 60%);
   border: 1px solid var(--glass-line);
   box-shadow: inset 0 1px 0 var(--glass-hi), inset 0 -1px 0 rgba(0, 0, 0, 0.18), var(--shadow);
@@ -100,19 +100,31 @@ small { color: var(--muted); }
 .langs a[aria-current] { color: var(--ink); background: var(--sand); }
 
 .foot {
-  margin-top: 72px; padding: 32px clamp(16px, 4vw, 40px) 48px;
+  margin-top: 72px; padding: 40px clamp(16px, 4vw, 40px) 48px;
   border-top: 1px solid var(--line); color: var(--muted); font-size: 14px;
+  background: rgba(16, 32, 29, 0.35);
 }
-.foot p { max-width: 900px; margin: 0 0 8px; }
+.foot-cols { max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)); gap: 28px 40px; }
+.foot-about p { margin: 12px 0 0; max-width: 420px; }
+.foot-col { display: flex; flex-direction: column; gap: 8px; }
+.foot-col h2 { font-family: var(--font); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text); margin: 4px 0 4px; }
+.foot-col p { margin: 0; }
+.foot a { color: var(--muted); }
+.foot a:hover { color: var(--text); }
+.foot .brand { color: var(--text); }
+@media (max-width: 760px) {
+  .foot-cols { grid-template-columns: 1fr 1fr; }
+  .foot-about { grid-column: 1 / -1; }
+}
 
 main { padding: 0 clamp(16px, 4vw, 40px); max-width: 1440px; margin: 0 auto; }
 .kicker { text-transform: uppercase; letter-spacing: 0.14em; font-size: 12px; color: var(--green); margin: 0 0 10px; font-weight: 800; }
 
 /* ---------------------------------------------------------------- catalog (index) */
 
-.lead { padding: clamp(36px, 7vw, 84px) 0 24px; max-width: 780px; }
+.lead { padding: clamp(36px, 7vw, 84px) 0 32px; }
 .lead h1 { font-size: clamp(38px, 6vw, 68px); }
-.lead p { color: var(--muted); font-size: 19px; margin: 18px 0 0; }
+.lead p { color: var(--muted); font-size: 19px; margin: 18px 0 0; max-width: 1200px; }
 
 .filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 28px; }
 .filters button, .seasons button, .speed button, .map-tools button {
@@ -200,7 +212,7 @@ main { padding: 0 clamp(16px, 4vw, 40px); max-width: 1440px; margin: 0 auto; }
 
 .hero { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(320px, 1fr); gap: 24px; align-items: stretch; }
 .stage {
-  position: relative; min-height: min(78vh, 780px); border-radius: var(--radius); overflow: hidden;
+  position: relative; min-height: min(64vh, 640px); border-radius: var(--radius); overflow: hidden;
   background: linear-gradient(#6fb8e6, #bfe6f5 60%, #d7e6b0);
   border: 1px solid var(--glass-line); box-shadow: var(--shadow), 0 0 0 6px rgba(220, 255, 230, 0.04);
   isolation: isolate;
@@ -208,6 +220,8 @@ main { padding: 0 clamp(16px, 4vw, 40px); max-width: 1440px; margin: 0 auto; }
 .page-species[data-mode="night"] .stage { background: linear-gradient(#0b1230, #1b2a55 70%, #1f2d3a); }
 .stage-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
 .stage-canvas:active { cursor: grabbing; }
+.stage:fullscreen { border-radius: 0; border: 0; min-height: 100vh; }
+.stage:-webkit-full-screen { border-radius: 0; border: 0; min-height: 100vh; }
 .stage-loading {
   position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%);
   padding: 10px 18px; border-radius: 999px; background: rgba(16,32,29,.6); font-weight: 700; font-size: 14px;
@@ -226,12 +240,41 @@ main { padding: 0 clamp(16px, 4vw, 40px); max-width: 1440px; margin: 0 auto; }
 .daynight[aria-pressed="true"] .i-sun { display: inline; }
 .daynight[aria-pressed="true"] .i-moon { display: none; }
 
-.sim {
-  position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 2;
-  padding: 12px 14px; border-radius: 22px;
-  background: linear-gradient(160deg, rgba(16, 32, 29, 0.55), rgba(16, 32, 29, 0.38));
-  display: grid; gap: 10px;
+/* The simulator: a module right under the 3D tree, with its life on top. */
+/* The 3D tree and its simulator are one module. */
+.hero-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 10px; }
+.hero-main .stage { box-shadow: none; border-radius: calc(var(--radius) - 8px); }
+.sim { display: grid; gap: 12px; padding: 4px 8px 8px; }
+.stage-seasons { position: absolute; top: 14px; left: 14px; z-index: 2; display: flex; gap: 6px; flex-wrap: wrap; }
+.stage-seasons button { height: 44px; padding: 0 14px; font-size: 13px; color: var(--text); background: rgba(16, 32, 29, 0.55); border: 1px solid var(--glass-line); }
+.stage-seasons button[aria-pressed="true"] { color: var(--ink); background: var(--green); }
+.stage-info { position: absolute; left: 14px; top: 72px; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.info-toggle { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: rgba(16, 32, 29, 0.45); cursor: pointer; }
+.info-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.info-toggle[aria-expanded="true"] { background: rgba(166, 227, 154, 0.25); }
+.stage-info .readout {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 10px 14px; border-radius: 16px;
+  background: rgba(16, 32, 29, 0.5); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  font-size: 14px; line-height: 1.35;
 }
+.stage-info[data-open="false"] .readout { display: none; }
+.readout .line { display: block; white-space: nowrap; }
+.sim .life-stages { margin: 2px 0 0; }
+.sim .legend { margin: 0; }
+.info {
+  position: relative; flex: none; align-self: center; width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(16, 32, 29, 0.45); border: 1px solid var(--line-2); cursor: help;
+  font-family: var(--display); font-weight: 600; font-size: 17px; color: var(--text);
+}
+.info:hover, .info:focus-visible { background: var(--glass-hi); outline: none; box-shadow: 0 0 0 3px var(--green); }
+.info::after {
+  content: attr(data-tip); position: absolute; right: 0; top: calc(100% + 10px); z-index: 6;
+  width: min(360px, 80vw); padding: 12px 14px; border-radius: 14px;
+  background: rgba(16, 32, 29, 0.95); border: 1px solid var(--line-2); box-shadow: var(--shadow);
+  font-family: var(--font); font-size: 13px; font-weight: 600; line-height: 1.45; text-align: left; color: var(--text);
+  opacity: 0; pointer-events: none; transform: translateY(4px); transition: opacity .15s ease, transform .15s ease;
+}
+.info:hover::after, .info:focus::after { opacity: 1; transform: translateY(0); }
 .sim-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .play {
   width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--ink); cursor: pointer; flex: none;
@@ -282,7 +325,7 @@ main { padding: 0 clamp(16px, 4vw, 40px); max-width: 1440px; margin: 0 auto; }
 .tags li:first-child:hover::after, .tags li:first-child:focus::after { transform: translate(0, 0); }
 .summary { margin: 18px 0 0; font-size: 17px; }
 
-.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: auto; padding-top: 22px; }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 0; padding-top: 22px; }
 .tile {
   position: relative; padding: 14px 14px 12px 64px; border-radius: 20px;
   display: flex; flex-direction: column; gap: 1px; min-width: 0;
@@ -322,21 +365,21 @@ main { padding: 0 clamp(16px, 4vw, 40px); max-width: 1440px; margin: 0 auto; }
 .kpi span { font-size: 13px; color: var(--muted); font-weight: 700; }
 
 /* The stages of one life, as painted pictures */
-.life-stages { list-style: none; padding: 0; margin: 6px 0 14px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.life-stages { list-style: none; padding: 0; margin: 6px 0 14px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .life-stages button {
   width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 10px 6px 10px; border-radius: 20px; cursor: pointer; text-align: center;
+  padding: 6px 4px 7px; border-radius: 16px; cursor: pointer; text-align: center;
   background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); transition: background 0.2s, transform 0.2s, border-color 0.2s;
 }
 .life-stages button:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.08); }
 .life-stages button[aria-current="step"] { background: rgba(166, 227, 154, 0.18); border-color: var(--green); }
-.life-stages .pic { height: 110px; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.life-stages .pic { height: 58px; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
 .life-stages img { max-height: 100%; max-width: 100%; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.35)); }
 .life-stages li:nth-child(1) img { max-height: 30%; }
 .life-stages li:nth-child(2) img { max-height: 55%; }
 .life-stages li:nth-child(3) img { max-height: 80%; }
-.life-stages strong { font-family: var(--display); font-weight: 600; font-size: 15px; margin-top: 4px; }
-.life-stages small { font-size: 11px; font-weight: 700; }
+.life-stages strong { font-family: var(--display); font-weight: 600; font-size: 13px; margin-top: 2px; line-height: 1.15; }
+.life-stages small { font-size: 10px; font-weight: 700; }
 img.ico { object-fit: contain; }
 .tubes figcaption { display: flex; align-items: center; justify-content: center; gap: 6px; }
 
@@ -451,24 +494,30 @@ svg text { fill: var(--muted); font: 700 12px var(--font); }
 .photo figcaption { font-size: 13px; margin-top: 6px; color: var(--text); text-transform: capitalize; font-weight: 700; }
 .photo figcaption small { text-transform: none; font-size: 11px; font-weight: 600; }
 
-.facts { width: 100%; border-collapse: collapse; font-size: 14px; }
-.facts th, .facts td { text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.facts { width: 100%; border-collapse: collapse; font-size: 13px; }
+.facts th, .facts td { text-align: left; padding: 7px 12px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.facts .note { font-size: 12px; color: var(--muted); margin: 3px 0 0; line-height: 1.4; }
+.src a { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; }
+.src a:hover { color: var(--green); }
 .facts thead th { color: var(--muted); font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
 .facts tbody th { font-weight: 700; color: var(--muted); width: 28%; }
 .facts td.src { width: 18%; }
 .ids { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 10px 24px; margin: 22px 0 0; }
 .ids dt { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800; }
 .ids dd { margin: 2px 0 0; }
-.sources { padding-left: 0; list-style: none; font-size: 14px; }
-.sources li { margin: 6px 0; }
-.src-id { display: inline-block; min-width: 92px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--green); }
 
 @media (max-width: 1000px) {
   .hero { grid-template-columns: 1fr; }
   .stage { min-height: 70vh; }
+
   .grid, .grid-wide { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
+  .stage-seasons { top: 66px; right: 14px; }
+  .stage-seasons button { height: 36px; padding: 0 10px; }
+  .hero-main { padding: 6px; }
+  .sim { padding: 12px; }
+  .readout { flex: 1 1 100%; min-width: 0; }
   .nav { gap: 2px; font-size: 14px; }
   .nav a, .nav .soon { padding: 6px 10px; }
   .top { gap: 10px; }
@@ -485,7 +534,8 @@ svg text { fill: var(--muted); font: 700 12px var(--font); }
   .speed button, .seasons button { padding: 4px 9px; }
   .tubes { grid-template-columns: 1fr; }
   .life-stages { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .life-stages .pic { height: 80px; }
+  .life-stages .pic { height: 48px; }
+  .stage-info { top: 124px; }
   .panel > header { align-items: flex-start; }
   .head-ico { width: 44px; height: 44px; }
 }

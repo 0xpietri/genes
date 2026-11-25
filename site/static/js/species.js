@@ -24,6 +24,45 @@ function store(key, value) {
   return null;
 }
 
+// ---------------------------------------------------------------- full screen
+
+function setupFullscreen(stage) {
+  const btn = $('[data-fullscreen]');
+  const box = $('[data-stage]');
+  if (!btn || !box) return;
+  if (!document.fullscreenEnabled && !box.webkitRequestFullscreen) { btn.hidden = true; return; }
+  btn.addEventListener('click', () => {
+    const on = document.fullscreenElement || document.webkitFullscreenElement;
+    if (on) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else (box.requestFullscreen || box.webkitRequestFullscreen).call(box);
+  });
+  const sync = () => {
+    const on = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    btn.setAttribute('aria-pressed', String(on));
+    stage.resize();
+  };
+  document.addEventListener('fullscreenchange', sync);
+  document.addEventListener('webkitfullscreenchange', sync);
+}
+
+// ---------------------------------------------------------------- the numbers beside the tree
+
+function setupInfo() {
+  const box = $('[data-info]');
+  const btn = $('[data-info-toggle]');
+  if (!box || !btn) return;
+  const apply = (open) => {
+    box.dataset.open = String(open);
+    btn.setAttribute('aria-expanded', String(open));
+  };
+  apply(store('genes.info') !== 'closed');
+  btn.addEventListener('click', () => {
+    const open = box.dataset.open !== 'true';
+    store('genes.info', open ? 'open' : 'closed');
+    apply(open);
+  });
+}
+
 // ---------------------------------------------------------------- day and night
 
 function setupDayNight(stage) {
@@ -60,7 +99,6 @@ function setupLife(stage, life, look) {
   const age = $('[data-age]');
   const play = $('[data-play]');
   const readout = $('[data-readout]');
-  const chips = [...document.querySelectorAll('[data-stage-chip]')];
   const jumps = [...document.querySelectorAll('[data-jump]')];
   const seasons = [...document.querySelectorAll('[data-season]')];
   const speeds = [...document.querySelectorAll('[data-speed]')];
@@ -85,18 +123,21 @@ function setupLife(stage, life, look) {
     stage.show(st, s);
     age.value = String(i);
     const statusText = s.alive ? (s.status === 'healthy' ? '' : ` · ${t(s.status)}`) : '';
-    readout.innerHTML = '';
-    const parts = [
-      [t('Year '), Math.floor(s.ageYears)],
-      [` · ${t(MONTHS[s.month - 1])} ${s.year} · `, `${num(s.heightM)} m`],
-      [s.alive ? t(' tall, crown ') : '', s.alive ? `${num(s.crownM)} m` : ''],
+    // One fact per line: year of life, date, height, crown, stage.
+    const lines = [
+      [t('Year '), String(Math.floor(s.ageYears)), ''],
+      ['', `${t(MONTHS[s.month - 1])} ${s.year}`, ''],
+      ...(s.alive ? [['', `${num(s.heightM)} m`, t(' tall')], [t('crown '), `${num(s.crownM)} m`, '']] : []),
+      ['', `${t(STAGE_LABEL[st] ?? st)}`, statusText],
     ];
-    for (const [t, b] of parts) {
-      readout.append(t);
-      if (b !== '') { const el = document.createElement('b'); el.textContent = b; readout.append(el); }
-    }
-    readout.append(` · ${t(STAGE_LABEL[st] ?? st)}${statusText}`);
-    for (const c of chips) c.setAttribute('aria-current', c.dataset.stageChip === st ? 'step' : 'false');
+    readout.replaceChildren(...lines.map(([before, bold, after]) => {
+      const line = document.createElement('span');
+      line.className = 'line';
+      const b = document.createElement('b');
+      b.textContent = bold;
+      line.append(before, b, after);
+      return line;
+    }));
     for (const b of jumps) b.setAttribute('aria-current', b.dataset.stagePic === st ? 'step' : 'false');
     const season = SEASON_OF(s.month);
     for (const b of seasons) b.setAttribute('aria-pressed', String(Number(b.dataset.season) === season));
@@ -197,7 +238,8 @@ async function main() {
     const { Stage } = await import('./stage.js');
     const stage = new Stage(canvas, { look, sheet, modelsBase: body.dataset.models });
     setupDayNight(stage);
-    $('[data-recentre]').addEventListener('click', () => stage.recentre());
+    setupInfo();
+    setupFullscreen(stage);
     if (life) {
       setupLife(stage, life, look);
     } else {

@@ -74,6 +74,23 @@ def num(x: float, spec: str = "g") -> str:
 
 
 UI_ES: dict[str, str] = {
+    "Full screen": "Pantalla completa",
+    "Show or hide the numbers": "Mostrar u ocultar los datos",
+    "Living things of pietri.dev": "Seres vivos de pietri.dev",
+    "the year it is gone into the soil": "el año en que vuelve al suelo",
+    "simulated life": "de vida simulada",
+    "About this tree": "Sobre este árbol",
+    "The tree's simulated life": "La vida simulada del árbol",
+    "Species of the Sierras Chicas of Córdoba, simulated in": "Especies de las Sierras Chicas de Córdoba, simuladas en el mundo de",
+    "Source code": "Código fuente",
+    "Data": "Datos",
+    "Licences": "Licencias",
+    "Sheets and looks: CC BY 4.0": "Fichas y apariencias: CC BY 4.0",
+    "Code: MIT": "Código: MIT",
+    "Photos keep their own licence.": "Las fotos mantienen su licencia.",
+    "More trees of the Sierras Chicas, one by one.": "Más árboles de las Sierras Chicas, de a uno.",
+    "A catalog of the species that live in the Sierras Chicas of Córdoba, Argentina. Each one is built from real data with its sources (how tall it grows, when it flowers, how much frost it stands) and modelled in 3D, at every stage of its life, by a procedural generator in Blender.": "Un catálogo de las especies que habitan las Sierras Chicas de Córdoba, Argentina. Cada una está armada con datos reales y sus fuentes (cuánto crece, cuándo florece, cuánta helada aguanta) y modelada en 3D, en cada etapa de su vida, por un generador procedural en Blender.",
+    "In the world of pietri.dev they come alive: a simulator grows them day by day with the real weather, and they age and die according to their genetics and the climate.": "En el mundo de pietri.dev cobran vida: un simulador las hace crecer día a día con el clima real, y envejecen y mueren según su genética y el clima.",
     # units stay as they are
     "m": "m",
     "°C": "°C",
@@ -303,7 +320,6 @@ UI_ES: dict[str, str] = {
     "catalog": "catálogo",
     "3D models": "Modelos 3D",
     "stages × variants, generator": "etapas × variantes, generador",
-    "Data": "Datos",
     "sheet JSON": "ficha JSON",
     "look JSON": "apariencia JSON",
     "simulated life JSON": "vida simulada JSON",
