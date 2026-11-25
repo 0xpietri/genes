@@ -52,8 +52,9 @@ genes.pietri.dev {
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
-		# Pages are always checked again, so a deploy shows at once.
-		Cache-Control "no-cache"
+		# Pages are always checked again, so a deploy shows at once. `?` sets it only when
+		# @frozen below has not, whichever order Caddy runs the two `header` lines in.
+		?Cache-Control "no-cache"
 		-Server
 	}
 	# The site's CSS, JS and art live in a folder named by their content
