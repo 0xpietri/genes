@@ -1,0 +1,328 @@
+{
+  "$schema": "../../../../schemas/refs.v1.json",
+  "format": "genes.refs.v1",
+  "id": "neltuma-nigra",
+  "photos": [
+    {
+      "angle": "side",
+      "author": "(c) Jose Luis Navarro, some rights reserved (CC BY)",
+      "file": "r01.jpg",
+      "id": "r01",
+      "licence": "cc-by",
+      "observed_on": "2021-10-24",
+      "place": "Reserva Los Corbalanes (Santiago del Estero)",
+      "shows": [
+        "whole",
+        "summer"
+      ],
+      "source": "inaturalist",
+      "tree_box": [
+        0.1,
+        0.14,
+        0.84,
+        0.82
+      ],
+      "url": "https://www.inaturalist.org/photos/165605656"
+    },
+    {
+      "angle": "side",
+      "author": "(c) Jose Luis Navarro, some rights reserved (CC BY)",
+      "file": "r02.jpg",
+      "id": "r02",
+      "licence": "cc-by",
+      "observed_on": "2021-10-24",
+      "place": "Reserva Los Corbalanes (Santiago del Estero)",
+      "shows": [
+        "whole",
+        "habitat"
+      ],
+      "source": "inaturalist",
+      "tree_box": [
+        0.11,
+        0.15,
+        0.8,
+        0.82
+      ],
+      "url": "https://www.inaturalist.org/photos/165606180"
+    },
+    {
+      "angle": "side",
+      "author": "no rights reserved",
+      "file": "r03.jpg",
+      "id": "r03",
+      "licence": "cc0",
+      "observed_on": "2023-05-04",
+      "place": "Victoria, Entre Ríos, Argentina",
+      "shows": [
+        "whole"
+      ],
+      "source": "inaturalist",
+      "tree_box": [
+        0.02,
+        0.18,
+        0.98,
+        0.68
+      ],
+      "url": "https://www.inaturalist.org/photos/276424436"
+    },
+    {
+      "angle": "side",
+      "author": "no rights reserved",
+      "file": "r04.jpg",
+      "id": "r04",
+      "licence": "cc0",
+      "observed_on": "2018-10-13",
+      "place": "Gral Obligado, Santa Fe, Argentina",
+      "shows": [
+        "whole"
+      ],
+      "source": "inaturalist",
+      "tree_box": [
+        0.25,
+        0.2,
+        0.88,
+        0.99
+      ],
+      "url": "https://www.inaturalist.org/photos/67307438"
+    },
+    {
+      "angle": "side",
+      "author": "(c) Nicolas Olejnik, some rights reserved (CC BY)",
+      "file": "r05.jpg",
+      "id": "r05",
+      "licence": "cc-by",
+      "observed_on": "2023-12-03",
+      "place": "Islas del Ibicuy, Entre Ríos, Argentina",
+      "shows": [
+        "trunk",
+        "branch",
+        "summer"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/339076072"
+    },
+    {
+      "angle": "side",
+      "author": "(c) Jose Luis Navarro, some rights reserved (CC BY)",
+      "file": "r06.jpg",
+      "id": "r06",
+      "licence": "cc-by",
+      "observed_on": "2021-10-24",
+      "place": "Reserva Los Corbalanes (Santiago del Estero)",
+      "shows": [
+        "young",
+        "whole"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/165584054"
+    },
+    {
+      "angle": "side",
+      "author": "(c) Eduardo Luis Beltrocco, some rights reserved (CC BY)",
+      "file": "r07.jpg",
+      "id": "r07",
+      "licence": "cc-by",
+      "observed_on": "2021-04-25",
+      "place": "San Jerónimo, Santa Fe, Argentina",
+      "shows": [
+        "old",
+        "trunk",
+        "branch"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/123298342"
+    },
+    {
+      "angle": "side",
+      "author": "(c) florsoteras, some rights reserved (CC BY)",
+      "file": "r08.jpg",
+      "id": "r08",
+      "licence": "cc-by",
+      "observed_on": "2021-10-05",
+      "place": "Córdoba, Argentina",
+      "shows": [
+        "trunk",
+        "branch",
+        "habitat"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/162042413"
+    },
+    {
+      "angle": "side",
+      "author": "(c) E Santos Ortega, some rights reserved (CC BY)",
+      "file": "r09.jpg",
+      "id": "r09",
+      "licence": "cc-by",
+      "observed_on": "2023-06-18",
+      "place": "Uruguay, Entre Ríos, Argentina",
+      "shows": [
+        "old",
+        "winter"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/292079524"
+    },
+    {
+      "angle": "side",
+      "author": "no rights reserved",
+      "file": "r10.jpg",
+      "id": "r10",
+      "licence": "cc0",
+      "observed_on": "2023-07-01",
+      "place": "Rosario, Santa Fe, Argentina",
+      "shows": [
+        "winter",
+        "branch"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/296116806"
+    },
+    {
+      "angle": "below",
+      "author": "(c) Tomás Tamagno, some rights reserved (CC BY)",
+      "file": "r11.jpg",
+      "id": "r11",
+      "licence": "cc-by",
+      "observed_on": "2023-08-26",
+      "place": "Paraná, Entre Ríos, Argentina",
+      "shows": [
+        "winter",
+        "branch"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/314540810"
+    },
+    {
+      "angle": "below",
+      "author": "(c) Candela Castro, some rights reserved (CC BY)",
+      "file": "r12.jpg",
+      "id": "r12",
+      "licence": "cc-by",
+      "observed_on": "2023-03-31",
+      "place": "Baradero, Provincia de Buenos Aires, Argentina",
+      "shows": [
+        "branch",
+        "leaves"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/264885234"
+    },
+    {
+      "angle": "detail",
+      "author": "(c) Candela Castro, some rights reserved (CC BY)",
+      "file": "r13.jpg",
+      "id": "r13",
+      "licence": "cc-by",
+      "observed_on": "2023-03-31",
+      "place": "Baradero, Provincia de Buenos Aires, Argentina",
+      "shows": [
+        "bark"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/264885231"
+    },
+    {
+      "angle": "detail",
+      "author": "(c) E Santos Ortega, some rights reserved (CC BY)",
+      "file": "r14.jpg",
+      "id": "r14",
+      "licence": "cc-by",
+      "observed_on": "2023-06-18",
+      "place": "Uruguay, Entre Ríos, Argentina",
+      "shows": [
+        "branch"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/292079354"
+    },
+    {
+      "angle": "detail",
+      "author": "(c) Leonel Roget, some rights reserved (CC BY)",
+      "file": "r15.jpg",
+      "id": "r15",
+      "licence": "cc-by",
+      "observed_on": "2023-10-07",
+      "place": "Parque Nacional Pre-Delta, Entre Ríos, AR",
+      "shows": [
+        "leaves"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/326187285"
+    },
+    {
+      "angle": "detail",
+      "author": "no rights reserved",
+      "file": "r16.jpg",
+      "id": "r16",
+      "licence": "cc0",
+      "observed_on": "2019-11-12",
+      "place": "Roque Sáenz Peña, S2000 Villa Gdor. Galvez, Santa Fe, Argentina",
+      "shows": [
+        "leaves"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/61094688"
+    },
+    {
+      "angle": "detail",
+      "author": "(c) aacocucci, some rights reserved (CC BY)",
+      "file": "r17.jpg",
+      "id": "r17",
+      "licence": "cc-by",
+      "observed_on": "2026-11-05",
+      "place": "Punilla, Córdoba, Argentina",
+      "shows": [
+        "flowers",
+        "leaves"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/761192817"
+    },
+    {
+      "angle": "detail",
+      "author": "no rights reserved",
+      "file": "r18.jpg",
+      "id": "r18",
+      "licence": "cc0",
+      "observed_on": "2024-10-10",
+      "place": "Tulumba, Córdoba, Argentina",
+      "shows": [
+        "flowers",
+        "leaves"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/440470185"
+    },
+    {
+      "angle": "side",
+      "author": "(c) Eduardo Luis Beltrocco, some rights reserved (CC BY)",
+      "file": "r19.jpg",
+      "id": "r19",
+      "licence": "cc-by",
+      "observed_on": "2023-01-26",
+      "place": "Islas del Ibicuy, Entre Ríos, Argentina",
+      "shows": [
+        "fruit",
+        "summer"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/279292480"
+    },
+    {
+      "angle": "detail",
+      "author": "(c) Facundo Chieffo, some rights reserved (CC BY)",
+      "file": "r20.jpg",
+      "id": "r20",
+      "licence": "cc-by",
+      "observed_on": "2023-02-04",
+      "place": "Baradero, Provincia de Buenos Aires, Argentina",
+      "shows": [
+        "fruit",
+        "branch"
+      ],
+      "source": "inaturalist",
+      "url": "https://www.inaturalist.org/photos/255982151"
+    }
+  ]
+}

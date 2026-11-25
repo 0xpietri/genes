@@ -1,0 +1,467 @@
+{
+  "$schema": "../../../../schemas/sheet.v1.json",
+  "format": "genes.sheet.v1",
+  "id": "neltuma-nigra",
+  "version": 1,
+  "kind": "plant",
+  "scientific_name": "Neltuma nigra",
+  "authority": "(Griseb.) C.E.Hughes & G.P.Lewis",
+  "synonyms": [
+    "Prosopis nigra (Griseb.) Hieron.",
+    "Prosopis algarrobilla var. nigra Griseb.",
+    "Prosopis dulcis var. australis Benth."
+  ],
+  "family": "Fabaceae",
+  "external": {
+    "gbif": 5358478,
+    "inaturalist": 1493150
+  },
+  "names": {
+    "es": [
+      "Algarrobo negro",
+      "Algarrobo morado",
+      "Algarrobo dulce",
+      "Ibopé-hú"
+    ],
+    "en": [
+      "Black carob",
+      "Black mesquite"
+    ],
+    "note": "In Argentina 'algarrobo negro' is the standard name; 'algarrobo morado' and 'algarrobo dulce' are regional names, and 'ibopé-hú' is its Guaraní name in the northeast."
+  },
+  "status_in_sierras_chicas": "native",
+  "conservation": "IUCN Data Deficient (DD)",
+  "range_note": "Gran Chaco, Espinal and northern Monte of Argentina (including Córdoba up to 1,500 m in southern sierras), Bolivia, Paraguay, Uruguay and southern Brazil.",
+  "summary": {
+    "en": "A native Chaco and Espinal tree with a short, dark furrowed trunk and a wide, rounded umbrella crown of airy bipinnate leaves. In spring it hangs pale-yellow flower spikes, followed in summer by sweet, beaded yellow pods blotched with dark purple.",
+    "es": "Árbol nativo del Chaco y el Espinal, de tronco corto, oscuro y surcado y copa ancha, redondeada y aparasolada de hojas bipinnadas aireadas. En primavera cuelga espigas florales amarillo pálido y en verano da chauchas dulces y arrosariadas, amarillas con manchas violáceas."
+  },
+  "sources": [
+    {
+      "id": "flora_arg",
+      "kind": "flora",
+      "title": "Flora del Cono Sur / Flora Argentina: Neltuma nigra (Griseb.) C.E. Hughes & G.P. Lewis var. nigra (Instituto de Botánica Darwinion)",
+      "url": "https://app.floraargentina.edu.ar/cono-sur/especie.php?id=200701",
+      "accessed": "2026-11-25"
+    },
+    {
+      "id": "galera2000",
+      "kind": "flora",
+      "title": "Galera, F. M. (2000). Las especies del género Prosopis (Algarrobos) de América Latina con especial énfasis en aquellas de interés económico — I.2.23 Prosopis nigra. FCA-UNC / FAO, Córdoba.",
+      "url": "https://www.fao.org/4/ad314s/AD314S07.htm",
+      "accessed": "2026-11-25"
+    },
+    {
+      "id": "sib",
+      "kind": "database",
+      "title": "Sistema de Información de Biodiversidad (SIB), Administración de Parques Nacionales: Neltuma nigra (citing Digilio & Legname 1966)",
+      "url": "https://sib.gob.ar/especies/neltuma-nigra",
+      "accessed": "2026-11-25"
+    },
+    {
+      "id": "gaillard2014",
+      "kind": "paper",
+      "title": "Gaillard de Benítez, C., Pece, M., Juárez de Galíndez, M. & Acosta, M. (2014). Modelaje de la biomasa aérea individual y otras relaciones dendrométricas de Prosopis nigra Gris. en la provincia de Santiago del Estero, Argentina. Quebracho 22(1): 17-29.",
+      "url": "https://www.scielo.org.ar/scielo.php?script=sci_arttext&pid=S1851-30262014000100003",
+      "accessed": "2026-11-25"
+    },
+    {
+      "id": "gimenez2003",
+      "kind": "field_guide",
+      "title": "Giménez, A. M. & Moglia, J. G. (2003). Árboles del Chaco Argentino: Guía para el reconocimiento dendrológico (Ficha 45: Prosopis nigra). FCF-UNSE, Santiago del Estero.",
+      "url": "https://fcf.unse.edu.ar/archivos/publicaciones/libro-arboles-del-chaco/libro-arboles-del-chaco-argentino-GIMENEZ-MOGLIA.pdf",
+      "accessed": "2026-11-25"
+    },
+    {
+      "id": "inti",
+      "kind": "database",
+      "title": "INTI-CITEMA: Densidad de maderas argentinas (Prosopis nigra)",
+      "url": "https://www.inti.gob.ar/publicaciones/descargac/366",
+      "accessed": "2026-11-25"
+    },
+    {
+      "id": "cadamda",
+      "kind": "database",
+      "title": "CADAMDA: Ficha Técnica Algarrobo Negro (Prosopis nigra)",
+      "url": "https://cadamda.org.ar/portal/index.php?option=com_content&task=view&id=38&Itemid=36",
+      "accessed": "2026-11-25"
+    },
+    {
+      "id": "inat",
+      "kind": "observations",
+      "title": "iNaturalist: Neltuma nigra (taxon 1493150, research-grade observations and phenology histograms)",
+      "url": "https://www.inaturalist.org/taxa/1493150",
+      "accessed": "2026-11-25"
+    },
+    {
+      "id": "wiki_es",
+      "kind": "encyclopedia",
+      "title": "Wikipedia (es): Prosopis nigra (rev. 170805831)",
+      "url": "https://es.wikipedia.org/w/index.php?title=Prosopis_nigra&oldid=170805831",
+      "accessed": "2026-11-25"
+    }
+  ],
+  "plant": {
+    "growth_form": "tree",
+    "size": {
+      "adult_height_m": {
+        "min": 4,
+        "typical": 9,
+        "max": 16,
+        "source": [
+          "galera2000",
+          "flora_arg",
+          "gaillard2014",
+          "gimenez2003",
+          "sib"
+        ],
+        "note": "Galera (2000) gives 4-10 m with occasional trees to 16 m; Flora Argentina up to 15 m; Giménez & Moglia (2003) up to 16 m; SIB (Digilio & Legname 1966) 3-8 m; 30 Dry Chaco trees in Gaillard de Benítez et al. (2014) averaged 9.17 m (range 5.5-12 m)."
+      },
+      "crown_width_m": {
+        "min": 4.4,
+        "typical": 11,
+        "max": 16.4,
+        "source": [
+          "gaillard2014"
+        ],
+        "note": "Geometric mean of major and minor crown diameters across 30 Dry Chaco trees in Santiago del Estero (major 5.32-17.0 m, mean 11.94 m; minor 3.7-15.8 m, mean 10.08 m)."
+      },
+      "trunk_dbh_m": {
+        "min": 0.3,
+        "typical": 0.55,
+        "max": 1.1,
+        "source": [
+          "galera2000",
+          "gimenez2003",
+          "gaillard2014",
+          "sib"
+        ],
+        "note": "Galera (2000) gives 0.5-0.8 m; Giménez & Moglia (2003) 0.6-1.1 m; SIB up to 0.4 m; 30 Dry Chaco trees in Gaillard de Benítez et al. (2014) ranged 0.12-0.60 m (mean 0.35 m)."
+      },
+      "height_at_age": [
+        {
+          "age_years": 8,
+          "height_m": {
+            "min": 3.03,
+            "typical": 3.51,
+            "max": 3.99,
+            "source": [
+              "galera2000"
+            ],
+            "note": "Eight-year-old cultivated trees in Córdoba (Galera 1998 in Galera 2000, mean 3.51 ± 0.48 m)."
+          }
+        }
+      ]
+    },
+    "life": {
+      "life_cycle": "perennial"
+    },
+    "phenology": {
+      "leaf_habit": "deciduous",
+      "leaf_type": "bipinnate",
+      "leaf_out": {
+        "months": [
+          9,
+          10
+        ],
+        "source": [
+          "galera2000",
+          "inat"
+        ],
+        "note": "In Córdoba bud break starts in early September with peak swelling in mid-September (Galera 2000); bright new foliage shows in October photos r01, r06 and r15."
+      },
+      "flowering": {
+        "months": [
+          9,
+          10,
+          11
+        ],
+        "source": [
+          "galera2000",
+          "inat",
+          "wiki_es"
+        ],
+        "note": "In Córdoba flower buds appear in late September and peak in late October (Galera 2000); iNaturalist flowering histogram records September (2), October (8) and November (1), with Córdoba flowering photos r17 and r18 in October and early November."
+      },
+      "fruiting": {
+        "months": [
+          12,
+          1,
+          2,
+          3
+        ],
+        "source": [
+          "galera2000",
+          "inat",
+          "wiki_es"
+        ],
+        "note": "Pods exceed 5 cm by late November and ripen in late December in northern Córdoba (Galera 2000); Wikipedia (es) reports November to March; iNaturalist fruiting histogram records December (3), January (4), February (1), April (1) and July (1), matching photos r19 (January) and r20 (February)."
+      },
+      "leaf_fall": {
+        "months": [
+          6,
+          7
+        ],
+        "trigger": "first_frost",
+        "source": [
+          "galera2000",
+          "inat"
+        ],
+        "note": "Galera (2000) describes it as strictly deciduous, dropping leaves in winter when frosts arrive or as new growth breaks; photos r09 (June) and r10 (July) show thinning frost-dulled foliage and r11 (late August) shows bare branches."
+      },
+      "leaf_tones": [
+        {
+          "tone": "new",
+          "months": [
+            9,
+            10
+          ],
+          "source": [
+            "galera2000",
+            "inat"
+          ],
+          "note": "Bud break in September (Galera 2000); bright yellow-green new leaves in October photos r01, r06 and r15."
+        },
+        {
+          "tone": "mature",
+          "months": [
+            10,
+            11,
+            12,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "source": [
+            "inat"
+          ],
+          "note": "Full green to olive-green mature foliage from late spring through early winter (photos r16 in November, r05 in December, r12 in March, r03 in May and r09 in June)."
+        },
+        {
+          "tone": "dry",
+          "months": [
+            6,
+            7
+          ],
+          "trigger": "first_frost",
+          "source": [
+            "galera2000",
+            "inat"
+          ],
+          "note": "Winter frosts dry and dull the remaining leaves before they drop (Galera 2000; photos r09 in June and r10 in July)."
+        }
+      ]
+    },
+    "water": {
+      "rainfall_mm_year": {
+        "min": 300,
+        "typical": 650,
+        "max": 1200,
+        "source": [
+          "galera2000"
+        ],
+        "note": "Occurs in Argentina from 300 to 1,200 mm/year, with greatest abundance between 500 and 800 mm/year (Adámoli 1973 in Galera 2000)."
+      },
+      "drought_tolerance": {
+        "value": "high",
+        "source": [
+          "galera2000"
+        ],
+        "note": "High resistance to aridity and drought, thriving down to 300 mm annual rainfall."
+      },
+      "waterlogging_tolerance": {
+        "value": "medium",
+        "source": [
+          "gimenez2003",
+          "galera2000"
+        ],
+        "note": "Sources disagree: Giménez & Moglia (2003, citing López et al. 1995) report tolerance of poor drainage and prolonged flooding in palm-woodland depressions, whereas Galera (2000) states it does not thrive on heavy clay or saline soils."
+      }
+    },
+    "light": {
+      "shade_tolerance_seedling": {
+        "value": "low",
+        "source": [
+          "galera2000"
+        ],
+        "note": "Heliophilous species with low shade tolerance."
+      },
+      "shade_tolerance_adult": {
+        "value": "low",
+        "source": [
+          "galera2000"
+        ],
+        "note": "Heliophilous species with low shade tolerance."
+      }
+    },
+    "reproduction": {
+      "fruit": "pod",
+      "dispersal": [
+        {
+          "by": "animals",
+          "guilds": [
+            "mammals",
+            "livestock"
+          ],
+          "source": [
+            "galera2000"
+          ]
+        }
+      ],
+      "root_suckers": {
+        "value": "high",
+        "source": [
+          "galera2000"
+        ],
+        "note": "Resprouts readily from roots, especially under grazing or trampling."
+      },
+      "resprouts": {
+        "value": "high",
+        "source": [
+          "galera2000"
+        ],
+        "note": "Vigorous coppice resprouting from stumps; juvenile trees resist fire."
+      }
+    },
+    "wood": {
+      "density_kg_m3": {
+        "min": 830,
+        "typical": 850,
+        "max": 900,
+        "source": [
+          "cadamda",
+          "gimenez2003",
+          "inti"
+        ],
+        "note": "Air-dry wood density: 830 kg/m³ at 15% moisture (CADAMDA), 850 kg/m³ (Giménez & Moglia 2003), and 900 kg/m³ dry or 1,170 kg/m³ green (INTI)."
+      }
+    },
+    "gives": [
+      {
+        "what": "nectar",
+        "months": [
+          9,
+          10,
+          11
+        ],
+        "to": [
+          "bees",
+          "insects"
+        ],
+        "source": [
+          "galera2000",
+          "inat"
+        ]
+      },
+      {
+        "what": "pollen",
+        "months": [
+          9,
+          10,
+          11
+        ],
+        "to": [
+          "bees",
+          "insects"
+        ],
+        "source": [
+          "galera2000",
+          "inat"
+        ]
+      },
+      {
+        "what": "fruit",
+        "months": [
+          12,
+          1,
+          2,
+          3
+        ],
+        "to": [
+          "mammals",
+          "livestock",
+          "people"
+        ],
+        "source": [
+          "galera2000",
+          "wiki_es",
+          "inat"
+        ]
+      },
+      {
+        "what": "browse",
+        "months": [
+          9,
+          10,
+          11,
+          12,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "to": [
+          "livestock"
+        ],
+        "source": [
+          "galera2000"
+        ]
+      },
+      {
+        "what": "shade",
+        "months": [
+          10,
+          11,
+          12,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "to": [
+          "livestock",
+          "understory"
+        ],
+        "source": [
+          "galera2000"
+        ]
+      },
+      {
+        "what": "nitrogen_fixing",
+        "source": [
+          "galera2000"
+        ]
+      },
+      {
+        "what": "firewood",
+        "to": [
+          "people"
+        ],
+        "source": [
+          "galera2000"
+        ]
+      }
+    ],
+    "people": {
+      "uses": [
+        "carpentry, flooring and heavy furniture",
+        "fence posts and rural construction",
+        "sweet pod flour (patay), syrup (arrope) and drinks (añapa, aloja)",
+        "firewood and charcoal",
+        "livestock forage",
+        "bark and wood tannins for leather"
+      ],
+      "source": [
+        "galera2000",
+        "gimenez2003",
+        "cadamda"
+      ]
+    }
+  }
+}
