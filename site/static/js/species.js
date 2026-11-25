@@ -155,6 +155,7 @@ function setupLife(stage, life, look) {
 
   function setPlaying(on) {
     playing = on;
+    stage.holdSeason(on);
     play.setAttribute('aria-pressed', String(on));
     play.setAttribute('aria-label', t(on ? 'Pause' : "Play the tree's life"));
     if (on) {

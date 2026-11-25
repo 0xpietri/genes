@@ -82,3 +82,23 @@ hreflang, Open Graph; JSON-LD Taxon and breadcrumb; `robots.txt`, `llms.txt`,
 2. **The share picture** is the card (640 x 698 WebP). Platforms that crop to 1.91:1 cut its
    top and bottom; a 1200 x 630 JPEG made for sharing would look better on WhatsApp,
    LinkedIn and X.
+
+## Seasonal landscape and ground (same day)
+
+marcos painted with Gemini a landscape of the Sierras Chicas with the Pan de Azúcar and a
+top-down ground for each season (prompts in the project files, originals in
+`genes-catalog/seasons/`).
+
+- `site/static/art/scene/backdrop-<season>.webp` (2736 x 864, the magenta sky keyed out to
+  transparency, the top faded because the paintings reach the top edge; winter's repeated
+  strip above a magenta seam was dropped) and `ground-<season>.webp` (1024 px).
+- `stage.js`: the landscape is an open ring 150 m away, the painting mirrored four times
+  round it at its own proportions, its far valley floor at the horizon (the ground disc
+  hides its foreground). The ground disc wears the season's soil, a 12 m tile. Both follow
+  the shown month (`seasonOf`); while the life plays they keep the season they had, so they
+  do not flicker, and catch up when play stops. Day and night stay in code: the painted
+  sky dome as before, and the ring and soil tinted blue-grey at night.
+- The old `ground.webp` is gone.
+
+To improve: the paintings have almost no sky, so the mountain tops are cut by the frame
+and faded. Extending them upward (Gemini, "extend the canvas upward") would show whole peaks.

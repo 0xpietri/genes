@@ -231,9 +231,10 @@ def test_painted_map_pieces_and_skies_exist() -> None:
         for name, (w, h) in sizes.items():
             assert (SITE_STATIC / "art" / folder / f"{name}.webp").exists(), name
             assert w > 0 and h > 0
-    assert {"sky-day", "sky-night", "ground"} <= set(
-        jsonio.load(SITE_STATIC / "art" / "scene" / "sizes.json")["sizes"]
-    )
+    scene = set(jsonio.load(SITE_STATIC / "art" / "scene" / "sizes.json")["sizes"])
+    assert {"sky-day", "sky-night"} <= scene
+    for season in ("summer", "autumn", "winter", "spring"):
+        assert {f"ground-{season}", f"backdrop-{season}"} <= scene, season
 
 
 def test_the_simulator_holds_the_life(dist: Path) -> None:
@@ -523,6 +524,40 @@ def test_the_tree_shows_the_light_model_then_the_full_one(served: str) -> None:
         assert any(u.endswith("adult-a.lod0.glb") for u in asked)
         # Each model is asked for once: the preload is reused, not fetched twice.
         assert len(asked) == len(set(asked))
+    finally:
+        browser.close()
+        pw.stop()
+
+
+def test_the_landscape_and_ground_follow_the_season(served: str) -> None:
+    pw, browser = _browser()
+    try:
+        page = browser.new_page()
+        asked: list[str] = []
+        page.on("request", lambda r: asked.append(r.url.rsplit("/", 1)[-1]))
+        page.goto(f"{served}/species/neltuma-alba/")
+        page.wait_for_selector("body[data-ready], body[data-error]", timeout=60000)
+        seasons = page.evaluate(
+            """async () => {
+            const m = await import('"""
+            + site_static.url("js/stage.js")
+            + """');
+            return [1, 2, 3, 5, 6, 8, 9, 11, 12].map(m.seasonOf);
+        }"""
+        )
+        assert seasons == (
+            ["summer"] * 2 + ["autumn"] * 2 + ["winter"] * 2 + ["spring"] * 2 + ["summer"]
+        )
+        page.locator("[data-season='7']").click()
+        page.wait_for_timeout(1500)
+        assert "ground-winter.webp" in asked and "backdrop-winter.webp" in asked
+        # Playing holds the landscape: the seasons fly past without loading each one.
+        before = len([u for u in asked if u.startswith(("ground-", "backdrop-"))])
+        page.locator("[data-play]").click()
+        page.wait_for_timeout(1500)
+        page.locator("[data-play]").click()
+        after = [u for u in asked if u.startswith(("ground-", "backdrop-"))]
+        assert len(after) <= before + 2  # at most the season it stopped on
     finally:
         browser.close()
         pw.stop()

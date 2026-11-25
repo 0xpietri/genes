@@ -39,7 +39,7 @@ function groundFade() {
   const g = c.getContext('2d');
   const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
   r.addColorStop(0, '#fff');
-  r.addColorStop(0.55, '#f2f2f2');
+  r.addColorStop(0.8, '#fff');
   r.addColorStop(1, '#000');
   g.fillStyle = r;
   g.fillRect(0, 0, 256, 256);
@@ -64,8 +64,20 @@ function groundTexture() {
   return t;
 }
 
-// One tile of the painted soil covers this many metres; the disc is 120 m across.
-const GROUND_TILE_M = 5;
+// One tile of the painted soil covers this many metres.
+const GROUND_TILE_M = 12;
+// marcos's painted landscape stands round the tree as a ring this far away (beyond the
+// camera's farthest zoom), the painting mirrored RING_COPIES times round it at its own
+// proportions (2736 x 864). Its far valley floor, RING_EYE of the way down, sits at the
+// horizon; the ground disc hides the painting's foreground below it.
+const RING_R = 150;
+const RING_COPIES = 4;
+const RING_H = ((2 * Math.PI * RING_R) / RING_COPIES) * (864 / 2736);
+const RING_EYE = 0.5;
+const ART = new URL('../art/scene', import.meta.url).href;
+const SEASONS = ['summer', 'summer', 'autumn', 'autumn', 'autumn', 'winter', 'winter', 'winter', 'spring', 'spring', 'spring', 'summer'];
+/** The (southern) season of month `m` (1-12), as the painted art names it. */
+export const seasonOf = (m) => SEASONS[(m - 1) % 12];
 
 export class Stage {
   constructor(canvas, { look, sheet, modelsBase }) {
@@ -95,21 +107,21 @@ export class Stage {
     this.sky = new Sky(this.scene, this.renderer);
 
     this.ground = new THREE.Mesh(
-      new THREE.CircleGeometry(60, 96),
+      new THREE.CircleGeometry(RING_R + 6, 128),
       new THREE.MeshLambertMaterial({ map: groundTexture(), alphaMap: groundFade(), transparent: true, depthWrite: false, color: '#a3a56f' }),
     );
     this.groundPainted = false;
-    new THREE.TextureLoader().load(new URL('../art/scene/ground.webp', import.meta.url).href, (tex) => {
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.wrapS = tex.wrapT = THREE.MirroredRepeatWrapping;
-      tex.repeat.set(120 / GROUND_TILE_M, 120 / GROUND_TILE_M);
-      tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
-      const old = this.ground.material.map;
-      this.ground.material.map = tex;
-      this.ground.material.needsUpdate = true;
-      old.dispose();
-      this.groundPainted = true;
-    });
+    // The painted landscape: an open ring, painted on its inside, standing on the ground's edge.
+    this.ring = new THREE.Mesh(
+      new THREE.CylinderGeometry(RING_R, RING_R, RING_H, 160, 1, true),
+      new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.BackSide, visible: false }),
+    );
+    this.ring.position.y = RING_H / 2 - (1 - RING_EYE) * RING_H;
+    this.ring.renderOrder = -3;
+    this.scene.add(this.ring);
+    this.art = new Map(); // url -> Promise<Texture>
+    this.season = null;
+    this.seasonHeld = false;
     this.ground.rotation.x = -Math.PI / 2;
     this.ground.renderOrder = -1;
     this.scene.add(this.ground);
@@ -258,9 +270,69 @@ export class Stage {
     this.applySeason();
   }
 
+  texture(name, setup) {
+    const url = `${ART}/${name}.webp`;
+    if (!this.art.has(url)) {
+      this.art.set(url, new THREE.TextureLoader().loadAsync(url).then((tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+        setup(tex);
+        return tex;
+      }));
+    }
+    return this.art.get(url);
+  }
+
+  groundArt(season) {
+    return this.texture(`ground-${season}`, (tex) => {
+      tex.wrapS = tex.wrapT = THREE.MirroredRepeatWrapping;
+      const n = (2 * (RING_R + 6)) / GROUND_TILE_M;
+      tex.repeat.set(n, n);
+    });
+  }
+
+  ringArt(season) {
+    return this.texture(`backdrop-${season}`, (tex) => {
+      tex.wrapS = THREE.MirroredRepeatWrapping; // mirrored, so every seam matches
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.repeat.set(RING_COPIES, 1);
+    });
+  }
+
+  /** Ground and landscape of `season`; the ones shown stay until the new ones have arrived. */
+  setSeason(season) {
+    if (season === this.season) return;
+    this.season = season;
+    this.groundArt(season).then((tex) => {
+      if (this.season !== season) return;
+      const m = this.ground.material;
+      if (!this.groundPainted) m.map.dispose();
+      m.map = tex;
+      m.needsUpdate = true;
+      this.groundPainted = true;
+    }).catch(() => {});
+    this.ringArt(season).then((tex) => {
+      if (this.season !== season) return;
+      const m = this.ring.material;
+      m.map = tex;
+      m.visible = true;
+      m.needsUpdate = true;
+    }).catch(() => {});
+  }
+
+  /**
+   * While the life plays, the seasons pass several times a second: the landscape keeps the
+   * season it had, so it does not flicker, and follows the month again when play stops.
+   */
+  holdSeason(on) {
+    this.seasonHeld = on;
+    if (!on && this.state) this.setSeason(seasonOf(this.state.s.month));
+  }
+
   applySeason() {
     if (!this.state) return;
     const { s } = this.state;
+    if (!this.seasonHeld) this.setSeason(seasonOf(s.month));
     const a = partAmounts(this.sheet, s.month);
     const vigour = s.status === 'dying' ? 0.5 : s.status === 'stressed' ? 0.8 : 1;
     this.reveal.foliage.value = s.alive ? a.foliage * vigour : 0;
@@ -325,6 +397,8 @@ export class Stage {
     const t = this.clock.getElapsed();
     this.sky.update(dt, t);
     this.sky.groundColour(this.ground.material.color, this.groundPainted);
+    // Unlit, so it darkens a little more than the lit ground at night.
+    this.sky.groundColour(this.ring.material.color, true).multiplyScalar(1 - 0.3 * this.sky.blend);
     // A light wind: the crown leans a little, more when it is in leaf.
     const leafy = this.state?.s.alive ? 1 : 0.2;
     this.holder.rotation.z = Math.sin(t * 0.9) * 0.006 * leafy;
