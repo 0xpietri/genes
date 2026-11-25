@@ -14,9 +14,11 @@ Add a new plant species to this repository: **<scientific name>** (<Spanish comm
 2. Run `uv run genes doctor` and fix whatever it reports before anything else.
 3. Follow the recipe in order: branch `species/<id>`, sources and facts, reference photos,
    sheet with its leaf colour calendar, look, models, contact sheet, viewer checks,
+   Spanish texts (`i18n/es.json`), the public page in English and Spanish,
    `uv run genes validate` and `uv run pytest`.
 4. Never guess a fact: leave out what you cannot source. Never change
-   `tools/blender/plant/`, the schemas, the validator or the tests. If the species cannot
+   `tools/blender/plant/`, the schemas, the validator or the tests (the one exception: a
+   missing site word in `UI_ES`, recipe section 4.2). If the species cannot
    be drawn with the parameters, stop and explain why.
 5. Work alone until the species is finished and passes every check of the recipe's
    "definition of done". Then write to me in Spanish (rioplatense, plain words) as the
