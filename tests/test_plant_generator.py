@@ -4,6 +4,8 @@ plain Python, so the model contract is checked here without bpy (spec §8)."""
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 import math
 import random
 from typing import Any
@@ -157,6 +159,20 @@ def test_old_limbs_rest_on_the_ground(look: dict[str, Any]) -> None:
     assert resting(0.0) == 0
 
 
+@pytest.mark.parametrize("sag", [0.2, 0.5, 0.79, 1.0])
+def test_nothing_grows_below_the_ground(look: dict[str, Any], sag: float) -> None:
+    # A limb sagging part way (0 < limb_sag < 0.8) used to droop on into the soil.
+    changed = copy.deepcopy(look)
+    changed["form"]["old"].update(limb_sag=sag, sagging_limbs=1.0)
+    for lv in changed["form"]["branching"]:
+        lv["droop"] = 1.0
+    for stage in ("old", "dead_standing"):
+        for variant in ("a", "b"):
+            model = build(changed, stage, variant, "lod1", BUDGETS)
+            lo, _ = bounds(model.parts)
+            assert lo[1] >= -BASE_TOLERANCE_M, (stage, variant, lo)
+
+
 def test_an_old_trunk_opens_at_the_base(look: dict[str, Any]) -> None:
     changed = copy.deepcopy(look)
     changed["form"]["old"]["trunk_split"] = 1.0
@@ -281,3 +297,43 @@ def test_no_leaf_without_wood(look: dict[str, Any], stage: str, lod: str) -> Non
                 for p in grid.get((k[0] + dx, k[1] + dy, k[2] + dz), ())
             )
             assert near, f"{stage}-{v}.{lod}: a foliage card at {centre} has no wood near"
+
+
+FINGERPRINTS = REPO_ROOT / "tests" / "fixtures" / "plant_fingerprints.json"
+
+
+def _fingerprint(model: Any) -> str:
+    h = hashlib.sha256()
+    for name in sorted(model.parts):
+        part = model.parts[name]
+        h.update(name.encode())
+        h.update(json.dumps([round(c, 4) for xyz in part.positions for c in xyz]).encode())
+        h.update(json.dumps([list(t) for t in part.triangles]).encode())
+    return h.hexdigest()[:16]
+
+
+def _frozen_fingerprints() -> dict[str, str]:
+    out: dict[str, str] = {}
+    for path in sorted(SPECIES_DIR.glob("plants/*/looks/*/look.json")):
+        look = jsonio.load(path)
+        rel = path.parent.relative_to(SPECIES_DIR).as_posix()
+        for st, variant, lod in expected_models(look):
+            out[f"{rel}/{st}-{variant}.{lod}"] = _fingerprint(
+                build(look, st, variant, lod, BUDGETS)
+            )
+    return out
+
+
+def test_merged_looks_still_build_the_same_models() -> None:
+    """Merged looks are frozen (spec §4): a generator change may add new parameters, never
+    change what an existing look draws. A new look adds its lines with
+    `PYTHONPATH=tools/blender uv run python -m tests.test_plant_generator`, which prints
+    the whole file."""
+    want: dict[str, str] = jsonio.load(FINGERPRINTS)
+    have = _frozen_fingerprints()
+    changed = sorted(k for k in want if k in have and have[k] != want[k])
+    assert not changed, changed
+
+
+if __name__ == "__main__":
+    print(json.dumps(_frozen_fingerprints(), indent=2, sort_keys=True))

@@ -200,7 +200,7 @@ ones:
 | `phenology` | `leaf_habit`, `leaf_type`, `leaf_out`, `flowering`, `fruiting`, `leaf_fall`, `leaf_tones`, `winter_leaf_share`, `spread_days` (all shown) |
 | `water` | `rainfall_mm_year`\*, `drought_tolerance`\*, `root_depth_m`\*, `waterlogging_tolerance` |
 | `light` | `shade_tolerance_seedling`, `shade_tolerance_adult` |
-| `climate` | `frost_kill_c_adult`\*, `frost_kill_c_seedling`, `heat_limit_c` |
+| `climate` | `frost_kill_c_adult`\*, `frost_kill_c_seedling`, `heat_limit_c` (measured limits); `habitat_min_c`, `habitat_max_c` (the extremes of the places it grows) |
 | `reproduction` | `fruit`, `seeds_per_year`, `dispersal`, `root_suckers`, `resprouts` |
 | `wood` | `density_kg_m3`\*, `standing_dead_years`, `fallen_decay_years` |
 | `gives` | what it gives to others by month: fruit, nectar, pollen, browse, shade, nesting… |

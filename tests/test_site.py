@@ -247,7 +247,7 @@ def test_the_simulator_holds_the_life(dist: Path) -> None:
         "data-play",
         "data-info-toggle",
         'class="seasons stage-seasons"',
-        'class="info" data-tip="One algarrobo grown alone',
+        'class="info" data-tip="One tree grown alone',
     ):
         assert part in module.group(0), part
     assert "sim-kpis" not in html and "is what it dies of" not in html
@@ -461,7 +461,8 @@ def test_species_page_reads_well_for_search_engines_and_models(dist: Path) -> No
         other = "es_AR" if lg == "en" else "en_GB"
         assert f'<meta property="og:locale:alternate" content="{other}">' in html
     sitemap = (dist / "sitemap.xml").read_text(encoding="utf-8")
-    assert sitemap.count("<url>") == 4
+    species = validate.discover([SPECIES_DIR])
+    assert sitemap.count("<url>") == 2 + 2 * len(species)  # the catalog and each page, twice
     assert (
         '<xhtml:link rel="alternate" hreflang="es" '
         'href="https://genes.pietri.dev/es/species/neltuma-alba/"/>' in sitemap
@@ -561,3 +562,64 @@ def test_the_landscape_and_ground_follow_the_season(served: str) -> None:
     finally:
         browser.close()
         pw.stop()
+
+
+def _schema_words() -> list[str]:
+    """Every word the pages build from a schema's fixed values."""
+    sheet = jsonio.load(REPO_ROOT / "schemas" / "sheet.v1.json")
+    refs = jsonio.load(REPO_ROOT / "schemas" / "refs.v1.json")
+    common = jsonio.load(REPO_ROOT / "schemas" / "common.v1.json")
+    plant = sheet["$defs"]["plant"]["properties"]
+    ph = plant["phenology"]["properties"]
+    words = [g.capitalize() for g in plant["growth_form"]["enum"]]
+    words += [genes_site.leaf_type_label(t) for t in ph["leaf_type"]["enum"]]
+    words += [f"{t} leaves" for t in ph["leaf_tones"]["items"]["properties"]["tone"]["enum"]]
+    words += [genes_site.HABIT_LABEL[h] for h in ph["leaf_habit"]["enum"]]
+    words += [
+        genes_site.TRIGGER_LABEL[t]
+        for t in common["$defs"]["phase"]["properties"]["trigger"]["enum"]
+    ]
+    words += plant["reproduction"]["properties"]["fruit"]["enum"]
+    words += [
+        genes_site.GIVES_LABEL.get(w, w.replace("_", " ").capitalize())
+        for w in plant["gives"]["items"]["properties"]["what"]["enum"]
+    ]
+    words += common["$defs"]["level"]["properties"]["value"]["enum"]
+    words += refs["properties"]["photos"]["items"]["properties"]["shows"]["items"]["enum"]
+    words += list(genes_site.GUILDS)
+    return words
+
+
+def test_every_schema_value_has_its_spanish() -> None:
+    # A new species never needs a Python change for words the schema already fixes.
+    missing = [w for w in _schema_words() if w not in site_i18n.UI_ES]
+    assert not missing, missing
+
+
+def test_spanish_contracts_a_el_and_names_the_fruit_by_its_kind() -> None:
+    with site_i18n.speaking("es"):
+        assert genes_site.to_whom(["livestock"]) == "al ganado"
+        assert genes_site.to_whom(["bees", "livestock"]) == "a las abejas, el ganado"
+    with site_i18n.speaking("en"):
+        assert genes_site.to_whom(["livestock"]) == "to livestock"
+    pod = {"plant": {"reproduction": {"fruit": "pod"}}}
+    berry = {"plant": {"reproduction": {"fruit": "berry"}}}
+    assert genes_site.fruit_word(pod) == "Pods"
+    assert genes_site.fruit_word(berry) == "Fruit"
+
+
+def test_no_species_name_is_written_into_the_page_code(dist: Path) -> None:
+    nigra = (dist / "es" / "species" / "neltuma-nigra" / "index.html").read_text(encoding="utf-8")
+    assert "La gente y esta especie" in nigra
+    assert not re.search(r"\ba el ", nigra)
+    assert "Un algarrobo que" not in nigra
+
+
+def test_the_frost_thermometer_shows_only_with_a_fact() -> None:
+    frost = {"min": -12, "max": -8, "source": ["s"]}
+    habitat = {"min": -10, "max": -6, "source": ["s"]}
+    assert genes_site.frost_figure({"plant": {"climate": {}}}) == ""
+    with_kill = genes_site.frost_figure({"plant": {"climate": {"frost_kill_c_adult": frost}}})
+    assert "Frost that kills an adult" in with_kill
+    only_habitat = genes_site.frost_figure({"plant": {"climate": {"habitat_min_c": habitat}}})
+    assert "Coldest where it grows" in only_habitat and "kills" not in only_habitat

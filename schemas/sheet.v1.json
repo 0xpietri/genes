@@ -180,7 +180,15 @@
           "properties": {
             "frost_kill_c_seedling": { "$ref": "#/$defs/range" },
             "frost_kill_c_adult": { "$ref": "#/$defs/range" },
-            "heat_limit_c": { "$ref": "#/$defs/range" }
+            "heat_limit_c": { "$ref": "#/$defs/range" },
+            "habitat_min_c": {
+              "description": "The coldest temperatures recorded where the species grows (the climate of its range), not a lethal limit: the lowest absolute minimums the sources give for the places it lives. A source giving a measured killing frost goes in frost_kill_c_*.",
+              "$ref": "#/$defs/range"
+            },
+            "habitat_max_c": {
+              "description": "The hottest temperatures recorded where the species grows (the climate of its range), not a lethal limit. A measured heat limit goes in heat_limit_c.",
+              "$ref": "#/$defs/range"
+            }
           },
           "additionalProperties": false
         },

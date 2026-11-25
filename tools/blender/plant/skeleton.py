@@ -226,6 +226,8 @@ def grow(
                 ground_left = -2  # done: rises and never comes down again
         elif not g.rest and env is not None and nxt[1] < env.top * 0.06:
             break  # drooping limbs stop above the ground
+        elif not g.rest and nxt[1] < floor and nxt[1] < p[1]:
+            break  # no crown to stop it (a limb sagging part way): it stops at the ground
         if g.rest:
             pass  # a resting limb leaves the crown on purpose
         elif env is not None and env.inside(nxt):
