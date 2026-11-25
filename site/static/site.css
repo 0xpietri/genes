@@ -64,7 +64,7 @@ small { color: var(--muted); }
 :focus-visible { outline: 3px solid var(--green); outline-offset: 2px; border-radius: 10px; }
 
 /* Glass: every module, tile and control shares it. */
-.glass, .panel, .tile, .card-link, .card-soon, .sim, .daynight, .tool, .pill, .kpi, .give, .level, .mini-tile {
+.glass, .panel, .tile, .card-link, .card-soon, .daynight, .tool, .pill, .kpi, .give, .level, .mini-tile {
   background: linear-gradient(160deg, var(--glass-2), var(--glass) 60%);
   border: 1px solid var(--glass-line);
   box-shadow: inset 0 1px 0 var(--glass-hi), inset 0 -1px 0 rgba(0, 0, 0, 0.18), var(--shadow);
@@ -239,18 +239,29 @@ main { padding: 0 clamp(16px, 4vw, 40px); max-width: 1440px; margin: 0 auto; }
 .daynight[aria-pressed="true"] .i-moon { display: none; }
 
 /* The simulator: a module right under the 3D tree, with its life on top. */
-.hero-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.sim { display: grid; gap: 12px; padding: 16px; }
+/* The 3D tree and its simulator are one module. */
+.hero-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 10px; }
+.hero-main .stage { box-shadow: none; border-radius: calc(var(--radius) - 8px); }
+.sim { display: grid; gap: 12px; padding: 4px 8px 8px; }
+.stage-seasons { position: absolute; top: 14px; left: 14px; z-index: 2; display: flex; gap: 6px; flex-wrap: wrap; }
+.stage-seasons button { height: 44px; padding: 0 14px; font-size: 13px; color: var(--text); background: rgba(16, 32, 29, 0.55); border: 1px solid var(--glass-line); }
+.stage-seasons button[aria-pressed="true"] { color: var(--ink); background: var(--green); }
+.stage-info { position: absolute; left: 14px; top: 72px; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.info-toggle { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: rgba(16, 32, 29, 0.45); cursor: pointer; }
+.info-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.info-toggle[aria-expanded="true"] { background: rgba(166, 227, 154, 0.25); }
+.stage-info .readout {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 10px 14px; border-radius: 16px;
+  background: rgba(16, 32, 29, 0.5); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  font-size: 14px; line-height: 1.35;
+}
+.stage-info[data-open="false"] .readout { display: none; }
+.readout .line { display: block; white-space: nowrap; }
 .sim .life-stages { margin: 2px 0 0; }
 .sim .legend { margin: 0; }
-.sim-kpis { display: flex; gap: 8px; align-items: stretch; }
-.sim-kpis .kpi { flex: 1 1 0; min-width: 0; padding: 8px 12px; border-radius: 16px; background: var(--glass-2); border: 1px solid var(--line); }
-.sim-kpis .kpi-ico { width: 32px; height: 32px; }
-.sim-kpis .kpi strong { font-size: 20px; white-space: nowrap; }
-.sim-kpis .kpi span { font-size: 12px; line-height: 1.2; }
 .info {
-  position: relative; flex: none; align-self: center; width: 34px; height: 34px; border-radius: 50%;
-  background: var(--glass-2); border: 1px solid var(--line-2); cursor: help;
+  position: relative; flex: none; align-self: center; width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(16, 32, 29, 0.45); border: 1px solid var(--line-2); cursor: help;
   font-family: var(--display); font-weight: 600; font-size: 17px; color: var(--text);
 }
 .info:hover, .info:focus-visible { background: var(--glass-hi); outline: none; box-shadow: 0 0 0 3px var(--green); }
@@ -312,7 +323,7 @@ main { padding: 0 clamp(16px, 4vw, 40px); max-width: 1440px; margin: 0 auto; }
 .tags li:first-child:hover::after, .tags li:first-child:focus::after { transform: translate(0, 0); }
 .summary { margin: 18px 0 0; font-size: 17px; }
 
-.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: auto; padding-top: 22px; }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 0; padding-top: 22px; }
 .tile {
   position: relative; padding: 14px 14px 12px 64px; border-radius: 20px;
   display: flex; flex-direction: column; gap: 1px; min-width: 0;
@@ -352,21 +363,21 @@ main { padding: 0 clamp(16px, 4vw, 40px); max-width: 1440px; margin: 0 auto; }
 .kpi span { font-size: 13px; color: var(--muted); font-weight: 700; }
 
 /* The stages of one life, as painted pictures */
-.life-stages { list-style: none; padding: 0; margin: 6px 0 14px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.life-stages { list-style: none; padding: 0; margin: 6px 0 14px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .life-stages button {
   width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 10px 6px 10px; border-radius: 20px; cursor: pointer; text-align: center;
+  padding: 6px 4px 7px; border-radius: 16px; cursor: pointer; text-align: center;
   background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); transition: background 0.2s, transform 0.2s, border-color 0.2s;
 }
 .life-stages button:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.08); }
 .life-stages button[aria-current="step"] { background: rgba(166, 227, 154, 0.18); border-color: var(--green); }
-.life-stages .pic { height: 110px; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.life-stages .pic { height: 58px; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
 .life-stages img { max-height: 100%; max-width: 100%; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.35)); }
 .life-stages li:nth-child(1) img { max-height: 30%; }
 .life-stages li:nth-child(2) img { max-height: 55%; }
 .life-stages li:nth-child(3) img { max-height: 80%; }
-.life-stages strong { font-family: var(--display); font-weight: 600; font-size: 15px; margin-top: 4px; }
-.life-stages small { font-size: 11px; font-weight: 700; }
+.life-stages strong { font-family: var(--display); font-weight: 600; font-size: 13px; margin-top: 2px; line-height: 1.15; }
+.life-stages small { font-size: 10px; font-weight: 700; }
 img.ico { object-fit: contain; }
 .tubes figcaption { display: flex; align-items: center; justify-content: center; gap: 6px; }
 
@@ -496,17 +507,15 @@ svg text { fill: var(--muted); font: 700 12px var(--font); }
 @media (max-width: 1000px) {
   .hero { grid-template-columns: 1fr; }
   .stage { min-height: 70vh; }
-  .hero-main { display: contents; }
+
   .grid, .grid-wide { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
+  .stage-seasons { top: 66px; right: 14px; }
+  .stage-seasons button { height: 36px; padding: 0 10px; }
+  .hero-main { padding: 6px; }
   .sim { padding: 12px; }
   .readout { flex: 1 1 100%; min-width: 0; }
-  .sim-kpis { gap: 6px; }
-  .sim-kpis .kpi { display: block; padding: 6px 8px; }
-  .sim-kpis .kpi-ico { display: none; }
-  .sim-kpis .kpi strong { display: block; font-size: 17px; }
-  .sim-kpis .kpi span { display: block; font-size: 11px; }
   .nav { gap: 2px; font-size: 14px; }
   .nav a, .nav .soon { padding: 6px 10px; }
   .top { gap: 10px; }
@@ -523,7 +532,8 @@ svg text { fill: var(--muted); font: 700 12px var(--font); }
   .speed button, .seasons button { padding: 4px 9px; }
   .tubes { grid-template-columns: 1fr; }
   .life-stages { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .life-stages .pic { height: 80px; }
+  .life-stages .pic { height: 48px; }
+  .stage-info { top: 124px; }
   .panel > header { align-items: flex-start; }
   .head-ico { width: 44px; height: 44px; }
 }

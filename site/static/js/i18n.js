@@ -9,7 +9,7 @@ const ES = {
   January: 'enero', February: 'febrero', March: 'marzo', April: 'abril', May: 'mayo',
   June: 'junio', July: 'julio', August: 'agosto', September: 'septiembre', October: 'octubre',
   November: 'noviembre', December: 'diciembre',
-  Day: 'Día', Night: 'Noche', 'Year ': 'Año ', ' tall, crown ': ' de alto, copa ',
+  Day: 'Día', Night: 'Noche', 'Year ': 'Año ', ' tall': ' de alto', 'crown ': 'copa ',
   Pause: 'Pausa', "Play the tree's life": 'Reproducir la vida del árbol',
   'The 3D model could not load.': 'No se pudo cargar el modelo 3D.',
   'The map could not load.': 'No se pudo cargar el mapa.',

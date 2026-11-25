@@ -238,13 +238,19 @@ def test_painted_map_pieces_and_skies_exist() -> None:
 
 def test_the_simulator_holds_the_life(dist: Path) -> None:
     html = (dist / "species" / "neltuma-alba" / "index.html").read_text(encoding="utf-8")
-    sim = re.search(r'<section class="sim panel" id="life".*?</section>', html, re.S)
-    assert sim
-    for part in ('class="sim-kpis"', 'class="life-stages"', "data-life-cursor", "data-play"):
-        assert part in sim.group(0), part
-    assert "231 years" in sim.group(0) and "the year it is gone into the soil" in sim.group(0)
-    assert 'class="info" data-tip="One algarrobo grown alone' in sim.group(0)
-    assert "is what it dies of" not in html and "data-stage-chip" not in html
+    module = re.search(r'<div class="hero-main panel">.*?<div class="intro">', html, re.S)
+    assert module
+    for part in (
+        'class="life-stages"',
+        "data-life-cursor",
+        "data-play",
+        "data-info-toggle",
+        'class="seasons stage-seasons"',
+        'class="info" data-tip="One algarrobo grown alone',
+    ):
+        assert part in module.group(0), part
+    assert "sim-kpis" not in html and "is what it dies of" not in html
+    assert "data-stage-chip" not in html
 
 
 def test_sources_link_straight_to_their_pages(dist: Path) -> None:

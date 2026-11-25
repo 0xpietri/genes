@@ -837,41 +837,30 @@ def species_page(
         )
         if isinstance(r, dict) and "min" in r
     )
-    life_kpis = ""
-    if life:
-        ind = life["individual"]
-        kpis = [(f"{num(ind['max_height_mm'] / 1000, '.1f')} m", T("its tallest"), "height")]
-        if dead:
-            kpis.insert(
-                0,
-                (
-                    f"{int(dead['date'][:4]) - int(life['born'][:4])} {T('years')}",
-                    T("simulated life"),
-                    "life",
-                ),
-            )
-        kpis.append((life["end"]["date"][:4], T("the year it is gone into the soil"), "trunk"))
-        about_life = life_text.removeprefix("<p>").removesuffix("</p>")
-        about_life = re.sub(r"<[^>]+>", "", about_life)
-        life_kpis = (
-            '<div class="sim-kpis">'
-            + "".join(
-                f'<div class="kpi">{art.icon(ico, "ico kpi-ico")}<strong>{v}</strong><span>{k}</span></div>'
-                for v, k, ico in kpis
-            )
-            + f'<button type="button" class="info" data-tip="{e(about_life)}" '
-            f'aria-label="{T("About this tree")}: {e(about_life)}">i</button>' + "</div>"
-        )
-
+    about_life = re.sub(r"<[^>]+>", "", life_text)
+    info_btn = (
+        f'<button type="button" class="info" data-tip="{e(about_life)}" '
+        f'aria-label="{T("About this tree")}: {e(about_life)}">i</button>'
+        if about_life
+        else ""
+    )
     sim = ""
+    stage_overlay = ""
     if look and life:
         seasons = "".join(
             f'<button type="button" data-season="{m}">{T(name)}</button>'
             for m, name in ((1, "Summer"), (4, "Autumn"), (7, "Winter"), (10, "Spring"))
         )
+        stage_overlay = f"""
+      <div class="seasons stage-seasons" role="group" aria-label="{T("Season")}">{seasons}</div>
+      <div class="stage-info" data-info>
+        <button type="button" class="info-toggle" data-info-toggle aria-expanded="true" title="{
+            T("Show or hide the numbers")
+        }"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h13"/></svg></button>
+        <output class="readout" data-readout>{T("Year 0")}</output>
+      </div>"""
         sim = f"""
-      <section class="sim panel" id="life" data-sim aria-label="{T("The tree's simulated life")}">
-        {life_kpis}
+      <div class="sim" id="life" data-sim aria-label="{T("The tree's simulated life")}">
         <div class="sim-row">
           <button type="button" class="play" data-play aria-label="{
             T("Play the tree's life")
@@ -883,16 +872,12 @@ def species_page(
             T("Speed")
         }"><button type="button" data-speed="1">1×</button><button type="button" data-speed="4" aria-pressed="true">4×</button><button type="button" data-speed="16">16×</button></div>
         </div>
-        <div class="sim-row">
-          <output class="readout" data-readout>{T("Year 0")}</output>
-          <div class="seasons" role="group" aria-label="{T("Season")}">{seasons}</div>
-        </div>
         {stage_strip(life, stage_art)}
         {life_chart(life)}
         <ul class="legend"><li><i class="sw alive"></i>{T("Alive")}</li><li><i class="sw dead"></i>{
             T("Dead, standing")
         }</li><li><i class="sw fallen"></i>{T("Fallen, rotting")}</li></ul>
-      </section>"""
+      </div>"""
 
     def head_of(icon_name: str, h2: str, sub: str) -> str:
         return (
@@ -920,7 +905,7 @@ def species_page(
         T("Catalog")
     }</a> <span>/</span> <span>{e(es[0].capitalize())}</span></nav>
   <section class="hero">
-    <div class="hero-main">
+    <div class="hero-main panel">
     <div class="stage" data-stage>
       <div class="stage-sky" aria-hidden="true"></div>
       <canvas class="stage-canvas" data-canvas aria-label="{T("3D model of the")} {e(es[0])}: {
@@ -929,6 +914,7 @@ def species_page(
       <noscript><p class="stage-note">{T("The 3D model needs JavaScript.")}</p></noscript>
       <div class="stage-loading" data-loading>{T("Growing the tree…")}</div>
       <div class="stage-tools">
+        {info_btn}
         <button type="button" class="daynight" data-daynight aria-pressed="false" title="{
         T("Day or night")
     }"><svg viewBox="0 0 24 24" aria-hidden="true"><circle class="i-sun" cx="12" cy="12" r="4"/><path class="i-sun" d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/><path class="i-moon" d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg><span data-daynight-label>{
@@ -938,6 +924,7 @@ def species_page(
         T("Back to the whole tree")
     }"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
       </div>
+      {stage_overlay}
     </div>
     {sim}
     </div>
