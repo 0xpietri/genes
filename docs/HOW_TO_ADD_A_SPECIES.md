@@ -172,8 +172,9 @@ that are missing.
 - `--angle`: `side`, `below`, `above` or `detail`.
 - `--box` only for whole-tree side photos: where the tree is, as fractions of the photo's
   width and height, `left,top,right,bottom`. Top is the top of the crown, bottom the foot
-  of the trunk. Open the photo in a viewer that shows pixel coordinates and divide by the
-  photo's size. Be tight: the box decides the score.
+  of the trunk. `uv run genes refs grid <id> <number>` writes the photo with a 0–1 grid
+  over it to `.work/<id>/box-<number>.jpg`; read the box off it, then check it with
+  `--box l,t,r,b` on the same command (drawn in yellow). Be tight: the box decides the score.
 
 Photos go to `references/r01.jpg`, ... (at most 1280 px), with the author, licence and
 link in `references/refs.json`. Never add a photo with another licence; link it in the
@@ -344,6 +345,8 @@ Crookedness is the one thing that differs between variants, so it gets its own r
 | Crooked all the way, hardly a straight part | `trunk.crooked_to_tip` (0 = calm towards the crown, 1 = crooked to every tip; algarrobo 1) |
 | Small zig-zag | `trunk.twist` |
 | Crooked branches | `branching[].tortuosity`, `branching[].bend_style`, `branching[].wander` |
+| Runs of wood that break and change course, the turns adding up (sympodial: algarrobo, tala, quebracho) | `trunk.kinks` (0 off, 0.5 about two breaks per branch), `trunk.kink_angle_deg`, `trunk.light_bias`, `branching[].kinks` |
+| Knotty swellings where the wood turns or forks | `trunk.knots` |
 
 Crookedness grows with age by itself: a sapling is nearly straight.
 
@@ -384,7 +387,8 @@ The leaves are painted clumps (crossed cards) along the finest twigs.
 | What you see | Parameters |
 | --- | --- |
 | Flowers | `flowers.form`, `flowers.length_cm`, `flowers.where`, `flowers.cover` (sizes from the sheet) |
-| Fruit | `fruit.form` (`pod_straight`, `pod_curved`, `pod_coiled`, `berry`, `capsule`, ...), `fruit.length_cm`, `fruit.width_cm`, `fruit.hanging`, `fruit.cover` |
+| Fruit | `fruit.form` (`pod_straight`, `pod_curved`, `pod_coiled`, `pod_beaded`, `berry`, `capsule`, ...), `fruit.length_cm`, `fruit.width_cm`, `fruit.hanging`, `fruit.cover`; beaded pods: `fruit.beads`, `fruit.constriction` |
+| Fruit of two colours (spotted, streaked, darker tip, a blushing cheek) | `fruit.accent` (`spots`, `streaks`, `tip`, `blush`) with `palette.fruit.accent` |
 | Flowers or fruit vanish at real size but are a recognisable trait | `show_scale` 1.2 to 1.8 |
 | Thorns | `thorns.kind`, `thorns.length_cm`, `thorns.where` |
 
@@ -417,7 +421,9 @@ prints one JSON line per model: triangles, bytes, height and notes. Read the not
 
 - "branches thinner than X cm drawn as N fine twigs out to the leaves": normal.
 - "N clumps moved onto their wood": a few are fine; hundreds mean the crown is denser
-  than its wood (raise `crown.clump_spacing` or add twigs).
+  than its wood (raise `crown.clump_spacing` or add twigs), or the twigs that carry the
+  leaves ran out of triangles (`foliage.carry_share` 0.4–0.5 helps a little; see the
+  note on budgets in `docs/reports/PLANT_GENERATOR_ROUND2.md`).
 - "N clumps over budget, kept M": the foliage hit its triangle budget; the crown is still
   full, just with bigger clumps.
 
@@ -437,8 +443,11 @@ Airy crowns score lower because sky shows through the model too: the algarrobo s
 Open `sheet.png` and look at it:
 
 - top rows: each photo with the best model laid over it in red, inside the yellow box;
-- then the adult variants in summer, winter and in flower, painted, and lod1;
+- then the adult variants in summer, in the barest month of the leaf calendar, and in
+  flower, painted, and lod1;
 - close-ups near the crown's edge (flowers, fruit);
+- the adult and the old tree from above (shade, even on every side) and from below
+  (the crooked limbs inside the crown);
 - bottom rows: every stage of variant a at one scale beside a 1.75 m person.
 
 Read the red overlay like a tailor: red outside the tree means the model is too big there;
