@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from genes import catalog, jsonio, serve, site_i18n, validate
+from genes import catalog, jsonio, serve, site_i18n, site_static, validate
 from genes import site as genes_site
 from genes.paths import REPO_ROOT, SPECIES_DIR
 from tests.test_viewer import _browser
@@ -167,11 +167,11 @@ def test_stage_strip_follows_the_life_and_its_pictures_exist(dist: Path) -> None
 
 def test_painted_icons_exist_with_their_sizes(dist: Path) -> None:
     html = (dist / "species" / "neltuma-alba" / "index.html").read_text(encoding="utf-8")
-    used = set(re.findall(r'src="/static/site/art/([a-z-]+)\.webp"', html))
+    used = set(re.findall(r'src="/static/site/[0-9a-f]{10}/art/([a-z-]+)\.webp"', html))
     assert {"i-pod", "i-bee", "i-goat", "i-frost", "i-rain"} <= used
     sizes = jsonio.load(SITE_STATIC / "art" / "sizes.json")["sizes"]
     for name in used:
-        assert name in sizes and (dist / "static" / "site" / "art" / f"{name}.webp").exists()
+        assert name in sizes and (dist / site_static.url(f"art/{name}.webp").lstrip("/")).exists()
 
 
 def test_the_map_draws_no_provinces() -> None:
@@ -338,13 +338,17 @@ def test_stages_follow_the_recorded_life(served: str) -> None:
     try:
         page = browser.new_page()
         page.goto(f"{served}/")
-        stages = page.evaluate("""async () => {
-            const m = await import('/static/site/js/life.js');
+        stages = page.evaluate(
+            """async () => {
+            const m = await import('"""
+            + site_static.url("js/life.js")
+            + """');
             const life = await (await fetch('/v1/species/neltuma-alba/lifecycle/1.json')).json();
             const at = (years) => life.samples.age_days.findIndex((d) => d >= years * 365.25);
             return [0, 7, 15, 60, 200, 232].map((y) => m.stageAt(life, at(y)))
               .concat([m.stageAt(life, life.samples.date.length - 1)]);
-        }""")
+        }"""
+        )
         assert stages == ["seedling", "sapling", "young", "adult", "old", "dead_standing", "fallen"]
     finally:
         browser.close()
@@ -376,3 +380,15 @@ def test_a_species_without_a_recorded_life_still_shows_its_tree(example_site: st
     finally:
         browser.close()
         pw.stop()
+
+
+def test_static_files_live_in_a_folder_named_by_their_content(dist: Path) -> None:
+    html = (dist / "es" / "species" / "neltuma-alba" / "index.html").read_text(encoding="utf-8")
+    v = site_static.version()
+    assert re.fullmatch(r"[0-9a-f]{10}", v)
+    for ref in (f"/static/site/{v}/site.css", f"/static/site/{v}/js/species.js"):
+        assert ref in html and (dist / ref.lstrip("/")).exists(), ref
+    # Nothing links the unversioned folder, which would let an old file be cached.
+    assert not re.search(r'"/static/site/(?![0-9a-f]{10}/)', html)
+    for js in (SITE_STATIC / "js").glob("*.js"):
+        assert "/static/site/" not in js.read_text(encoding="utf-8"), js.name

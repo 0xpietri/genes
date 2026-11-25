@@ -4,7 +4,8 @@
     dist/species/<id>/index.html          a species page, every fact already in the HTML
     dist/species/<id>/index.md            the same page as Markdown, for language models
     dist/sitemap.xml  robots.txt  llms.txt  llms-full.txt
-    dist/static/site/...                  the pages' CSS and JS (3D, simulator, map, leaf)
+    dist/static/site/<version>/...        the pages' CSS and JS (3D, simulator, map, leaf),
+                                          in a folder named by their content (site_static)
 
 Everything a reader or a search engine needs is in the HTML; JavaScript only adds the 3D
 tree, the simulator, the animated leaf and the map's pan and zoom. Nothing is computed per
@@ -24,6 +25,7 @@ from typing import Any
 
 from genes import jsonio
 from genes import site_art as art
+from genes import site_static as static
 from genes.paths import REPO_ROOT
 from genes.site_i18n import (
     LANG_NAME,
@@ -172,10 +174,10 @@ def head(
         parts.append(f'<meta property="og:image" content="{e(BASE_URL + image)}">')
     for font in ("fredoka", "nunito"):
         parts.append(
-            f'<link rel="preload" href="/static/site/fonts/{font}.woff2" as="font" '
+            f'<link rel="preload" href="{static.url(f"fonts/{font}.woff2")}" as="font" '
             'type="font/woff2" crossorigin>'
         )
-    parts.append('<link rel="stylesheet" href="/static/site/site.css">')
+    parts.append(f'<link rel="stylesheet" href="{static.url("site.css")}">')
     for href in preload or []:
         parts.append(f'<link rel="modulepreload" href="{e(href)}">')
     for src in scripts or []:
@@ -271,7 +273,7 @@ def map_art() -> dict[str, Any]:
     """marcos's painted map pieces (little trees, mountains): base URL and sizes."""
     p = SITE_DIR / "static" / "art" / "map" / "sizes.json"
     sizes = jsonio.load(p)["sizes"] if p.exists() else {}
-    return {"url": "/static/site/art/map", "sizes": sizes}
+    return {"url": static.url("art/map"), "sizes": sizes}
 
 
 def occurrences_of(sp: Species) -> dict[str, Any] | None:
@@ -895,7 +897,7 @@ def species_page(
             image=image,
             ld=species_ld(sheet, path, image),
             preload=["/static/vendor/three/three.module.js", "/static/vendor/three/three.core.js"],
-            scripts=["/static/site/js/species.js"],
+            scripts=[static.url("js/species.js")],
         )
     }
 <body class="page-species" {attrs}>
@@ -1004,7 +1006,7 @@ def species_page(
   <div class="grid">
     <section class="panel" id="map">
       {head_of("map", "Where it lives", e(T(sheet.get("range_note", ""))))}
-      <figure class="map" data-map data-basemap="/static/site/geo/basemap.json" data-points="{
+      <figure class="map" data-map data-basemap="{static.url("geo/basemap.json")}" data-points="{
         json_attr(points)
     }" data-art="{json_attr(map_art())}">
         <div class="map-tools"><button type="button" data-zoom="1" aria-label="{
@@ -1292,7 +1294,7 @@ def index_page(species: list[Species], entries: list[dict[str, Any]], catalog_no
         "In the world of pietri.dev they come alive: a simulator grows them day by day with the "
         "real weather, and they age and die according to their genetics and the climate."
     )
-    return f"""{head(T("genes · species of the pietri.dev world"), desc, "/", ld=ld, scripts=["/static/site/js/catalog.js"])}
+    return f"""{head(T("genes · species of the pietri.dev world"), desc, "/", ld=ld, scripts=[static.url("js/catalog.js")])}
 <body class="page-index">
 {header("plants", "/")}
 <main>
@@ -1366,7 +1368,7 @@ def build(
     species: list[Species], entries: list[dict[str, Any]], catalog_no: int, out: Path
 ) -> None:
     """Every public page, once per language: English at the root, Spanish under /es/."""
-    shutil.copytree(SITE_DIR / "static", out / "static" / "site", dirs_exist_ok=True)
+    shutil.copytree(SITE_DIR / "static", out / static.url().lstrip("/"), dirs_exist_ok=True)
     basemap = jsonio.load(SITE_DIR / "static" / "geo" / "basemap.json")
     by_id = {x["id"]: x for x in entries}
     paths = ["/"]

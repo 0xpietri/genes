@@ -32,7 +32,7 @@ def test_serves_the_site_with_the_csp(server: str) -> None:
     status, headers, body = _get(f"{server}/review/species/example-tree/")
     assert status == 200 and b'src="/static/viewer.js"' in body
     status, headers, body = _get(f"{server}/species/example-tree/")
-    assert status == 200 and b'src="/static/site/js/species.js"' in body
+    assert status == 200 and b'src="/static/site/' in body and b'/js/species.js"' in body
     assert "script-src 'self'" in headers["Content-Security-Policy"]
     status, headers, _ = _get(f"{server}/v1/species/example-tree/looks/1/adult-a.lod0.glb")
     assert headers["Content-Type"] == "model/gltf-binary"

@@ -99,7 +99,7 @@ export class Stage {
       new THREE.MeshLambertMaterial({ map: groundTexture(), alphaMap: groundFade(), transparent: true, depthWrite: false, color: '#a3a56f' }),
     );
     this.groundPainted = false;
-    new THREE.TextureLoader().load('/static/site/art/scene/ground.webp', (tex) => {
+    new THREE.TextureLoader().load(new URL('../art/scene/ground.webp', import.meta.url).href, (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.wrapS = tex.wrapT = THREE.MirroredRepeatWrapping;
       tex.repeat.set(120 / GROUND_TILE_M, 120 / GROUND_TILE_M);
