@@ -126,7 +126,9 @@ class Form:
 
 
 # The only individual traits that change between variants: the shape of the crookedness.
-VARIES = frozenset({"trunk.tortuosity", "trunk.twist", "trunk.gnarl", "trunk.fluting"})
+VARIES = frozenset(
+    {"trunk.tortuosity", "trunk.twist", "trunk.gnarl", "trunk.fluting", "trunk.kinks"}
+)
 
 
 def draw(rng: random.Random, value: Any) -> float:

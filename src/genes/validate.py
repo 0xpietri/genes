@@ -282,6 +282,12 @@ def _look_problems(sp: Species, v: Version, budgets: dict[str, Any]) -> list[Pro
                 Problem(path, f"palette.foliage has no {tone!r} tone the sheet's leaf_tones use")
             )
 
+    accent = ((look.get("form") or {}).get("fruit") or {}).get("accent", "none")
+    if accent != "none" and not ((look.get("palette") or {}).get("fruit") or {}).get("accent"):
+        out.append(
+            Problem(path, f"form.fruit.accent is {accent!r} but palette.fruit has no accent")
+        )
+
     if sp.refs is not None and isinstance(sp.refs.data, dict):
         photo_ids = {p.get("id") for p in sp.refs.data.get("photos", [])}
         for rid in look.get("references", []):

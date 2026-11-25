@@ -23,7 +23,7 @@ agent can iterate without looking at the picture.
 from __future__ import annotations
 
 import threading
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BytesIO
@@ -390,7 +390,8 @@ def barest_month(sheet: dict[str, Any] | None) -> int:
     phen = (sheet or {}).get("plant", {}).get("phenology", {})
     tones = phen.get("leaf_tones") or []
     on = {m: {t["tone"] for t in tones if m in t.get("months", [])} for m in range(1, 13)}
-    for bare in (lambda m: not on[m], lambda m: on[m] == {"dry"}):
+    tests: list[Callable[[int], bool]] = [lambda m: not on[m], lambda m: on[m] == {"dry"}]
+    for bare in tests:
         runs: list[list[int]] = []
         for k in range(24):  # twice round the year, so a run over New Year stays whole
             m = k % 12 + 1

@@ -88,7 +88,7 @@ def test_the_barest_month_comes_from_the_leaf_calendar() -> None:
     # Never bare: the month with only dry leaves.
     assert (
         contact.barest_month(
-            sheet([("mature", list(range(1, 8)) + [10, 11, 12]), ("new", [9]), ("dry", [8, 9])])
+            sheet([("mature", [1, 2, 3, 4, 5, 6, 7, 10, 11, 12]), ("new", [9]), ("dry", [8, 9])])
         )
         == 8
     )

@@ -144,6 +144,123 @@ def test_tortuosity_bends_the_leaders(look: dict[str, Any]) -> None:
     assert mean_crook(0.9) > mean_crook(0.0) + 0.03
 
 
+def _turns(branch: Any) -> list[float]:
+    """The angle, in degrees, between each run of a branch and the next."""
+    out = []
+    pts = branch.points
+    for a, b, c in zip(pts, pts[1:], pts[2:], strict=False):
+        u = [b[i] - a[i] for i in range(3)]
+        v = [c[i] - b[i] for i in range(3)]
+        nu, nv = math.sqrt(sum(x * x for x in u)), math.sqrt(sum(x * x for x in v))
+        if nu > 1e-6 and nv > 1e-6:
+            cos = sum(u[i] * v[i] for i in range(3)) / (nu * nv)
+            out.append(math.degrees(math.acos(max(-1.0, min(1.0, cos)))))
+    return out
+
+
+def _sympodial(look: dict[str, Any], kinks: float, knots: float = 0.0) -> dict[str, Any]:
+    changed = copy.deepcopy(look)
+    changed["form"]["trunk"].update(kinks=kinks, knots=knots)
+    return changed
+
+
+def test_sympodial_breaks_turn_the_course_and_the_turns_add_up(look: dict[str, Any]) -> None:
+    plain = _skeleton(look, "adult")
+    kinked = _skeleton(_sympodial(look, 0.8), "adult")
+    limbs = [b for b in kinked.branches if b.level in (0, 1) and not b.removed]
+    # Real breaks of 40 degrees and more, which the slow bends never make.
+    assert max(t for b in plain.branches if b.level in (0, 1) for t in _turns(b)) < 40
+    assert sum(1 for b in limbs for t in _turns(b) if t >= 35) > len(limbs)
+    long = [b for b in limbs if len(b.points) > 4]
+    assert sum(1 for b in long if b.keep) > 0.6 * len(long)
+    # The course does not swing back to one straight line: the limbs stray further.
+    assert sum(_crookedness(b) for b in limbs) / len(limbs) > 1.3 * sum(
+        _crookedness(b) for b in plain.branches if b.level in (0, 1)
+    ) / sum(1 for b in plain.branches if b.level in (0, 1))
+
+    # Bent back towards the light: the breaks never send a limb diving more steeply than
+    # its own droop does.
+    def steepest(branches: list[Any]) -> float:
+        return min(
+            (q[1] - p[1]) / math.dist(p, q)
+            for b in branches
+            for p, q in zip(b.points, b.points[1:], strict=False)
+            if math.dist(p, q) > 0
+        )
+
+    plain_limbs = [b for b in plain.branches if b.level in (0, 1) and not b.removed]
+    assert steepest(limbs) > min(steepest(plain_limbs) - 0.15, -0.3)
+
+
+def test_knots_swell_the_wood_where_it_turns(look: dict[str, Any]) -> None:
+    def bumps(knots: float) -> int:
+        tree = _skeleton(_sympodial(look, 0.8, knots), "adult")
+        return sum(
+            1
+            for b in tree.branches
+            for r0, r1 in zip(b.radii, b.radii[1:], strict=False)
+            if r1 > r0 * 1.02
+        )
+
+    assert bumps(0.0) == 0
+    assert bumps(1.0) > 20
+
+
+def test_sympodial_models_keep_the_contract(look: dict[str, Any]) -> None:
+    changed = _sympodial(look, 0.7, 0.6)
+    for stage in ("young", "adult", "old"):
+        for lod in ("lod0", "lod1"):
+            model = build(changed, stage, "a", lod, BUDGETS)
+            assert model.triangles <= BUDGETS["triangles"][lod][stage]
+            lo, hi = bounds(model.parts)
+            assert lo[1] >= -BASE_TOLERANCE_M
+            ref = float(look["stages"][stage]["ref_height_m"])
+            assert abs((hi[1] - lo[1]) - ref) <= HEIGHT_TOLERANCE * ref
+
+
+def test_a_coarse_drawing_keeps_the_breaks() -> None:
+    from plant.model import _simple
+    from plant.skeleton import Branch
+
+    pts = [(0.0, float(i), 0.0) for i in range(10)]
+    b = Branch(2, pts, [0.01] * 10, keep=(3, 7))
+    kept = _simple(b, 3).points
+    assert (0.0, 3.0, 0.0) in kept and (0.0, 7.0, 0.0) in kept
+    assert _simple(Branch(2, pts, [0.01] * 10), 3).points == [pts[0], pts[3], pts[6], pts[9]]
+
+
+def test_beaded_pods_pinch_between_their_seeds() -> None:
+    from plant.geometry import Part, ribbon
+
+    def widths(beads: tuple[int, float] | None) -> list[float]:
+        part = Part("fruit", order=[])
+        ribbon(part, (0, 0, 0), (0, -1, 0), (0, 0, 1), 0.2, 0.02, 0.0, 0.5, 12, beads)
+        pos = part.positions
+        return [math.dist(pos[i], pos[i + 1]) for i in range(0, len(pos), 2)]
+
+    plain, beaded = widths(None), widths((6, 0.5))
+    assert len(beaded) == 13
+    # Narrow at every pinch (even rows), as wide as the plain pod at every bead (odd rows).
+    for i in range(2, 11, 2):
+        assert beaded[i] < 0.6 * plain[i]
+    for i in range(1, 12, 2):
+        assert beaded[i] == pytest.approx(plain[i])
+
+
+def test_beaded_pods_and_accents_build(look: dict[str, Any]) -> None:
+    changed = copy.deepcopy(look)
+    changed["form"]["fruit"].update(form="pod_beaded", accent="streaks", beads=[5, 7])
+    model = build(changed, "adult", "a", "lod0", BUDGETS)
+    plain = build(look, "adult", "a", "lod0", BUDGETS)
+    assert model.triangles <= BUDGETS["triangles"]["lod0"]["adult"]
+    assert "fruit" in model.parts
+    # More rings per pod, so fewer pods fit the fruit's share.
+    per_pod = model.parts["fruit"].triangle_count / max(1, len(model.parts["fruit"].positions))
+    assert (
+        per_pod <= plain.parts["fruit"].triangle_count / len(plain.parts["fruit"].positions) + 0.5
+    )
+
+
 def test_old_limbs_rest_on_the_ground(look: dict[str, Any]) -> None:
     def resting(sag: float) -> int:
         changed = copy.deepcopy(look)

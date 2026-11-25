@@ -13,10 +13,11 @@ from dataclasses import dataclass, field
 
 from plant import vec
 from plant.envelope import Envelope
-from plant.form import Form, draw, draw_int
+from plant.form import Form, as_range, draw, draw_int
 from plant.vec import UP, Vec
 
 BOLE = -1
+MAX_BREAKS = 4  # sympodial breaks along one branch at kinks = 1
 LEADER = 0
 OLD_STAGES = ("old", "dead_standing", "fallen")
 SECTORS = 8
@@ -33,6 +34,7 @@ class Branch:
     removed: bool = False
     broken: bool = False  # ends in a break, not a tip
     free: bool = False  # grows outside the crown on purpose (sagging limbs, gap fillers)
+    keep: tuple[int, ...] = ()  # points a coarser drawing keeps (sympodial breaks)
 
     @property
     def length(self) -> float:
@@ -130,6 +132,13 @@ class Growth:
     elbows: bool = False  # angular kinks instead of smooth S-curves
     rest: bool = False  # sags to the ground, lies along it and rises again
     full: float = 1.0  # >1 keeps the branch thick for longer before it thins
+    # Sympodial growth (all off by default, so existing looks draw as before):
+    kinks: float = 0.0  # 0-1: share of MAX_BREAKS where the course itself turns
+    kink_angle: tuple[float, float] = (40.0, 90.0)  # degrees turned at a break
+    light: float = 0.35  # share of the turn taken back towards up and out
+    knots: float = 0.0  # swelling of the wood at breaks
+    centre: tuple[float, float] | None = None  # the crown's axis (x, z), for "out"
+    marks: list[int] = field(default_factory=list)  # out: where `grow` broke the course
 
 
 def _bends(g: Growth, rng: random.Random) -> tuple[float, ...] | None:
@@ -181,6 +190,18 @@ def grow(
     n = max(2, segments)
     dl = length / n
     d = vec.norm(direction)
+    runs = [1.0] * n
+    breaks: set[int] = set()
+    if g.kinks > 0:
+        # Runs of uneven length, and the steps where the course breaks.
+        runs = [rng.uniform(0.55, 1.45) for _ in range(n)]
+        total = sum(runs)
+        runs = [r * n / total for r in runs]
+        count = sum(1 for _ in range(MAX_BREAKS) if rng.random() < g.kinks)
+        breaks = set(rng.sample(range(1, n), min(count, n - 1)))
+    heading = d
+    knots = g.marks
+    knots.clear()
     pts: list[Vec] = [start]
     p = start
     entered = env is None or env.inside(start)
@@ -189,6 +210,9 @@ def grow(
     ground_left = -1  # steps still to lie on the ground; -1 = not reached it yet
     floor = r0 * 0.95  # the limb lies on the ground, not in it
     for i in range(n):
+        if i in breaks:
+            d = _break(d, heading, p, g, rng)
+            knots.append(len(pts) - 1)
         if g.wander > 0:
             axis = vec.rotate(vec.perpendicular(d), d, rng.uniform(0, 2 * math.pi))
             d = vec.norm(vec.rotate(d, axis, rng.gauss(0, g.wander * 0.3)))
@@ -210,7 +234,7 @@ def grow(
             ref = vec.norm(ref) if vec.length(ref) > 1e-3 else vec.perpendicular(d)
             axis = vec.rotate(ref, d, shape[3] + 2 * math.pi * shape[4] * s)
             step = vec.norm(vec.rotate(d, axis, _bend_angle(g, shape, s)))
-        nxt = vec.add(p, vec.mul(step, dl))
+        nxt = vec.add(p, vec.mul(step, dl * runs[i]))
         if g.rest and (nxt[1] < floor or ground_left > 0):
             # On the ground: run along it a while, then turn up again.
             flat = vec.horizontal(d)
@@ -244,7 +268,36 @@ def grow(
     if count == 1:
         return pts, [r0]
     radii = [r0 + (r1 - r0) * (i / (count - 1)) ** g.full for i in range(count)]
+    if g.knots > 0:
+        swell(radii, knots, g.knots)
     return pts, radii
+
+
+def swell(radii: list[float], at: list[int], knots: float) -> None:
+    """A knot: the wood bulges where it turned or forked, most at the point itself."""
+    for k in at:
+        for j, share in ((k - 1, 0.35), (k, 1.0), (k + 1, 0.35)):
+            if 0 < j < len(radii):
+                radii[j] *= 1 + 0.3 * knots * share
+
+
+def _break(d: Vec, heading: Vec, p: Vec, g: Growth, rng: random.Random) -> Vec:
+    """A sympodial break: the course turns by kink_angle in any direction around it, then
+    leans back towards the light (up and away from the crown's axis, and the way the
+    branch set out), so the turns add up without folding the branch back over its stem,
+    closing the crown or diving into the ground."""
+    axis = vec.rotate(vec.perpendicular(d), d, rng.uniform(0, 2 * math.pi))
+    angle = math.radians(rng.uniform(*g.kink_angle))
+    d = vec.norm(vec.rotate(d, axis, angle))
+    out = vec.horizontal(vec.sub(p, (g.centre[0], 0.0, g.centre[1]))) if g.centre else (0, 0, 0)
+    if vec.length(out) < 1e-3:
+        out = vec.horizontal(d)
+    light = vec.add(vec.mul(vec.norm(out), 0.8), UP) if vec.length(out) > 1e-3 else UP
+    light = vec.norm(vec.add(vec.norm(light), heading))
+    d = vec.rotate_towards(d, light, g.light * angle)
+    if d[1] < -0.3 and not g.rest:
+        d = vec.rotate_towards(d, UP, math.asin(min(1.0, -d[1])) - math.asin(0.3))
+    return vec.norm(d)
 
 
 def _sector(tree: Tree, p: Vec) -> int:
@@ -295,14 +348,43 @@ def _bend_style(form: Form) -> tuple[tuple[float, float], bool]:
 
 
 def _segments(
-    level: int, length: float, height: float, bend: float = 0.0, waves: float = 1.0
+    level: int,
+    length: float,
+    height: float,
+    bend: float = 0.0,
+    waves: float = 1.0,
+    kinks: float = 0.0,
 ) -> int:
     most = {BOLE: 8, LEADER: 10, 1: 7, 2: 5, 3: 3}[level]
     if bend > 0 and level <= 2:
         # Bends need more rings to stay round, and more bends need more still.
         most += round(3 * min(bend, 1.0) * min(max(1.0, waves), 2.0))
     step = height * (0.035 - 0.015 * min(bend, 1.0))
-    return max(2, min(most, round(length / max(step, 0.05))))
+    n = max(2, min(most, round(length / max(step, 0.05))))
+    if kinks > 0:
+        # Sympodial wood is runs between breaks: even a twig gets a few, so it is never
+        # a straight stick.
+        n = max(n + round(3 * kinks), 2 + round(3 * kinks))
+    return n
+
+
+def _kinked(g: Growth, form: Form, kinks: float, knots: bool = True) -> Growth:
+    """`g` with the look's sympodial breaks (no change when kinks is 0)."""
+    if kinks > 0:
+        g.kinks = kinks
+        g.kink_angle = form.range("trunk.kink_angle_deg")
+        g.light = float(form.get("trunk.light_bias"))
+        g.knots = float(form.get("trunk.knots")) if knots else 0.0
+    return g
+
+
+def _level_kinks(
+    form: Form, lv: dict[str, object] | None, level: int, age: float, rng: random.Random
+) -> float:
+    """Sympodial breaks of one level: its own, or the trunk's at 80 % (limbs) / 60 %."""
+    if lv is not None and "kinks" in lv:
+        return draw(rng, lv["kinks"]) * age
+    return form.ind("trunk.kinks") * (0.8 if level == 1 else 0.6) * age
 
 
 def make_envelope(form: Form, height: float, centre: tuple[float, float]) -> Envelope:
@@ -353,8 +435,18 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
     centre = (math.cos(lean_az) * drift, math.sin(lean_az) * drift)
     env = make_envelope(form, height, centre)
 
-    bole_growth = Growth(
-        curve=0.12, droop=0.0, wander=twist * 0.5, bend=bend, bend_waves=style[0], elbows=style[1]
+    kinks = form.ind("trunk.kinks") * min(1.0, height / adult_height) ** 0.8
+    bole_growth = _kinked(
+        Growth(
+            curve=0.12,
+            droop=0.0,
+            wander=twist * 0.5,
+            bend=bend,
+            bend_waves=style[0],
+            elbows=style[1],
+        ),
+        form,
+        kinks * 0.5,  # the bole breaks less: it carries the whole crown
     )
     if fork_h > 0.02 * height:
         length = fork_h / max(math.cos(lean), 0.3)
@@ -367,9 +459,9 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
             bole_growth,
             rng,
             None,
-            _segments(BOLE, length, height, bend, sum(style[0]) / 2),
+            _segments(BOLE, length, height, bend, sum(style[0]) / 2, bole_growth.kinks),
         )
-        branches.append(Branch(BOLE, pts, radii))
+        branches.append(Branch(BOLE, pts, radii, keep=tuple(bole_growth.marks)))
         fork, fork_r = pts[-1], radii[-1]
         top_dir = vec.norm(vec.sub(pts[-1], pts[-2]))
     else:
@@ -385,7 +477,9 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
         full=1.6,
         bend_waves=style[0],
         elbows=style[1],
+        centre=centre,
     )
+    _kinked(leader_growth, form, kinks)
     reach = form.ind("trunk.leader_reach")
     az0 = 2 * math.pi * form.unit("leader_azimuth")
     leader_r = fork_r * count ** (-1 / 2.8)  # stems as thick as fused trunks
@@ -418,7 +512,7 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
             leader_growth,
             rng,
             env if count > 1 else None,
-            _segments(LEADER, length, height, bend, sum(style[0]) / 2),
+            _segments(LEADER, length, height, bend, sum(style[0]) / 2, leader_growth.kinks),
         )
         if len(pts) < 2:
             pts.append(vec.add(fork, vec.mul(d, height * 0.05)))
@@ -426,7 +520,9 @@ def grow_tree(form: Form, height: float, adult_height: float, rng: random.Random
         if bole is None and fork_h <= 0.02 * height and count == 1:
             # One axis from the ground: it is the bole and the leader at once.
             pts[0] = (0.0, 0.0, 0.0)
-        branches.append(Branch(LEADER, pts, radii, parent=bole, at=1.0))
+        branches.append(
+            Branch(LEADER, pts, radii, parent=bole, at=1.0, keep=tuple(leader_growth.marks))
+        )
         if bole is not None:
             branches[bole].children.append(len(branches) - 1)
 
@@ -509,7 +605,9 @@ def _grow_level(
                 full=1.4 if level == 1 else 1.0,
                 bend_waves=style[0],
                 elbows=lv.get("bend_style", "elbows" if style[1] else "smooth") == "elbows",
+                centre=env.centre,
             )
+            _kinked(g, form, _level_kinks(form, lv, level, age, rng))
             if rest:
                 g.droop, g.curve = 0.25 + 0.85 * sag, 0.0
                 g.rest = sag >= 0.8
@@ -524,7 +622,7 @@ def _grow_level(
                 g,
                 rng,
                 None if rest else env,
-                _segments(level, length, tree.height, g.bend, sum(style[0]) / 2)
+                _segments(level, length, tree.height, g.bend, sum(style[0]) / 2, g.kinks)
                 + (5 if rest else 0),
                 rim if (rest or parent.free) else None,
             )
@@ -536,8 +634,17 @@ def _grow_level(
                 spread = math.hypot(pts[-1][0] - pts[0][0], pts[-1][2] - pts[0][2])
                 sectors = tree.rest_sectors if rest else tree.sectors
                 sectors[_sector(tree, pts[-1])] += max(spread, 0.2 * length)
-            tree.branches.append(Branch(level, pts, radii, parent=pi, at=t, free=free))
+            tree.branches.append(
+                Branch(level, pts, radii, parent=pi, at=t, free=free, keep=tuple(g.marks))
+            )
             idx = len(tree.branches) - 1
+            if g.knots > 0:
+                # The parent swells where the branch leaves it, more for a stout branch.
+                k = min(
+                    range(len(parent.points)),
+                    key=lambda j: vec.length(vec.sub(parent.points[j], p)),
+                )
+                swell(parent.radii, [k], g.knots * min(1.0, 1.5 * r0 / max(pr, 1e-6)))
             parent.children.append(idx)
             made.append(idx)
     return made
@@ -565,9 +672,13 @@ def _twig_growth(form: Form, level: int, age: float) -> Growth:
         bend = form.ind("trunk.tortuosity") * 0.6 * age
     style = lv.get("bend_style") if lv is not None else None
     elbows = (style or form.get("trunk.bend_style")) == "elbows"
-    return Growth(
-        curve=0.15, droop=0.0, wander=0.25, bend=bend, bend_waves=(1.0, 2.0), elbows=elbows
-    )
+    g = Growth(curve=0.15, droop=0.0, wander=0.25, bend=bend, bend_waves=(1.0, 2.0), elbows=elbows)
+    if lv is not None and "kinks" in lv:
+        lo_k, hi_k = as_range(lv["kinks"])
+        kinks = (lo_k + hi_k) / 2 * age
+    else:
+        kinks = form.ind("trunk.kinks") * 0.6 * age
+    return _kinked(g, form, kinks, knots=False)
 
 
 def fill_crown(
@@ -646,11 +757,13 @@ def fill_crown(
             g,
             rng,
             None,
-            _segments(max(level, 2), dist, tree.height, g.bend),
+            _segments(max(level, 2), dist, tree.height, g.bend, kinks=g.kinks),
         )
         if len(pts) < 2:
             continue
-        riser = Branch(level, pts, radii, parent=pi, at=parent.fraction(k), free=True)
+        riser = Branch(
+            level, pts, radii, parent=pi, at=parent.fraction(k), free=True, keep=tuple(g.marks)
+        )
         tree.branches.append(riser)
         idx = len(tree.branches) - 1
         parent.children.append(idx)
@@ -670,11 +783,21 @@ def fill_crown(
                 out = vec.norm(vec.add(vec.norm(flat), vec.mul(UP, 0.25)))
             length = min(max(dist * rng.uniform(0.3, 0.5), size * 0.6), size * 1.3)
             tp, tr = grow(
-                p, out, length, max(pr * 0.7, tree.twig_radius), tree.twig_radius, tg, rng, None, 3
+                p,
+                out,
+                length,
+                max(pr * 0.7, tree.twig_radius),
+                tree.twig_radius,
+                tg,
+                rng,
+                None,
+                3 + round(3 * tg.kinks),
             )
             if len(tp) < 2:
                 continue
-            tree.branches.append(Branch(deepest, tp, tr, parent=idx, at=t, free=True))
+            tree.branches.append(
+                Branch(deepest, tp, tr, parent=idx, at=t, free=True, keep=tuple(tg.marks))
+            )
             riser.children.append(len(tree.branches) - 1)
             made.append(len(tree.branches) - 1)
             have.append(tp[-1])
