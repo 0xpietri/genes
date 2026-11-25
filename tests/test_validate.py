@@ -287,3 +287,14 @@ def test_leaf_tones_need_their_colour_in_the_palette(examples: Path) -> None:
     _edit(_sheet(examples), tones)
     _edit(_look(examples), lambda look: look["palette"]["foliage"].pop("autumn", None))
     assert _has(_messages(examples), "palette.foliage has no 'autumn' tone")
+
+
+def test_a_fruit_accent_needs_its_colour_in_the_palette(examples: Path) -> None:
+    def accent(look: Any) -> None:
+        look["form"].setdefault("fruit", {})["accent"] = "streaks"
+        look["palette"].setdefault("fruit", {"lit": "#d6b874", "shade": "#6b4a5e"}).pop(
+            "accent", None
+        )
+
+    _edit(_look(examples), accent)
+    assert _has(_messages(examples), "palette.fruit has no accent")

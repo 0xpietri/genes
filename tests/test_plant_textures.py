@@ -99,3 +99,21 @@ def test_blender_exports_the_contract(tmp_path: Path, look: dict[str, Any], atla
         if prim.mesh != "bark":
             assert "_ORDER" in prim.attributes, prim.mesh
     assert not info.has_cameras and not info.has_lights
+
+
+def test_fruit_accents_paint_the_accent_over_the_lit_colour() -> None:
+    lit, accent = "#d6b874", "#5e3852"
+    assert textures.fruit("none", lit, accent, 1) is None
+    for pattern in ("spots", "streaks", "tip", "blush"):
+        tex = textures.fruit(pattern, lit, accent, 1)
+        assert tex is not None and tex.shape == (128, 64, 4)
+        assert (tex[..., 3] == 1).all()
+        rgb = tex[..., :3]
+        assert rgb.max() == pytest.approx(1.0)  # the lit colour shows as itself
+        darkest = rgb.reshape(-1, 3)[rgb.sum(axis=2).argmin()]
+        # lit x darkest (in linear light) is the accent colour.
+        want = textures._linear(accent) / textures._linear(lit)
+        assert textures._linear_of(darkest) == pytest.approx(want, abs=0.06)
+    assert (
+        textures.fruit("streaks", lit, accent, 1) == textures.fruit("streaks", lit, accent, 1)
+    ).all()

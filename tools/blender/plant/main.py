@@ -48,6 +48,13 @@ def main(argv: list[str] | None = None) -> int:
     adult = resolve(look, "adult" if "adult" in look["stages"] else next(iter(look["stages"])), "a")
     lo, hi = adult.range("crown.clump_size_m")
     bark = textures.bark(adult.data, seed(look["id"], "bark"))
+    fruit_colours = look["palette"].get("fruit", {})
+    fruit_tex = textures.fruit(
+        str(adult.get("fruit.accent")),
+        str(fruit_colours.get("lit", "#808080")),
+        str(fruit_colours.get("accent") or fruit_colours.get("lit", "#808080")),
+        seed(look["id"], "fruit"),
+    )
     atlases: dict[str, Any] = {}
 
     def textures_for(stage: str, lod: str) -> dict[str, Any]:
@@ -62,9 +69,12 @@ def main(argv: list[str] | None = None) -> int:
             )
         atlas = atlases[key]
         small = float(look["stages"][stage]["ref_height_m"]) < 2.5
-        if lod == "lod0" and not small:
-            return {"foliage": atlas, "bark": bark}
-        return {"foliage": textures.half(atlas), "bark": textures.half_bark(bark)}
+        out = {"foliage": atlas, "bark": bark}
+        if lod != "lod0" or small:
+            out = {"foliage": textures.half(atlas), "bark": textures.half_bark(bark)}
+        if fruit_tex is not None:
+            out["fruit"] = fruit_tex
+        return out
 
     from genes.species import variant_letters
 

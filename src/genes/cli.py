@@ -7,6 +7,7 @@ genes make-example                          rebuild the example species's code-m
 genes refs candidates <id> --taxon N         shareable iNaturalist photos to choose from
 genes refs add <id> <n> --shows .. --angle ..  store a chosen photo (spec §9)
 genes refs thumbs <id>                        write missing photo thumbs for the page
+genes refs grid <id> <n|rNN> [--box l,t,r,b]   a photo with a coordinate grid, to read a tree box
 genes build-models <id> [--stage S] ...      build a look's models (needs `uv sync --group blender`)
 genes contact-sheet <id>                     models beside the reference photos (spec §7.1)
 genes occurrences <id> [--taxon N]           GBIF sightings counted per cell, for the map
@@ -111,6 +112,10 @@ def main(argv: list[str] | None = None) -> int:
     p_add.add_argument("--used-for", action="append")
     p_thumbs = refs_sub.add_parser("thumbs", help="write missing thumbs for stored photos")
     p_thumbs.add_argument("species")
+    p_grid = refs_sub.add_parser("grid", help="a photo with a 0-1 grid, to read its tree box")
+    p_grid.add_argument("species")
+    p_grid.add_argument("photo", help="candidate number, or a stored photo's id (r03)")
+    p_grid.add_argument("--box", help="draw this box l,t,r,b to check it")
 
     p_models = sub.add_parser("build-models", help="build a look's models (needs Blender's bpy)")
     p_models.add_argument("species")
@@ -194,6 +199,9 @@ def main(argv: list[str] | None = None) -> int:
                 print(path.relative_to(folder))
             return 0
         box = [float(x) for x in args.box.split(",")] if args.box else None
+        if args.refs_command == "grid":
+            print(refs.grid(folder, args.photo, box))
+            return 0
         entry = refs.add(folder, args.number, args.shows.split(","), args.angle, box, args.used_for)
         print(f"{entry['id']}: {entry['url']} ({entry['licence']}, {entry['author']})")
         return 0

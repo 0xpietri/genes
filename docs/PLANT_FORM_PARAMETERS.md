@@ -38,6 +38,10 @@ The trunk and the leaders above the fork: count, fork, lean, crookedness, girth.
 | `trunk.bends` | number or [min, max] | [0.8, 1.6] | How many bends along the trunk and each leader (waves along its length): 1 = one long S, 3 = a restless trunk. |
 | `trunk.bend_style` | `smooth` \| `elbows` | "smooth" | smooth = slow S-curves that turn in space (algarrobo); elbows = straight runs broken by sharp kinks (tala, espinillo). |
 | `trunk.crooked_to_tip` | 0–1 | 0 | How far up the bends reach: 0 = the trunk and stems are crooked low down and calm towards the crown; 1 = crooked all along, from the foot to every tip, with hardly a straight part (algarrobo). Also gives more bends to long limbs. |
+| `trunk.kinks` | 0–1, or [min, max] | 0 | Sympodial growth, as in algarrobos, talas and quebrachos: the trunk, the leaders and the limbs grow in runs of uneven length, and at each break the course itself turns (by trunk.kink_angle_deg) in any direction, so the turns add up instead of swinging back to a straight average line. 0 = off (the slow bends of tortuosity only); 0.5 = about two breaks along each branch; 1 = about four. Each variant draws its own. Level 1 limbs follow it at 80 %, finer levels at 60 %, unless a level sets its own kinks. |
+| `trunk.kink_angle_deg` | number or [min, max] | [40, 90] | How far the course turns at each sympodial break, in degrees (with trunk.kinks above 0). |
+| `trunk.light_bias` | 0–1 | 0.35 | After each sympodial break the new run leans back towards the light (up and out from the crown's axis) by this share of the turn, so crooked limbs stay inside the crown and never fold back over the trunk. |
+| `trunk.knots` | 0–1 | 0 | Swellings of the wood where it turns or forks: at sympodial breaks and where a branch leaves its parent the bark bulges by up to a third of its radius, instead of tapering smoothly. 0 = smooth taper. |
 | `trunk.fluting` | 0–1, or [min, max] | 0 | Ribs and grooves running up the trunk and the leaders in a slow spiral, as if several stems had fused (old algarrobos, quebrachos). 0 = round. |
 | `trunk.gnarl` | 0–1, or [min, max] | 0.2 | Bumps, lobes and buttresses on the trunk's surface. |
 | `trunk.radius_per_height` | number or [min, max] | [0.022, 0.03] | Trunk radius at 1.3 m divided by the tree's height. From the sheet: (trunk_dbh_m / 2) / adult_height_m. |
@@ -65,6 +69,7 @@ One entry per branching level below the leaders, from the thickest (1) to the tw
 | `branching[].wander` | 0–1, or [min, max] | 0.3 | Random zig-zag. |
 | `branching[].tortuosity` | 0–1, or [min, max] |  | Big bends of the branches of this level, like trunk.tortuosity. Default: 60 % of the trunk's for level 1, none for the others. |
 | `branching[].bend_style` | `smooth` \| `elbows` |  | Default: the trunk's bend_style. Old algarrobos: smooth limbs, elbowed branches. |
+| `branching[].kinks` | 0–1, or [min, max] |  | Sympodial breaks of the branches of this level, like trunk.kinks. Default: 80 % of the trunk's for level 1, 60 % for finer levels. |
 | `branching[].radius_ratio` | number or [min, max] | [0.5, 0.7] | Base radius relative to the parent's radius where it grows. |
 | `branching[].roll` | `spiral` \| `opposite` \| `alternate` | "spiral" | How branches turn around the parent. |
 
@@ -80,6 +85,7 @@ The leaves: clumps of painted cards along the twigs.
 | `foliage.density` | 0–1 | 0.6 | How full each clump's texture is: 0 = a few sprays you see through, 1 = a solid mass. Airy trees (algarrobo, espinillo) 0.2–0.3. |
 | `foliage.twigs` | 0–1 | 0 | Dark crooked twigs painted inside each clump, under the leaves: the fine branch net that shows through airy foliage. 0 = none, 1 = a dense net (old algarrobos). |
 | `foliage.leafy_from` | 0–1 | 0.35 | Clumps sit on twigs from this fraction of their length to the tip. |
+| `foliage.carry_share` | 0–1 | 0.3 | Share of the bark's triangles kept for the fine twigs that carry the leaves out to the crown's edge (lod0). Wide airy crowns whose build notes say hundreds of clumps 'moved onto their wood' need more: 0.4–0.5. |
 
 ## `tips`
 
@@ -115,9 +121,12 @@ Fruit, shown in the sheet's fruiting months.
 
 | Parameter | Value | Default | What it does |
 | --- | --- | --- | --- |
-| `fruit.form` | `none` \| `pod_straight` \| `pod_curved` \| `pod_coiled` \| `berry` \| `drupe` \| `samara` \| `capsule` | "none" |  |
+| `fruit.form` | `none` \| `pod_straight` \| `pod_curved` \| `pod_coiled` \| `pod_beaded` \| `berry` \| `drupe` \| `samara` \| `capsule` | "none" | pod_beaded = a moniliform pod pinched between its seeds, like a string of beads (tusca, some algarrobos). |
 | `fruit.length_cm` | number or [min, max] | [1, 2] |  |
 | `fruit.width_cm` | number or [min, max] | [1, 2] | Pods and samaras: width; round fruit: ignored (length is the diameter). |
+| `fruit.beads` | integer or [min, max] | [6, 10] | pod_beaded: how many seeds (beads) along one pod. |
+| `fruit.constriction` | 0–1 | 0.45 | pod_beaded: how deep the pinch between beads is, as a share of the width (0 = a smooth pod, 0.8 = almost separate beads). |
+| `fruit.accent` | `none` \| `spots` \| `streaks` \| `tip` \| `blush` | "none" | Where the palette's fruit.accent colour shows on each fruit, painted into its texture: spots (mottled), streaks (lengthwise lines, like the violet-streaked pods of the algarrobo negro), tip (the end darkens), blush (one cheek, like a ripe berry). none = flat fruit.lit. |
 | `fruit.hanging` | boolean | true | Pods and bunches hang down from the twig. |
 | `fruit.per_bunch` | integer or [min, max] | [1, 3] |  |
 | `fruit.cover` | 0–1 | 0.3 | Share of the clumps that carry fruit at peak. |

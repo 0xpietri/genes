@@ -1,7 +1,8 @@
 """Painted textures made in code (look `textures[].made_by = "code"`): the foliage
-clump atlas and the bark. Near white: the model's flat colour (from the palette)
-multiplies them, and pietri.dev paints and lights the result (spec §8). The foliage is
-grey only; the bark has gentle colour patches (warm wood, lichen, weathered).
+clump atlas, the bark, and the fruit's accent marks. Near white: the model's flat
+colour (from the palette) multiplies them, and pietri.dev paints and lights the result
+(spec §8). The foliage is grey only; the bark has gentle colour patches (warm wood,
+lichen, weathered).
 
 Arrays are rows from the top, RGBA floats 0–1. numpy comes with Blender's
 `bpy`, so this module is only imported by `blend.py`.
@@ -346,4 +347,67 @@ def half_bark(img: np.ndarray) -> np.ndarray:
     """The bark at half size (a plain 2 x 2 mean; it tiles the same)."""
     h, w = img.shape[:2]
     out: np.ndarray = img.reshape(h // 2, 2, w // 2, 2, 4).mean(axis=(1, 3))
+    return out
+
+
+def _linear(hex_colour: str) -> np.ndarray:
+    h = hex_colour.lstrip("#")
+    return _linear_of(np.array([int(h[i : i + 2], 16) / 255 for i in (0, 2, 4)], dtype=np.float32))
+
+
+def _linear_of(c: np.ndarray) -> np.ndarray:
+    out: np.ndarray = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    return out
+
+
+def _srgb(c: np.ndarray) -> np.ndarray:
+    out: np.ndarray = np.where(
+        c <= 0.0031308, c * 12.92, 1.055 * np.power(np.maximum(c, 0), 1 / 2.4) - 0.055
+    )
+    return out
+
+
+def fruit(pattern: str, lit: str, accent: str, seed: int, size: int = 64) -> np.ndarray | None:
+    """Where the accent colour shows on a fruit (`fruit.accent`), as a texture the flat lit
+    colour multiplies: white keeps the lit colour, and the marks are accent / lit per
+    channel (in linear light, the way the material multiplies), so lit x texture paints
+    the accent. Accent channels brighter than lit cannot be reached and stay at lit. UV:
+    u across the fruit, v along it (pods), or a front view (round fruit). None for
+    `none`."""
+    if pattern == "none":
+        return None
+    rng = random.Random(seed)
+    w, h = size, size * 2
+    ys, xs = np.mgrid[0:h, 0:w].astype(np.float32)
+    u, v = (xs + 0.5) / w, (ys + 0.5) / h
+    mark = np.zeros((h, w), dtype=np.float32)
+    if pattern == "spots":
+        for _ in range(26):
+            spot = np.zeros((h, w, 4), dtype=np.float32)
+            cx, cy = rng.uniform(0, w), rng.uniform(0, h)
+            a, b = rng.uniform(2, 6), rng.uniform(1.5, 4)
+            _ellipse(spot, cx, cy, a, b, rng.uniform(0, math.pi), 1.0)
+            mark = np.maximum(mark, spot[..., 0] * rng.uniform(0.6, 1.0))
+    elif pattern == "streaks":
+        for _ in range(7):
+            x0 = rng.uniform(0.1, 0.9)
+            width = rng.uniform(0.03, 0.08)
+            phase = rng.uniform(0, 2 * math.pi)
+            centre = x0 + 0.04 * np.sin(2 * math.pi * 1.5 * v + phase)
+            line = np.clip(1 - np.abs(u - centre) / width, 0, 1)
+            # Each streak runs part of the length and fades at its ends.
+            lo, hi = sorted((rng.uniform(0, 1), rng.uniform(0, 1)))
+            along = np.clip(np.minimum(v - lo, hi - v) / 0.08 + 0.5, 0, 1)
+            mark = np.maximum(mark, line * along * rng.uniform(0.6, 1.0))
+    elif pattern == "tip":
+        mark = np.clip((v - 0.7) / 0.25, 0, 1)
+    elif pattern == "blush":
+        d = np.hypot(u - 0.35, (v - 0.4) * 0.5)
+        mark = np.clip(1 - d / 0.4, 0, 1) ** 0.8
+    else:
+        raise ValueError(f"unknown fruit accent {pattern}")
+    ratio = np.clip(_linear(accent) / np.maximum(_linear(lit), 1e-4), 0, 1)
+    colour = 1 - mark[..., None] * (1 - ratio[None, None, :])
+    out = np.ones((h, w, 4), dtype=np.float32)
+    out[..., :3] = _srgb(colour)
     return out

@@ -221,8 +221,10 @@ def ribbon(
     bend: float,
     order: float,
     segments: int = 4,
+    beads: tuple[int, float] | None = None,
 ) -> None:
-    """A flat curved strip (a pod or a samara), double sided by its material."""
+    """A flat curved strip (a pod or a samara), double sided by its material. `beads`
+    (count, depth) pinches it between its seeds, like a string of beads."""
     d = vec.norm(direction)
     p = anchor
     across = vec.norm(vec.cross(d, bend_axis))
@@ -231,6 +233,9 @@ def ribbon(
     for i in range(segments + 1):
         t = i / segments
         w = width * (0.35 + 0.65 * math.sin(math.pi * min(max(t, 0.08), 0.92)))
+        if beads is not None:
+            count, depth = beads
+            w *= 1 - depth * 0.5 * (1 + math.cos(2 * math.pi * count * t))
         n = vec.norm(vec.cross(d, across))
         a = part.vertex(vec.add(p, vec.mul(across, w / 2)), n, (0.0, t), order)
         b = part.vertex(vec.sub(p, vec.mul(across, w / 2)), n, (1.0, t), order)
@@ -279,8 +284,16 @@ def cone(part: Part, base: Vec, direction: Vec, length: float, radius: float) ->
         part.triangles.append((ring[j], ring[(j + 1) % 3], tip))
 
 
-def berry(part: Part, centre: Vec, radius: float, order: float, stretch: float = 1.0) -> None:
-    """An octahedron: 8 triangles (berries, drupes, capsules, ball flowers)."""
+def berry(
+    part: Part,
+    centre: Vec,
+    radius: float,
+    order: float,
+    stretch: float = 1.0,
+    mapped: bool = False,
+) -> None:
+    """An octahedron: 8 triangles (berries, drupes, capsules, ball flowers). `mapped`
+    gives it UVs (front view, u across, v down) so a painted accent can show on it."""
     axes: list[Vec] = [
         (radius, 0.0, 0.0),
         (-radius, 0.0, 0.0),
@@ -289,6 +302,16 @@ def berry(part: Part, centre: Vec, radius: float, order: float, stretch: float =
         (0.0, 0.0, radius),
         (0.0, 0.0, -radius),
     ]
-    idx = [part.vertex(vec.add(centre, a), vec.norm(a), (0.0, 0.0), order) for a in axes]
+    idx = [
+        part.vertex(
+            vec.add(centre, a),
+            vec.norm(a),
+            (0.5 + 0.5 * a[0] / radius, 0.5 - 0.5 * a[1] / (radius * stretch))
+            if mapped
+            else (0.0, 0.0),
+            order,
+        )
+        for a in axes
+    ]
     faces = [(0, 2, 4), (4, 2, 1), (1, 2, 5), (5, 2, 0), (4, 3, 0), (1, 3, 4), (5, 3, 1), (0, 3, 5)]
     part.triangles += [(idx[a], idx[b], idx[c]) for a, b, c in faces]

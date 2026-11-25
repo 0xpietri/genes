@@ -81,6 +81,42 @@ GIVES_LABEL = {
     "firewood": "Firewood",
     "nest_sites": "Nest sites",
 }
+LEAF_TYPE_LABEL = {"none": "leafless"}
+# What starts a phase, as it reads after the phase's months.
+TRIGGER_LABEL = {
+    "first_spring_rains": "after the first spring rains",
+    "first_frost": "after the first frost",
+    "day_length": "set by day length",
+    "heat_sum": "after enough warmth",
+    "rain": "after rain",
+    "drought": "with drought",
+}
+# Who a plant gives to (`gives[].to`) and who spreads its seeds (`dispersal[].guilds`):
+# free words in the sheet, these are the usual ones and have their Spanish in UI_ES.
+GUILDS = (
+    "people",
+    "livestock",
+    "cattle",
+    "goats",
+    "horses",
+    "bees",
+    "insects",
+    "butterflies",
+    "moths",
+    "ants",
+    "beetles",
+    "birds",
+    "hummingbirds",
+    "parrots",
+    "bats",
+    "mammals",
+    "rodents",
+    "foxes",
+    "reptiles",
+    "wildlife",
+    "understory",
+    "soil",
+)
 # iNaturalist place guesses use these codes for provinces.
 PLACE_CODES = {
     "AR-SE": "Santiago del Estero",
@@ -96,6 +132,24 @@ COUNTRY_CODES = {"AR": "ARG", "PY": "PRY", "BO": "BOL", "UY": "URY"}
 
 def e(value: Any) -> str:
     return escape(str(value), quote=True)
+
+
+def fruit_word(sheet: dict[str, Any]) -> str:
+    """What the fruit is called on the page: pods for a pod, fruit for anything else."""
+    return "Pods" if dig(sheet, "plant", "reproduction", "fruit") == "pod" else "Fruit"
+
+
+def leaf_type_label(value: str) -> str:
+    return LEAF_TYPE_LABEL.get(value, value)
+
+
+def to_whom(to: list[str]) -> str:
+    """ "to the bees, the goats": in Spanish "a" + "el" contracts to "al"."""
+    names = ", ".join(T(x) for x in to)
+    word = T("to")
+    if cur_lang() == "es" and names.startswith("el "):
+        return "al " + names[3:]
+    return f"{word} {names}"
 
 
 def dig(obj: Any, *keys: str) -> Any:
@@ -404,7 +458,13 @@ def phenology_wheel(sheet: dict[str, Any], palette: dict[str, Any]) -> str:
             )
     for key, r0, r1, colour, label in (
         ("flowering", 92, 112, dig(palette, "flowers", "lit") or "#e6dc8a", "flowers"),
-        ("fruiting", 66, 86, dig(palette, "fruit", "accent") or "#c79a4a", "pods"),
+        (
+            "fruiting",
+            66,
+            86,
+            dig(palette, "fruit", "accent") or "#c79a4a",
+            fruit_word(sheet).lower(),
+        ),
         ("leaf_fall", 40, 60, dig(palette, "foliage", "dry", "lit") or "#b9a35c", "leaf fall"),
     ):
         months = dig(ph, key, "months") or []
@@ -429,7 +489,7 @@ def phenology_wheel(sheet: dict[str, Any], palette: dict[str, Any]) -> str:
         )
     return (
         '<svg class="wheel" viewBox="-8 -8 336 336" role="img" '
-        f'aria-labelledby="wheel-title"><title id="wheel-title">{T("The year of the tree: leaves, flowers, pods and leaf fall by month")}</title>'
+        f'aria-labelledby="wheel-title"><title id="wheel-title">{T(f"The year of the tree: leaves, flowers, {fruit_word(sheet).lower()} and leaf fall by month")}</title>'
         + "".join(out)
         + "".join(labels)
         + f'<g class="wheel-needle" data-wheel-needle transform="rotate(0 {cx} {cy})">'
@@ -615,6 +675,23 @@ def src_refs(sheet: dict[str, Any], ids: list[str]) -> str:
     return f'<small class="src">[{src_links(sheet, ids)}]</small>' if ids else ""
 
 
+def frost_figure(sheet: dict[str, Any]) -> str:
+    """The thermometer: the frost that kills an adult, or else the coldest the places it
+    grows get; nothing at all when the sheet has neither."""
+    climate = dig(sheet, "plant", "climate") or {}
+    for key, label in (
+        ("frost_kill_c_adult", "Frost that kills an adult"),
+        ("habitat_min_c", "Coldest where it grows"),
+    ):
+        drawn = art.thermometer(climate.get(key), label=label)
+        if drawn:
+            return (
+                f"<figure><figcaption>{art.icon('thermometer', 'ico ico-sm')}{T(label)}"
+                f"</figcaption>{drawn}</figure>"
+            )
+    return ""
+
+
 def gives_tiles(sheet: dict[str, Any]) -> str:
     tiles = []
     for g in dig(sheet, "plant", "gives") or []:
@@ -630,12 +707,12 @@ def gives_tiles(sheet: dict[str, Any]) -> str:
                 )
                 + "</div>"
             )
-        to = ", ".join(T(x) for x in g.get("to", []))
+        to = to_whom(g["to"]) if g.get("to") else ""
         when = months_text(months)
         tiles.append(
             f'<li class="give">{art.icon(what, "ico give-ico")}'
             f"<div><strong>{e(T(GIVES_LABEL.get(what, what.replace('_', ' ').capitalize())))}</strong>"
-            f"{f'<span> {T("to")} {e(to)}</span>' if to else ''}"
+            f"{f'<span> {e(to)}</span>' if to else ''}"
             f"{f'<small>{e(when)}</small>' if when else ''}{cells}"
             f"{src_refs(sheet, g.get('source', []))}</div></li>"
         )
@@ -802,6 +879,10 @@ def facts_table(sheet: dict[str, Any]) -> str:
         (("light", "shade_tolerance_seedling"), "Shade tolerance, seedling", ""),
         (("light", "shade_tolerance_adult"), "Shade tolerance, adult", ""),
         (("climate", "frost_kill_c_adult"), "Frost that kills an adult", "°C"),
+        (("climate", "frost_kill_c_seedling"), "Frost that kills a seedling", "°C"),
+        (("climate", "heat_limit_c"), "Heat it cannot stand", "°C"),
+        (("climate", "habitat_min_c"), "Coldest where it grows", "°C"),
+        (("climate", "habitat_max_c"), "Hottest where it grows", "°C"),
         (("wood", "density_kg_m3"), "Wood density", "kg/m³"),
     ):
         r = dig(p, *path)
@@ -814,7 +895,7 @@ def facts_table(sheet: dict[str, Any]) -> str:
         rows.append(
             (
                 T("Leaves"),
-                f"{T(HABIT_LABEL.get(ph['leaf_habit'], ph['leaf_habit']))}, {T(ph.get('leaf_type', ''))}",
+                f"{T(HABIT_LABEL.get(ph['leaf_habit'], ph['leaf_habit']))}, {T(leaf_type_label(ph.get('leaf_type', '')))}",
                 [],
                 "",
             )
@@ -822,13 +903,13 @@ def facts_table(sheet: dict[str, Any]) -> str:
     for key, label in (
         ("leaf_out", "New leaves"),
         ("flowering", "Flowers"),
-        ("fruiting", "Pods"),
+        ("fruiting", fruit_word(sheet)),
         ("leaf_fall", "Leaf fall"),
     ):
         r = ph.get(key)
         if r:
             trig = (
-                f" ({T('after the')} {T(r['trigger'].replace('_', ' '))})"
+                f" ({T(TRIGGER_LABEL.get(r['trigger'], r['trigger'].replace('_', ' ')))})"
                 if r.get("trigger")
                 else ""
             )
@@ -954,7 +1035,7 @@ def species_page(
         ind = life["individual"]
         sim_words = T("'s simulator, day by day with the real weather of central Argentina since")
         life_text = (
-            f'<p>{T("One algarrobo grown alone by")} <a href="https://pietri.dev">pietri.dev</a>'
+            f'<p>{T("One tree grown alone by")} <a href="https://pietri.dev">pietri.dev</a>'
             f"{sim_words} "
             f"{life['born'][:4]}: {T('its own limit is')} {num(ind['max_height_mm'] / 1000, '.1f')} m. "
             + (
@@ -1118,9 +1199,7 @@ def species_page(
         <figure><figcaption>{art.icon("gauge", "ico ico-sm")}{T("Rain it lives with")}</figcaption>{
         art.rain_tube(dig(sheet, "plant", "water", "rainfall_mm_year"))
     }</figure>
-        <figure><figcaption>{art.icon("thermometer", "ico ico-sm")}{
-        T("Frost that kills an adult")
-    }</figcaption>{art.thermometer(dig(sheet, "plant", "climate", "frost_kill_c_adult"))}</figure>
+        {frost_figure(sheet)}
       </div>
       <div class="levels">
         {
@@ -1148,7 +1227,7 @@ def species_page(
       <ul class="legend"><li><i class="sw leaves"></i>{
         T("Leaves (outer ring: new, mature, dry)")
     }</li><li><i class="sw flowers"></i>{T("Flowers")}</li><li><i class="sw pods"></i>{
-        T("Pods")
+        T(fruit_word(sheet))
     }</li><li><i class="sw fall"></i>{T("Leaf fall")}</li></ul>
     </section>
   </div>
@@ -1177,7 +1256,7 @@ def species_page(
         head_of(
             "leaf",
             "The leaf",
-            f"{e(T(HABIT_LABEL.get(ph.get('leaf_habit', ''), '')))}, {e(T(ph.get('leaf_type', '')))}: "
+            f"{e(T(HABIT_LABEL.get(ph.get('leaf_habit', ''), '')))}, {e(T(leaf_type_label(ph.get('leaf_type', ''))))}: "
             + T("each leaf splits into pinnae lined with small leaflets. Drag to turn it."),
         )
     }
@@ -1196,7 +1275,7 @@ def species_page(
       {
         head_of(
             "people",
-            "People and the algarrobo",
+            "People and this species",
             f"{T('Uses the sources record')} {src_refs(sheet, uses_src)}.",
         )
     }

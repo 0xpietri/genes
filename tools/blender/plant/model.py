@@ -454,7 +454,11 @@ def _simple(b: Branch, segments: int | None, upto: int | None = None) -> Branch:
     n = len(b.points) if upto is None else max(2, min(upto + 1, len(b.points)))
     pts, radii = b.points[:n], b.radii[:n]
     if segments is not None and n - 1 > segments:
-        idx = sorted({round(i * (n - 1) / segments) for i in range(segments + 1)})
+        idx = sorted(
+            {round(i * (n - 1) / segments) for i in range(segments + 1)}
+            # A sympodial break is where the wood turns: always drawn, with its run.
+            | {k for k in b.keep if 0 < k < n - 1}
+        )
         pts, radii = [pts[i] for i in idx], [radii[i] for i in idx]
     return Branch(b.level, pts, radii, parent=b.parent, at=b.at, broken=b.broken and upto is None)
 
@@ -471,8 +475,6 @@ def _segments_for(b: Branch, coarse: bool) -> int | None:
 # The rule (spec §7.2): no foliage without wood. Every clump has drawn wood within this
 # share of its size from its centre, inside its leaves.
 REACH = 0.45
-# Share of the bark budget kept for the fine twigs that carry the foliage (lod0).
-CARRY_SHARE = 0.3
 
 
 def _carrier_sides(b: Branch) -> int:
@@ -484,12 +486,14 @@ CARRIER_MIN_R = 0.006
 
 
 def _carrier_segments(b: Branch, upto: int) -> int:
-    """Two segments, up to four on long twigs, so they stay crooked."""
+    """Two segments, up to four on long twigs, so they stay crooked (more where the twig
+    breaks sympodially)."""
     run = sum(
         vec.length(vec.sub(b.points[j + 1], b.points[j]))
         for j in range(min(upto, len(b.points) - 1))
     )
-    return max(1, min(upto, max(2, min(4, round(run / 0.6)))))
+    most = 4 + sum(1 for k in b.keep if k < upto)
+    return max(1, min(upto, max(2, min(most, round(run / 0.6)))))
 
 
 def _carrier_tris(b: Branch, upto: int) -> int:
@@ -689,6 +693,7 @@ def _flowers_and_fruit(
                     berry(flowers, base, max(length * 0.35, 0.01), order)
     r_form = form.get("fruit.form")
     r_cover = float(form.get("fruit.cover"))
+    accent = str(form.get("fruit.accent"))
     if r_form != "none" and r_cover > 0:
         hanging = bool(form.get("fruit.hanging"))
         for c in clumps:
@@ -727,14 +732,22 @@ def _flowers_and_fruit(
                         "pod_straight": 0.15,
                         "pod_curved": 1.6,
                         "pod_coiled": 5.5,
+                        "pod_beaded": 0.4,
                         "samara": 0.3,
                     }[r_form]
                     bend *= rng.uniform(0.7, 1.25)
-                    ribbon(fruit, start, d, bend_axis, length, width, bend, o, 2 if coarse else 3)
+                    segments = 2 if coarse else 3
+                    beads = None
+                    if r_form == "pod_beaded" and not coarse:
+                        count = draw_int(rng, form.get("fruit.beads"))
+                        beads = (count, float(form.get("fruit.constriction")))
+                        segments = 2 * count  # a ring at every bead and every pinch
+                    ribbon(fruit, start, d, bend_axis, length, width, bend, o, segments, beads)
                 else:
                     centre = vec.add(start, vec.mul(d, length * 0.6))
                     stretch = 1.4 if r_form == "capsule" else 1.0
-                    berry(fruit, centre, max(length / 2, 0.006) * (2 if coarse else 1), o, stretch)
+                    radius = max(length / 2, 0.006) * (2 if coarse else 1)
+                    berry(fruit, centre, radius, o, stretch, mapped=accent != "none")
     return flowers, fruit
 
 
@@ -839,6 +852,7 @@ def build(
     tip_share = float(form.get("tips.share")) * (1.0 if leafless else 0.4) if tipped else 0.0
     parts: dict[str, Part] = {}
     fitted: list[Clump] = []
+    carry_share = float(form.get("foliage.carry_share"))
     thorns = Part("thorns")
     if not leafless:
         thorns = _thorns(tree, form, mesh_rng, thorn_cap)
@@ -856,10 +870,10 @@ def build(
         tree,
         form,
         coarse,
-        int(bark_cap * (1 - tip_share - (CARRY_SHARE if fitted else 0.0))),
+        int(bark_cap * (1 - tip_share - (carry_share if fitted else 0.0))),
         form.unit("bark_seed") * 10,
         fitted or None,
-        int(bark_cap * CARRY_SHARE) if fitted else 0,
+        int(bark_cap * carry_share) if fitted else 0,
     )
     if r_min > 0:
         notes.append(

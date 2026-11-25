@@ -450,10 +450,21 @@ def rain_tube(rain: dict[str, Any] | None, top: float = 1000.0) -> str:
     )
 
 
-def thermometer(frost: dict[str, Any] | None, lo: float = -15.0, hi: float = 5.0) -> str:
-    """The frost that kills an adult, on a thermometer."""
-    if not frost or "min" not in frost:
+def thermometer(
+    frost: dict[str, Any] | None,
+    lo: float = -15.0,
+    hi: float = 5.0,
+    label: str = "Frost that kills an adult",
+) -> str:
+    """A cold limit (the frost that kills an adult, or the coldest where it grows) on a
+    thermometer. A range with only one end draws that end."""
+    if not frost:
         return ""
+    ends = [frost[k] for k in ("min", "typical", "max") if frost.get(k) is not None]
+    if not ends:
+        return ""
+    frost = {**frost, "min": frost.get("min", min(ends)), "max": frost.get("max", max(ends))}
+    lo = min(lo, 5 * math.floor(float(frost["min"]) / 5))
     x, y0, y1, w = 50.0, 20.0, 196.0, 22.0
     sy = (y1 - y0) / (hi - lo)
 
@@ -473,7 +484,7 @@ def thermometer(frost: dict[str, Any] | None, lo: float = -15.0, hi: float = 5.0
         else ""
     )
     return (
-        f'<svg class="tube" viewBox="0 0 170 250" role="img" aria-label="{T("Frost that kills an adult")}: '
+        f'<svg class="tube" viewBox="0 0 170 250" role="img" aria-label="{T(label)}: '
         f'{_minus(_n(frost["min"]))} – {_minus(_n(frost["max"]))} °C">'
         f'<rect x="{x}" y="{y0 - 8}" width="{w}" height="{y1 - y0 + 16}" rx="{w / 2}" class="tube-glass"/>'
         f'<rect x="{x + 5}" y="{yv(frost["max"]):.1f}" width="{w - 10}" height="{yv(frost["min"]) - yv(frost["max"]):.1f}" rx="5" fill="#9fdcff" stroke="{INK}" stroke-width="2"/>'

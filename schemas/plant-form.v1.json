@@ -59,11 +59,17 @@
         },
         "bends": {
           "$ref": "#/$defs/range",
-          "default": [0.8, 1.6],
+          "default": [
+            0.8,
+            1.6
+          ],
           "description": "How many bends along the trunk and each leader (waves along its length): 1 = one long S, 3 = a restless trunk."
         },
         "bend_style": {
-          "enum": ["smooth", "elbows"],
+          "enum": [
+            "smooth",
+            "elbows"
+          ],
           "default": "smooth",
           "description": "smooth = slow S-curves that turn in space (algarrobo); elbows = straight runs broken by sharp kinks (tala, espinillo)."
         },
@@ -71,6 +77,29 @@
           "$ref": "#/$defs/fraction",
           "default": 0,
           "description": "How far up the bends reach: 0 = the trunk and stems are crooked low down and calm towards the crown; 1 = crooked all along, from the foot to every tip, with hardly a straight part (algarrobo). Also gives more bends to long limbs."
+        },
+        "kinks": {
+          "$ref": "#/$defs/fraction_range",
+          "default": 0,
+          "description": "Sympodial growth, as in algarrobos, talas and quebrachos: the trunk, the leaders and the limbs grow in runs of uneven length, and at each break the course itself turns (by trunk.kink_angle_deg) in any direction, so the turns add up instead of swinging back to a straight average line. 0 = off (the slow bends of tortuosity only); 0.5 = about two breaks along each branch; 1 = about four. Each variant draws its own. Level 1 limbs follow it at 80 %, finer levels at 60 %, unless a level sets its own kinks."
+        },
+        "kink_angle_deg": {
+          "$ref": "#/$defs/range",
+          "default": [
+            40,
+            90
+          ],
+          "description": "How far the course turns at each sympodial break, in degrees (with trunk.kinks above 0)."
+        },
+        "light_bias": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.35,
+          "description": "After each sympodial break the new run leans back towards the light (up and out from the crown's axis) by this share of the turn, so crooked limbs stay inside the crown and never fold back over the trunk."
+        },
+        "knots": {
+          "$ref": "#/$defs/fraction",
+          "default": 0,
+          "description": "Swellings of the wood where it turns or forks: at sympodial breaks and where a branch leaves its parent the bark bulges by up to a third of its radius, instead of tapering smoothly. 0 = smooth taper."
         },
         "fluting": {
           "$ref": "#/$defs/fraction_range",
@@ -192,8 +221,15 @@
             "description": "Big bends of the branches of this level, like trunk.tortuosity. Default: 60 % of the trunk's for level 1, none for the others."
           },
           "bend_style": {
-            "enum": ["smooth", "elbows"],
+            "enum": [
+              "smooth",
+              "elbows"
+            ],
             "description": "Default: the trunk's bend_style. Old algarrobos: smooth limbs, elbowed branches."
+          },
+          "kinks": {
+            "$ref": "#/$defs/fraction_range",
+            "description": "Sympodial breaks of the branches of this level, like trunk.kinks. Default: 80 % of the trunk's for level 1, 60 % for finer levels."
           },
           "radius_ratio": {
             "$ref": "#/$defs/range",
@@ -335,6 +371,11 @@
           "$ref": "#/$defs/fraction",
           "default": 0.35,
           "description": "Clumps sit on twigs from this fraction of their length to the tip."
+        },
+        "carry_share": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.3,
+          "description": "Share of the bark's triangles kept for the fine twigs that carry the leaves out to the crown's edge (lod0). Wide airy crowns whose build notes say hundreds of clumps 'moved onto their wood' need more: 0.4–0.5."
         }
       },
       "additionalProperties": false
@@ -350,7 +391,10 @@
         },
         "length": {
           "$ref": "#/$defs/range",
-          "default": [0.03, 0.06],
+          "default": [
+            0.03,
+            0.06
+          ],
           "description": "Length of a twiglet, as a fraction of the tree's height."
         },
         "crookedness": {
@@ -370,8 +414,22 @@
         },
         "stages": {
           "type": "array",
-          "items": {"enum": ["seedling", "sapling", "young", "adult", "old", "dead_standing", "fallen"]},
-          "default": ["adult", "old", "dead_standing"],
+          "items": {
+            "enum": [
+              "seedling",
+              "sapling",
+              "young",
+              "adult",
+              "old",
+              "dead_standing",
+              "fallen"
+            ]
+          },
+          "default": [
+            "adult",
+            "old",
+            "dead_standing"
+          ],
           "description": "Stages that have twiglets."
         }
       },
@@ -475,12 +533,14 @@
             "pod_straight",
             "pod_curved",
             "pod_coiled",
+            "pod_beaded",
             "berry",
             "drupe",
             "samara",
             "capsule"
           ],
-          "default": "none"
+          "default": "none",
+          "description": "pod_beaded = a moniliform pod pinched between its seeds, like a string of beads (tusca, some algarrobos)."
         },
         "length_cm": {
           "$ref": "#/$defs/range",
@@ -496,6 +556,30 @@
             2
           ],
           "description": "Pods and samaras: width; round fruit: ignored (length is the diameter)."
+        },
+        "beads": {
+          "$ref": "#/$defs/int_range",
+          "default": [
+            6,
+            10
+          ],
+          "description": "pod_beaded: how many seeds (beads) along one pod."
+        },
+        "constriction": {
+          "$ref": "#/$defs/fraction",
+          "default": 0.45,
+          "description": "pod_beaded: how deep the pinch between beads is, as a share of the width (0 = a smooth pod, 0.8 = almost separate beads)."
+        },
+        "accent": {
+          "enum": [
+            "none",
+            "spots",
+            "streaks",
+            "tip",
+            "blush"
+          ],
+          "default": "none",
+          "description": "Where the palette's fruit.accent colour shows on each fruit, painted into its texture: spots (mottled), streaks (lengthwise lines, like the violet-streaked pods of the algarrobo negro), tip (the end darkens), blush (one cheek, like a ripe berry). none = flat fruit.lit."
         },
         "hanging": {
           "type": "boolean",
@@ -606,7 +690,9 @@
             "minimum": 0,
             "maximum": 3
           },
-            "branching": { "$ref": "#/properties/branching" },
+          "branching": {
+            "$ref": "#/properties/branching"
+          },
           "trunk": {
             "type": "object"
           },
