@@ -8,9 +8,12 @@ Chromium, and composes `looks/<n>/sheet.png`:
    silhouette laid over it (red), and the overlap score: intersection over
    union of the model's silhouette and the photo's tree (non-sky pixels in the
    box). 1.0 would be a perfect match; above about 0.6 the shapes agree.
-2. The adult variants in summer, winter and in flower, painted, and close to the
-   crown's edge in fruit and in flower.
-3. Every stage of variant a at one scale (the same metres per pixel), each beside a
+2. The adult variants in summer, in the barest month of the leaf calendar (a deciduous
+   tree's bare net of twigs) and in flower, painted, and close to the crown's edge in
+   fruit and in flower.
+3. The adult and the old tree from above (shade, and the crown even on every side) and
+   from below, looking up into the crown (the dark crooked limbs).
+4. Every stage of variant a at one scale (the same metres per pixel), each beside a
    1.75 m person; then each stage fitted to its picture, to see the small ones.
 
 Needs the `dev` group (Pillow, Playwright). The scores are printed too, so an
@@ -237,7 +240,9 @@ def contact_sheet(
     stages = [s for s in STAGES if s in look["stages"]]
     adult = "adult" if "adult" in stages else stages[-1]
     adult_variants = variant_letters(int(look["stages"][adult].get("variants", 1)))
-    fruit_month, winter_month, flower_month = _months(sp)
+    fruit_month, _, flower_month = _months(sp)
+    bare_month = barest_month(sp.latest_sheet.data if sp.latest_sheet else None)
+    old = "old" if "old" in stages else adult
 
     rows: list[list[Image.Image]] = []
     matches: list[Match] = []
@@ -271,7 +276,7 @@ def contact_sheet(
             rows.append(photo_row[i : i + 3])
         for month, name in (
             (fruit_month, "summer"),
-            (winter_month, "winter"),
+            (bare_month, f"barest, month {bare_month}"),
             (flower_month, "flowers"),
         ):
             rows.append(
@@ -315,6 +320,20 @@ def contact_sheet(
                 )
                 for v in adult_variants[:2]
                 for month, name in ((fruit_month, "fruit"), (flower_month, "flowers"))
+            ]
+        )
+        rows.append(
+            [
+                _label(
+                    render(page, base, sp, look_n, Shot(f"{s}-a.lod0.glb", view, "painted", m)),
+                    f"{s}-a {view}" + (f", month {m}" if m != fruit_month else ""),
+                )
+                for s in dict.fromkeys((adult, old))
+                for view, m in (
+                    ("above", fruit_month),
+                    ("below", fruit_month),
+                    ("above", bare_month),
+                )
             ]
         )
         for scale, label in ((frame, "{}"), (0.0, "{} (fitted, no person)")):
@@ -363,6 +382,28 @@ def _months(sp: Species) -> tuple[int, int, int]:
         return int(months[len(months) // 2]) if months else default
 
     return middle("fruiting", 1), middle("leaf_fall", 7), middle("flowering", 10)
+
+
+def barest_month(sheet: dict[str, Any] | None) -> int:
+    """The month the crown is barest by the leaf calendar: the middle of the longest run
+    of months with no leaf tone, else of months with only dry leaves, else mid leaf fall."""
+    phen = (sheet or {}).get("plant", {}).get("phenology", {})
+    tones = phen.get("leaf_tones") or []
+    on = {m: {t["tone"] for t in tones if m in t.get("months", [])} for m in range(1, 13)}
+    for bare in (lambda m: not on[m], lambda m: on[m] == {"dry"}):
+        runs: list[list[int]] = []
+        for k in range(24):  # twice round the year, so a run over New Year stays whole
+            m = k % 12 + 1
+            if tones and bare(m):
+                if runs and runs[-1][-1] % 12 + 1 == m and len(runs[-1]) < 12:
+                    runs[-1].append(m)
+                else:
+                    runs.append([m])
+        if runs:
+            best = max(runs, key=len)
+            return best[len(best) // 2]
+    months = phen.get("leaf_fall", {}).get("months")
+    return int(months[len(months) // 2]) if months else 7
 
 
 def scores_json(matches: list[Match]) -> str:

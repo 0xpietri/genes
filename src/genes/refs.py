@@ -13,6 +13,10 @@
     genes refs thumbs <id>
         Writes the missing thumbs for photos stored before thumbs existed.
 
+    genes refs grid <id> <number or r-id> [--box l,t,r,b]
+        The photo with a fine grid of 0.0–1.0 coordinates over it (and the box, if given,
+        in yellow) in .work/<id>/, to read a tree box off without other tools.
+
 Network only here, never in tests: the parsing is tested on recorded answers.
 """
 
@@ -220,6 +224,61 @@ def write_thumbs(species_dir: Path) -> list[Path]:
         out.write_bytes(thumb((refs_dir / photo["file"]).read_bytes()))
         made.append(out)
     return made
+
+
+def grid_picture(photo: Image.Image, box: list[float] | None = None) -> Image.Image:
+    """`photo` with lines every 0.05 of its width and height (labelled every 0.1), the
+    fractions `--box` takes; and `box` (left, top, right, bottom) drawn in yellow."""
+    img = photo.convert("RGB")
+    img.thumbnail((MAX_SIDE, MAX_SIDE))
+    w, h = img.size
+    over = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(over)
+    font = ImageFont.load_default(size=max(11, w // 70))
+    for k in range(1, 20):
+        f = k / 20
+        major = k % 2 == 0
+        colour = (255, 255, 255, 200) if major else (255, 255, 255, 90)
+        x, y = round(f * (w - 1)), round(f * (h - 1))
+        d.line((x, 0, x, h), fill=colour, width=1)
+        d.line((0, y, w, y), fill=colour, width=1)
+        if major:
+            text = f"{f:.1f}"
+            for tx, ty in ((x + 2, 2), (2, y + 2)):
+                d.text(
+                    (tx, ty),
+                    text,
+                    fill=(255, 255, 255, 255),
+                    font=font,
+                    stroke_width=2,
+                    stroke_fill=(0, 0, 0, 255),
+                )
+    if box:
+        left, top, right, bottom = box
+        d.rectangle(
+            (left * (w - 1), top * (h - 1), right * (w - 1), bottom * (h - 1)),
+            outline=(255, 230, 0, 255),
+            width=3,
+        )
+    return Image.alpha_composite(img.convert("RGBA"), over).convert("RGB")
+
+
+def grid(
+    species_dir: Path, which: str, box: list[float] | None = None, work: Path | None = None
+) -> Path:
+    """Write the grid picture for candidate number `which`, or stored photo `which` (r03)."""
+    species_id = species_dir.name
+    folder = (work or WORK) / species_id
+    if which.startswith("r"):
+        src = species_dir / "references" / f"{which}.jpg"
+    else:
+        src = folder / "candidates" / f"{int(which):03d}.jpg"
+    if not src.exists():
+        raise SystemExit(f"no photo {src}")
+    folder.mkdir(parents=True, exist_ok=True)
+    out = folder / f"box-{which}.jpg"
+    grid_picture(Image.open(src), box).save(out, quality=88)
+    return out
 
 
 def add(

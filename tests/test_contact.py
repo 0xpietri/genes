@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from PIL import Image, ImageDraw
 
@@ -71,3 +72,25 @@ def test_the_saved_sheet_is_small(tmp_path: Path) -> None:
     contact.save_sheet(sheet, tmp_path / "sheet.png")
     saved = Image.open(tmp_path / "sheet.png")
     assert saved.size == (200, 200) and saved.mode == "P"
+
+
+def test_the_barest_month_comes_from_the_leaf_calendar() -> None:
+    def sheet(tones: list[tuple[str, list[int]]], fall: list[int] | None = None) -> dict[str, Any]:
+        ph: dict[str, Any] = {"leaf_tones": [{"tone": t, "months": m} for t, m in tones]}
+        if fall:
+            ph["leaf_fall"] = {"months": fall}
+        return {"plant": {"phenology": ph}}
+
+    # A deciduous tree bare from April to September: the middle of the bare run.
+    assert contact.barest_month(sheet([("mature", [10, 11, 12, 1, 2, 3])])) == 7
+    # A bare run over New Year stays whole.
+    assert contact.barest_month(sheet([("mature", [3, 4, 5, 6, 7, 8, 9])])) == 12
+    # Never bare: the month with only dry leaves.
+    assert (
+        contact.barest_month(
+            sheet([("mature", list(range(1, 8)) + [10, 11, 12]), ("new", [9]), ("dry", [8, 9])])
+        )
+        == 8
+    )
+    # Leaves all year: the middle of leaf fall.
+    assert contact.barest_month(sheet([("mature", list(range(1, 13)))], fall=[6, 7, 8])) == 7

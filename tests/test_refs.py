@@ -77,3 +77,21 @@ def test_candidates_and_add(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     assert refs.add(species, 2, ["trunk"], "detail", get=get)["id"] == "r02"  # same observation
     with pytest.raises(SystemExit):
         refs.add(species, 1, ["whole"], "side", get=get)
+
+
+def test_grid_marks_coordinates_and_the_box(tmp_path: Path) -> None:
+    photo = Image.new("RGB", (400, 300), (40, 120, 200))
+    plain = refs.grid_picture(photo)
+    boxed = refs.grid_picture(photo, [0.25, 0.2, 0.75, 0.9])
+    assert plain.size == photo.size
+    # Grid lines every 0.05: the line at x = 0.5 is lighter than the sky beside it.
+    assert sum(plain.getpixel((200, 140))) > sum(plain.getpixel((205, 140)))
+    # The box is yellow where it runs and nowhere else.
+    r, g, b = boxed.getpixel((100, 140))
+    assert r > 200 and g > 200 and b < 100
+    assert boxed.getpixel((33, 140)) == plain.getpixel((33, 140))
+    species = tmp_path / "species" / "plants" / "some-tree"
+    (species / "references").mkdir(parents=True)
+    photo.save(species / "references" / "r01.jpg")
+    out = refs.grid(species, "r01", work=tmp_path / ".work")
+    assert out.name == "box-r01.jpg" and out.exists()
