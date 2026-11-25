@@ -14,11 +14,12 @@ from html import escape
 from pathlib import Path
 from typing import Any
 
+from genes import site_static as static
 from genes.site_i18n import T, num
 
 INK = "#1d2a26"
 ART_DIR = Path(__file__).resolve().parents[2] / "site" / "static" / "art"
-ART_URL = "/static/site/art"
+ART_URL = static.url("art")
 # Painted icons (marcos's sheet) that stand in for the drawn ones.
 PAINTED = {
     "wood": "i-wood",

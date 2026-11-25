@@ -16,7 +16,8 @@ const NIGHT = {
 };
 // The painted soil keeps its own colours by day and turns blue-grey at night.
 const PAINTED_GROUND = { day: new THREE.Color('#f2ece0'), night: new THREE.Color('#5d6a80') };
-const SKY_URL = '/static/site/art/scene';
+// Relative to this script, so it follows the versioned static folder.
+const SKY_URL = new URL('../art/scene', import.meta.url).href;
 // The painting's bottom edge sits a little under the horizon and its top this high up.
 const PAINT_LOW = -0.04;
 const PAINT_HIGH = 0.62;

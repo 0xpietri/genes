@@ -48,7 +48,8 @@ def test_catalog_content(tmp_path: Path, examples: Path) -> None:
     assert (out / "review" / "species" / "example-tree" / "index.html").read_bytes() == (
         out / "review" / "index.html"
     ).read_bytes()
-    assert b"/static/site/js/species.js" in (out / "species/example-tree/index.html").read_bytes()
+    assert b"/static/site/" in (out / "species/example-tree/index.html").read_bytes()
+    assert b"/js/species.js" in (out / "species/example-tree/index.html").read_bytes()
     assert (out / "v1" / "budgets.json").exists()
 
 
