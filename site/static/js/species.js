@@ -24,6 +24,27 @@ function store(key, value) {
   return null;
 }
 
+// ---------------------------------------------------------------- full screen
+
+function setupFullscreen(stage) {
+  const btn = $('[data-fullscreen]');
+  const box = $('[data-stage]');
+  if (!btn || !box) return;
+  if (!document.fullscreenEnabled && !box.webkitRequestFullscreen) { btn.hidden = true; return; }
+  btn.addEventListener('click', () => {
+    const on = document.fullscreenElement || document.webkitFullscreenElement;
+    if (on) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else (box.requestFullscreen || box.webkitRequestFullscreen).call(box);
+  });
+  const sync = () => {
+    const on = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    btn.setAttribute('aria-pressed', String(on));
+    stage.resize();
+  };
+  document.addEventListener('fullscreenchange', sync);
+  document.addEventListener('webkitfullscreenchange', sync);
+}
+
 // ---------------------------------------------------------------- the numbers beside the tree
 
 function setupInfo() {
@@ -218,7 +239,7 @@ async function main() {
     const stage = new Stage(canvas, { look, sheet, modelsBase: body.dataset.models });
     setupDayNight(stage);
     setupInfo();
-    $('[data-recentre]').addEventListener('click', () => stage.recentre());
+    setupFullscreen(stage);
     if (life) {
       setupLife(stage, life, look);
     } else {

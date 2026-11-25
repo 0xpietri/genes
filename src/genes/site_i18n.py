@@ -74,6 +74,7 @@ def num(x: float, spec: str = "g") -> str:
 
 
 UI_ES: dict[str, str] = {
+    "Full screen": "Pantalla completa",
     "Show or hide the numbers": "Mostrar u ocultar los datos",
     "Living things of pietri.dev": "Seres vivos de pietri.dev",
     "the year it is gone into the soil": "el año en que vuelve al suelo",
