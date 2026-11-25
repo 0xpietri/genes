@@ -36,10 +36,13 @@ Every item must be true before you hand over:
    form.
 4. All models built (`build-models`), and a contact sheet (`looks/1/sheet.png`) with its
    scores.
-5. `uv run genes validate` prints `ok` and `uv run pytest` passes.
-6. You looked at it in the viewer yourself: every stage, variant, season and both
-   detail levels (Close and Far), from the side, from above and from below.
-7. A hand-over message for marcos (section 8), in Spanish, with the exact commands to see
+5. `species/plants/<id>/i18n/es.json`: the Spanish for every English text of the sheet and
+   the look (section 4.2), so the Spanish page has no English in it.
+6. `uv run genes validate` prints `ok` and `uv run pytest` passes.
+7. You looked at it in the viewer yourself: every stage, variant, season and both
+   detail levels (Close and Far), from the side, from above and from below, and its public
+   page in both languages (section 7.1).
+8. A hand-over message for marcos (section 8), in Spanish, with the exact commands to see
    it on his computer.
 
 ## Rules marcos set (not negotiable)
@@ -238,6 +241,26 @@ The algarrobo's calendar, as an example:
 
 Run `uv run genes validate`. It checks the shape, the sources, the ranges and the
 calendar.
+
+### 4.2 Spanish texts (`i18n/es.json`)
+
+The public site has one language per page: English at `/species/<id>/`, Spanish at
+`/es/species/<id>/`, never mixed. Notes, summaries and traits are written in English in the
+sheet and the look; their Spanish goes in `species/plants/<id>/i18n/es.json`, keyed by the
+English text exactly (copy the algarrobo's file for its shape):
+
+```
+{
+  "about": "Spanish for the English texts of this species' sheet and look, shown on the Spanish page (/es/). Keys are the English text exactly; a missing one fails the tests.",
+  "texts": { "<English text, exactly>": "<texto en castellano rioplatense>" }
+}
+```
+
+Write it last, once the sheet and look stop changing: a key that no longer matches its
+English text counts as missing. `uv run pytest tests/test_site.py -k translated` lists every
+text still in English. If the list names a word of the site itself rather than of your
+sheet (a new fruit form, a leaf habit the algarrobo lacks), add it to `UI_ES` in
+`src/genes/site_i18n.py`; that is the one code file a species PR may touch.
 
 ## 5. The look: traits first, then numbers
 
@@ -468,6 +491,21 @@ uv run pytest
 byte budgets (`budgets.json`), every model present, and `extras.genes` matching the look.
 If a look is over its byte budget, say so: budgets change only with marcos.
 
+### 7.1 The public page
+
+With `uv run genes serve` still running (it builds the whole site), open
+`http://127.0.0.1:8810/species/<id>/` and `http://127.0.0.1:8810/es/species/<id>/`.
+Check that the Spanish page has no English left, and that the catalog (`/` and `/es/`)
+shows the new card. These parts of the page are **not** yours to make in a species PR:
+
+- `media/card.webp` (the card picture) and `media/stages/` (the painted stage pictures):
+  marcos paints them with Gemini; the page uses the 3D model until then.
+- `lifecycle/<n>.json` (the simulated life): recorded from pietri.dev's simulator, which
+  needs the species there first. Without it the page shows no life replay; that is fine.
+- `occurrences.json` (the map): run `uv run genes occurrences <id> --taxon <GBIF key>` if
+  the computer reaches `api.gbif.org`, and commit the file; otherwise leave it out and the
+  map uses the reference photos' places.
+
 ## 8. Hand over to marcos
 
 Commit on your branch `species/<id>` (code, commit messages and docs in English):
@@ -493,7 +531,8 @@ git checkout species/<id>
 uv run genes serve
 ```
 
-and the page to open: `http://127.0.0.1:8810/review/species/<id>`, with what to look at
+and the pages to open: `http://127.0.0.1:8810/review/species/<id>` and
+`http://127.0.0.1:8810/es/species/<id>/`, with what to look at
 (for example: "probá el botón Invierno y la vista desde arriba").
 
 ## When you are stuck
